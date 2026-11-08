@@ -1,7 +1,13 @@
 # Ma Tirelire — parcours et critères initiaux
 
-8 novembre 2026. Proposition de spécification, aucune interface implémentée.
+8 novembre 2026. Proposition de spécification ; démonstration 0.1.0-dev partielle
+désormais implémentée, sans équivalence complète avec les parcours ci-dessous.
 Référence : `cadrage-2026-11-08.md`. Périmètre : préparation des lots 0.1 à 0.3.
+
+Vérification ciblée après premiers essais :
+[soldes, catégories et moyens de paiement Palm](audit-workflows-palm-2026-11-08.md).
+Le lancement et la mise à jour du solde ont été observés par l'utilisateur ; le
+brouillon de saisie est encore perdu à la rotation dans la démonstration.
 
 ## Origine et statut des règles
 
@@ -61,6 +67,14 @@ Le mot de passe de sauvegarde n'est ni demandé dans une issue GitHub ni journal
 
 ## Saisir une opération
 
+**Précision historique vérifiée** : le « type d'opération » Palm correspond à la
+catégorie, distincte du signe débit/crédit et du moyen de paiement. Types et moyens
+se sélectionnent dans des listes, avec accès à leurs écrans de gestion/création.
+La création automatique par simple saisie libre d'un nom n'est pas établie.
+Les champs texte Catégorie/Moyen de la démo sont des simplifications à remplacer
+par des sélecteurs ; proposition Android : action Ajouter et retour sans perte
+du brouillon. Voir l'audit lié ci-dessus pour les sources et limites.
+
 **Palm confirmé dans les sources** : débit/crédit, montant, date, description,
 catégorie, moyen de paiement et date de valeur
 ([Transaction.h](https://github.com/maxatome/ma-tirelire/blob/master/Transaction.h),
@@ -115,6 +129,11 @@ relevé → sélectionner les opérations présentes sur le relevé → voir l'�
 ne doit pas être présenté comme un rapprochement réussi.
 Les choix restent provisoires jusqu'à confirmation ; Annuler restitue l'état initial.
 Le pointage seul ne change pas le montant ni le solde comptable.
+Il modifie en revanche le **solde pointé**, qui inclut le solde initial et les
+écritures pointées signées : cette règle de calcul est confirmée dans les sources.
+La démo n'affiche encore que le solde total. L'original permet de choisir le mode
+de solde ; afficher total et pointé simultanément sur Android reste une adaptation
+proposée, pas un affichage Palm confirmé.
 La détection automatique de combinaisons attend le lot 0.5.
 
 Exemple fictif : départ 1 000,00 EUR ; salaire +100,00 et achat -12,34 présents sur
