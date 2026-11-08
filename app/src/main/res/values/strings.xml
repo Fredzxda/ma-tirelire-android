@@ -9,7 +9,16 @@
     <string name="transactions">Opérations</string>
     <string name="settings">Réglages</string>
     <string name="overview">Une vue claire sur vos comptes</string>
-    <string name="total_balance">Solde total fictif</string>
+    <string name="total_balance">Total des comptes fictifs</string>
+    <string name="consolidated_cleared">Total pointé : %1$s</string>
+    <string name="total_short">Total : %1$s</string>
+    <string name="cleared_short">Pointé : %1$s</string>
+    <string name="cleared_balance">Solde pointé</string>
+    <string name="choose_reference">Choisir…</string>
+    <string name="add_reference">Ajouter : %1$s…</string>
+    <string name="reference_name">Nom</string>
+    <string name="reference_duplicate_hint">Si ce nom existe déjà, son entrée sera sélectionnée.</string>
+    <string name="add_and_select">Ajouter et sélectionner</string>
     <string name="your_accounts">Vos comptes de démonstration</string>
     <string name="current_account">Compte courant</string>
     <string name="savings_account">Épargne</string>
@@ -29,7 +38,7 @@
     <string name="unmarked">À pointer</string>
     <string name="pointing_hint">Touchez la case pour simuler le pointage. Le montant et le solde comptable ne changent pas.</string>
     <string name="empty_transactions">Aucune opération sur ce compte.</string>
-    <string name="balance">Solde comptable</string>
+    <string name="balance">Solde total du compte</string>
     <string name="security_title">Un socle en préparation</string>
     <string name="security_detail">Cette première version explore les écrans et les parcours. Le coffre chiffré, la biométrie et les sauvegardes ne sont pas encore implémentés.</string>
     <string name="privacy_title">Une démo entièrement locale</string>

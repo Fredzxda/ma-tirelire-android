@@ -30,6 +30,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import java.math.BigDecimal
 import java.text.NumberFormat
 import java.util.Currency
+import java.util.Locale
 import org.matirelire.android.domain.Money
 
 class MainActivity : ComponentActivity() {
@@ -71,19 +72,84 @@ internal data class DemoTransaction(
     val cleared: Boolean = false,
 )
 
+internal data class EntryDraft(
+    val account: Int,
+    val income: Boolean = false,
+    val amount: String = "",
+    val description: String = "",
+    val category: String = "",
+    val payment: String = "",
+    val attempted: Boolean = false,
+    val addingCategory: Boolean = false,
+    val addingPayment: Boolean = false,
+    val newCategory: String = "",
+    val newPayment: String = "",
+)
+
 /** Memory only: survives rotation, never writes financial values into saved state. */
 class DemoViewModel : ViewModel() {
     internal val transactions = mutableStateListOf<DemoTransaction>()
     internal val destination = mutableIntStateOf(0)
     internal val account = mutableIntStateOf(0)
     internal val openings = listOf(BigDecimal("500.00"), BigDecimal("3000.00"))
+    internal val categories = mutableStateListOf<String>()
+    internal val payments = mutableStateListOf<String>()
+    internal var draft by mutableStateOf<EntryDraft?>(null)
+        private set
     private var initialized = false
 
     internal fun initialize(samples: List<DemoTransaction>) {
         if (!initialized) {
             transactions.addAll(samples)
+            samples.forEach { addCategory(it.category); addPayment(it.payment) }
             initialized = true
         }
+    }
+
+    internal fun balance(account: Int, clearedOnly: Boolean = false): BigDecimal =
+        transactions.filter { it.account == account && (!clearedOnly || it.cleared) }
+            .fold(openings[account]) { total, tx -> total + tx.amount }
+
+    internal fun toggleCleared(id: Long) {
+        val index = transactions.indexOfFirst { it.id == id }
+        if (index >= 0) transactions[index] = transactions[index].copy(cleared = !transactions[index].cleared)
+    }
+
+    private fun addReference(items: MutableList<String>, text: String): String? {
+        val name = text.trim().take(60)
+        if (name.isBlank()) return null
+        val existing = items.firstOrNull { it.equals(name, ignoreCase = true) }
+        if (existing != null) return existing
+        items.add(name)
+        return name
+    }
+
+    internal fun addCategory(text: String): String? = addReference(categories, text)
+    internal fun addPayment(text: String): String? = addReference(payments, text)
+
+    internal fun beginEntry() {
+        if (draft == null) draft = EntryDraft(account = account.intValue,
+            category = categories.firstOrNull().orEmpty(), payment = payments.firstOrNull().orEmpty())
+    }
+
+    internal fun updateDraft(next: EntryDraft) { if (draft != null) draft = next.copy(attempted = false) }
+    internal fun cancelEntry() { draft = null }
+
+    internal fun saveEntry(locale: Locale, date: String): Boolean {
+        val current = draft ?: return false
+        val amount = Money.parseAmount(current.amount, locale)
+        if (amount == null || current.description.isBlank() || current.account !in openings.indices ||
+            current.category !in categories || current.payment !in payments || current.addingCategory || current.addingPayment) {
+            draft = current.copy(attempted = true)
+            return false
+        }
+        transactions.add(DemoTransaction((transactions.maxOfOrNull { it.id } ?: 0) + 1,
+            current.account, current.description.trim(), if (current.income) amount else amount.negate(),
+            current.category, current.payment, date))
+        account.intValue = current.account
+        destination.intValue = 1
+        draft = null
+        return true
     }
 }
 
@@ -118,14 +184,10 @@ private fun DemoApp(paused: Boolean, onResume: () -> Unit) {
     val transactions = model.transactions
     var destination by model.destination
     var account by model.account
-    var showEntry by remember { mutableStateOf(false) }
-    val openings = model.openings
-    val balances = accountNames.indices.map { index ->
-        transactions.filter { it.account == index }.fold(openings[index]) { total, tx -> total + tx.amount }
-    }
+    val balances = accountNames.indices.map { model.balance(it) }
+    val clearedBalances = accountNames.indices.map { model.balance(it, clearedOnly = true) }
     val labels = listOf(stringResource(R.string.accounts), stringResource(R.string.transactions), stringResource(R.string.settings))
     val symbols = listOf("◫", "≡", "⚙")
-    LaunchedEffect(paused) { if (paused) showEntry = false }
     if (paused) {
         PauseScreen(onResume)
         return
@@ -163,7 +225,7 @@ private fun DemoApp(paused: Boolean, onResume: () -> Unit) {
                     }
                 },
                 floatingActionButton = {
-                    if (destination != 2) ExtendedFloatingActionButton(onClick = { showEntry = true }) {
+                    if (destination != 2) ExtendedFloatingActionButton(onClick = model::beginEntry) {
                         Text(stringResource(R.string.enter_transaction))
                     }
                 },
@@ -172,24 +234,16 @@ private fun DemoApp(paused: Boolean, onResume: () -> Unit) {
                     BrandHeader()
                     DemoBanner()
                     when (destination) {
-                        0 -> AccountsScreen(accountNames, balances) { selected -> account = selected; destination = 1 }
-                        1 -> TransactionsScreen(accountNames, account, balances[account], transactions.filter { it.account == account },
-                            onAccount = { account = it }, onToggle = { id ->
-                                val index = transactions.indexOfFirst { it.id == id }
-                                if (index >= 0) transactions[index] = transactions[index].copy(cleared = !transactions[index].cleared)
-                            })
+                        0 -> AccountsScreen(accountNames, balances, clearedBalances) { selected -> account = selected; destination = 1 }
+                        1 -> TransactionsScreen(accountNames, account, balances[account], clearedBalances[account], transactions.filter { it.account == account },
+                            onAccount = { account = it }, onToggle = model::toggleCleared)
                         else -> SettingsScreen()
                     }
                 }
             }
         }
     }
-    if (showEntry) EntryDialog(accountNames, account, onDismiss = { showEntry = false }) { selected, description, amount, category, payment ->
-        transactions.add(DemoTransaction((transactions.maxOfOrNull { it.id } ?: 0) + 1, selected, description, amount, category, payment, java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM))))
-        account = selected
-        destination = 1
-        showEntry = false
-    }
+    if (model.draft != null) EntryDialog(accountNames, model)
 }
 
 @Composable
@@ -214,7 +268,7 @@ private fun DemoBanner() {
 }
 
 @Composable
-private fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, onAccount: (Int) -> Unit) {
+private fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, clearedBalances: List<BigDecimal>, onAccount: (Int) -> Unit) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 110.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item { Text(stringResource(R.string.overview), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold) }
         item {
@@ -222,6 +276,7 @@ private fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, onAc
                 Column(Modifier.padding(24.dp)) {
                     Text(stringResource(R.string.total_balance), color = Color(0xFFDAEBDF))
                     Text(money(balances.fold(BigDecimal.ZERO, BigDecimal::add)), style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text(stringResource(R.string.consolidated_cleared, money(clearedBalances.fold(BigDecimal.ZERO, BigDecimal::add))), color = Color(0xFFDAEBDF), modifier = Modifier.padding(top = 8.dp))
                 }
             }
         }
@@ -233,7 +288,10 @@ private fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, onAc
                         Text(names[index], style = MaterialTheme.typography.titleMedium)
                         Text("EUR", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary)
                     }
-                    Text(money(balances[index]), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(stringResource(R.string.total_short, money(balances[index])), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.cleared_short, money(clearedBalances[index])), style = MaterialTheme.typography.bodySmall)
+                    }
                 }
             }
         }
@@ -242,7 +300,7 @@ private fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, onAc
 }
 
 @Composable
-private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDecimal, transactions: List<DemoTransaction>, onAccount: (Int) -> Unit, onToggle: (Long) -> Unit) {
+private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDecimal, clearedBalance: BigDecimal, transactions: List<DemoTransaction>, onAccount: (Int) -> Unit, onToggle: (Long) -> Unit) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 110.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -252,6 +310,8 @@ private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDe
         item {
             Text(stringResource(R.string.balance), color = MaterialTheme.colorScheme.secondary)
             Text(money(balance), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.cleared_balance), color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(top = 8.dp))
+            Text(money(clearedBalance), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
         }
         item { Text(stringResource(R.string.pointing_hint), style = MaterialTheme.typography.bodySmall) }
         if (transactions.isEmpty()) item { Text(stringResource(R.string.empty_transactions)) }
@@ -312,40 +372,88 @@ private fun PauseScreen(onResume: () -> Unit) {
 }
 
 @Composable
-private fun EntryDialog(names: List<String>, initialAccount: Int, onDismiss: () -> Unit, onSave: (Int, String, BigDecimal, String, String) -> Unit) {
-    var account by remember { mutableIntStateOf(initialAccount) }
-    var income by remember { mutableStateOf(false) }
-    var amount by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf("") }
-    var payment by remember { mutableStateOf("") }
-    var attempted by remember { mutableStateOf(false) }
-    val parsed = Money.parseAmount(amount, LocalConfiguration.current.locales[0])
-    val valid = parsed != null && description.isNotBlank()
+private fun EntryDialog(names: List<String>, model: DemoViewModel) {
+    val draft = model.draft ?: return
+    val locale = LocalConfiguration.current.locales[0]
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = model::cancelEntry,
         properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn),
         title = { Text(stringResource(R.string.new_transaction)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                names.forEachIndexed { index, name -> FilterChip(selected = account == index, onClick = { account = index }, label = { Text(name) }) }
+                names.forEachIndexed { index, name -> FilterChip(selected = draft.account == index, onClick = { model.updateDraft(draft.copy(account = index)) }, label = { Text(name) }) }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(selected = !income, onClick = { income = false }, label = { Text(stringResource(R.string.expense)) })
-                    FilterChip(selected = income, onClick = { income = true }, label = { Text(stringResource(R.string.income)) })
+                    FilterChip(selected = !draft.income, onClick = { model.updateDraft(draft.copy(income = false)) }, label = { Text(stringResource(R.string.expense)) })
+                    FilterChip(selected = draft.income, onClick = { model.updateDraft(draft.copy(income = true)) }, label = { Text(stringResource(R.string.income)) })
                 }
-                OutlinedTextField(value = amount, onValueChange = { amount = it }, label = { Text(stringResource(R.string.amount)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
-                OutlinedTextField(value = description, onValueChange = { description = it.take(100) }, label = { Text(stringResource(R.string.description)) }, singleLine = true)
-                OutlinedTextField(value = category, onValueChange = { category = it.take(60) }, label = { Text(stringResource(R.string.category)) }, singleLine = true)
-                OutlinedTextField(value = payment, onValueChange = { payment = it.take(60) }, label = { Text(stringResource(R.string.payment)) }, singleLine = true)
-                if (attempted && !valid) Text(stringResource(R.string.invalid_amount), color = MaterialTheme.colorScheme.error)
+                OutlinedTextField(value = draft.amount, onValueChange = { model.updateDraft(draft.copy(amount = it.take(30))) }, label = { Text(stringResource(R.string.amount)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
+                OutlinedTextField(value = draft.description, onValueChange = { model.updateDraft(draft.copy(description = it.take(100))) }, label = { Text(stringResource(R.string.description)) }, singleLine = true)
+                ReferencePicker(
+                    label = stringResource(R.string.category), selected = draft.category,
+                    options = model.categories, onSelect = { model.updateDraft(draft.copy(category = it)) },
+                    adding = draft.addingCategory, newName = draft.newCategory,
+                    onBeginAdd = { model.updateDraft(draft.copy(addingCategory = true, newCategory = "")) },
+                    onNameChange = { model.updateDraft(draft.copy(newCategory = it.take(60))) },
+                    onCancelAdd = { model.updateDraft(draft.copy(addingCategory = false, newCategory = "")) },
+                    onAdd = {
+                        model.addCategory(draft.newCategory)?.let {
+                            model.updateDraft(draft.copy(category = it, addingCategory = false, newCategory = ""))
+                        }
+                    },
+                )
+                ReferencePicker(
+                    label = stringResource(R.string.payment), selected = draft.payment,
+                    options = model.payments, onSelect = { model.updateDraft(draft.copy(payment = it)) },
+                    adding = draft.addingPayment, newName = draft.newPayment,
+                    onBeginAdd = { model.updateDraft(draft.copy(addingPayment = true, newPayment = "")) },
+                    onNameChange = { model.updateDraft(draft.copy(newPayment = it.take(60))) },
+                    onCancelAdd = { model.updateDraft(draft.copy(addingPayment = false, newPayment = "")) },
+                    onAdd = {
+                        model.addPayment(draft.newPayment)?.let {
+                            model.updateDraft(draft.copy(payment = it, addingPayment = false, newPayment = ""))
+                        }
+                    },
+                )
+                if (draft.attempted) Text(stringResource(R.string.invalid_amount), color = MaterialTheme.colorScheme.error)
             }
         },
         confirmButton = {
             TextButton(onClick = {
-                attempted = true
-                if (valid) onSave(account, description.trim(), if (income) parsed!! else parsed!!.negate(), category.trim(), payment.trim())
-            }) { Text(stringResource(R.string.save)) }
+                val date = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM).withLocale(locale))
+                model.saveEntry(locale, date)
+            }, enabled = !draft.addingCategory && !draft.addingPayment) { Text(stringResource(R.string.save)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+        dismissButton = { TextButton(onClick = model::cancelEntry) { Text(stringResource(R.string.cancel)) } },
     )
+}
+
+@Composable
+private fun ReferencePicker(
+    label: String, selected: String, options: List<String>, onSelect: (String) -> Unit,
+    adding: Boolean, newName: String, onBeginAdd: () -> Unit, onNameChange: (String) -> Unit,
+    onCancelAdd: () -> Unit, onAdd: () -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Column(Modifier.fillMaxWidth()) {
+        Text(label, style = MaterialTheme.typography.labelLarge)
+        Box {
+            OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth(), enabled = !adding) {
+                Text(selected.ifBlank { stringResource(R.string.choose_reference) }, modifier = Modifier.weight(1f))
+                Text("▾")
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                options.forEach { value -> DropdownMenuItem(text = { Text(value) }, onClick = { onSelect(value); expanded = false }) }
+                HorizontalDivider()
+                DropdownMenuItem(text = { Text(stringResource(R.string.add_reference, label)) }, onClick = { expanded = false; onBeginAdd() })
+            }
+        }
+        if (adding) {
+            OutlinedTextField(value = newName, onValueChange = onNameChange, label = { Text(stringResource(R.string.reference_name)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            Text(stringResource(R.string.reference_duplicate_hint), style = MaterialTheme.typography.bodySmall)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = onAdd, enabled = newName.isNotBlank()) { Text(stringResource(R.string.add_and_select)) }
+                TextButton(onClick = onCancelAdd) { Text(stringResource(R.string.cancel)) }
+            }
+        }
+    }
 }

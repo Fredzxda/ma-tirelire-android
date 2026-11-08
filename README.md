@@ -1,12 +1,14 @@
 # Ma Tirelire — Android
 
-Première démonstration **0.1.0-dev** du portage de Ma Tirelire Palm.
+Démonstration **0.1.1-dev** du portage de Ma Tirelire Palm.
 Android 12 minimum, téléphone et tablette, français et anglais.
 
 ## Utilisation de cette version
 
 Navigation, comptes fictifs, liste d'opérations, saisie en mémoire et pointage de
-démonstration. Les modifications disparaissent à la fermeture du processus.
+démonstration. Solde total et pointé visibles, catégories et moyens réutilisables,
+brouillon conservé à la rotation et pendant la pause dans la mémoire du ViewModel.
+Les modifications disparaissent à la fermeture du processus.
 **Ne pas saisir de données réelles.** Chiffrement, authentification biométrique,
 sauvegarde/restauration et parité Palm ne sont pas encore implémentés.
 Le masque au retour d'arrière-plan est un écran de reprise de démonstration,
@@ -43,4 +45,6 @@ licences respectives ; la licence du projet ne remplace pas leurs notices.
 Le cadrage et les parcours sont dans `docs/`. Ils distinguent sources historiques,
 exigences validées, adaptations proposées et règles restant à établir.
 
-Les resultats et limites des controles locaux sont dans [docs/VALIDATION-0.1.md](docs/VALIDATION-0.1.md).
+Les résultats et limites sont dans [docs/VALIDATION-0.1.1.md](docs/VALIDATION-0.1.1.md).
+Les opérations périodiques restent suivies dans [REC-001](docs/operations-periodiques.md)
+et seront implémentées dans un lot ultérieur.

@@ -6,8 +6,19 @@ Référence : `cadrage-2026-11-08.md`. Périmètre : préparation des lots 0.1 �
 
 Vérification ciblée après premiers essais :
 [soldes, catégories et moyens de paiement Palm](audit-workflows-palm-2026-11-08.md).
-Le lancement et la mise à jour du solde ont été observés par l'utilisateur ; le
-brouillon de saisie est encore perdu à la rotation dans la démonstration.
+Sur 0.1.0-dev, le lancement et la mise à jour du solde ont été observés par
+l'utilisateur ; le brouillon de saisie était perdu à la rotation.
+
+Mise à jour 0.1.1-dev : brouillon dans le modèle mémoire, affichage total/pointé et
+sélecteurs catégories/moyens implémentés. Voir le rapport de validation de cette version pour
+distinguer implémentation, tests locaux et observations utilisateur.
+
+## Exigence conservée : opérations périodiques
+
+La saisie devra permettre de définir une opération périodique, dont les suivantes
+apparaissent automatiquement à échéance. Cette exigence historique reste suivie
+sous [REC-001](operations-periodiques.md), indépendamment de sa version de
+livraison. Non implémentée dans la démonstration 0.1.1-dev.
 
 ## Origine et statut des règles
 
@@ -131,9 +142,9 @@ Les choix restent provisoires jusqu'à confirmation ; Annuler restitue l'état i
 Le pointage seul ne change pas le montant ni le solde comptable.
 Il modifie en revanche le **solde pointé**, qui inclut le solde initial et les
 écritures pointées signées : cette règle de calcul est confirmée dans les sources.
-La démo n'affiche encore que le solde total. L'original permet de choisir le mode
-de solde ; afficher total et pointé simultanément sur Android reste une adaptation
-proposée, pas un affichage Palm confirmé.
+La démo 0.1.0 n'affichait que le total ; 0.1.1 affiche aussi le pointé. L'original
+permet de choisir le mode de solde ; afficher total et pointé simultanément sur
+Android est une adaptation, pas un affichage Palm confirmé.
 La détection automatique de combinaisons attend le lot 0.5.
 
 Exemple fictif : départ 1 000,00 EUR ; salaire +100,00 et achat -12,34 présents sur
