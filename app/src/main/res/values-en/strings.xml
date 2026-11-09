@@ -61,4 +61,10 @@
     <string name="payment_card">Card</string>
     <string name="payment_transfer">Transfer</string>
     <string name="sample_date">8 November · fictional example</string>
+    <string name="vault_restore_success">Restore completed. The accounts now match the backup. If a vault already existed, its previous state was backed up before replacement.</string>
+    <string name="vault_restore_change">Choose another local backup</string>
+    <string name="vault_restore_selected">Backup selected. Enter its password to restore it.</string>
+    <string name="vault_directory_unlock_first">Folder selected. Unlock the vault to continue backup settings.</string>
+    <string name="vault_directory_resume">Backup folder saved. You can continue configuration in settings.</string>
+    <string name="vault_configure_success">Backups configured. You can now create a local encrypted backup.</string>
 </resources>

@@ -42,6 +42,9 @@ class VaultController(application: Application) : AndroidViewModel(application) 
     var needsCode by mutableStateOf(false); private set
     var busy by mutableStateOf(false); private set
     var error by mutableStateOf<String?>(null); private set
+    var feedback by mutableStateOf<Int?>(null); private set
+    fun dismissFeedback() { feedback = null }
+    private fun result(id: Int) { feedback = id }
     var backupConfigured by mutableStateOf(false); private set
     var directorySelected by mutableStateOf(false); private set
     var lastBackupMillis by mutableLongStateOf(0L); private set
@@ -71,7 +74,7 @@ class VaultController(application: Application) : AndroidViewModel(application) 
     }
 
     internal fun bindModel(model: DemoViewModel) { ledger = model }
-    private fun message(id: Int) { error = app.getString(id) }
+    private fun message(id: Int) { error = app.getString(id); result(id) }
     private fun b64(bytes: ByteArray) = Base64.encodeToString(bytes, Base64.NO_WRAP)
     private fun un64(value: String) = Base64.decode(value, Base64.NO_WRAP)
 
@@ -96,6 +99,7 @@ class VaultController(application: Application) : AndroidViewModel(application) 
     fun lock() {
         if (unlocked && ::ledger.isInitialized) resumeDestination = ledger.destination.intValue
         epoch++
+        feedback = null
         unlocked = false
         needsCode = false
         job?.cancel(); job = null
@@ -221,6 +225,7 @@ class VaultController(application: Application) : AndroidViewModel(application) 
                         openSession(key, restored)
                         if (restored != null) {
                             pendingArchive?.fill(0); pendingArchive = null; restorePending = false
+                            result(R.string.vault_restore_success)
                         }
                     } finally { key.fill(0); wrappedInner.fill(0) }
                 }, onFailure = { key.fill(0); wrappedInner.fill(0) })
@@ -291,6 +296,7 @@ class VaultController(application: Application) : AndroidViewModel(application) 
         pendingDirectory?.let { uri ->
             val config = config().put("tree", uri.toString()).put("autoFiles", JSONArray()).put("lastAuto", 0)
             saveConfig(config); pendingDirectory = null
+            result(R.string.vault_directory_resume)
         }
         refreshConfig()
         val config = config()
@@ -340,6 +346,7 @@ class VaultController(application: Application) : AndroidViewModel(application) 
                 try { saveConfig(config.put("key", b64(material.key)).put("salt", b64(material.salt)).put("lastAuto", 0)) }
                 finally { material.clear() }
                 refreshConfig()
+                result(R.string.vault_configure_success)
             } finally { chars.fill('\u0000') }
         }
     }
@@ -347,7 +354,11 @@ class VaultController(application: Application) : AndroidViewModel(application) 
     fun backupNow() = backupNow(false)
     private fun backupNow(automatic: Boolean) {
         if (!unlocked) return
-        work { makeBackup(automatic); refreshConfig(); message(R.string.vault_backup_success) }
+        work {
+            makeBackup(automatic)
+            refreshConfig()
+            if (!automatic) result(R.string.vault_backup_success)
+        }
     }
 
     private suspend fun makeBackup(automatic: Boolean) {
@@ -419,6 +430,7 @@ class VaultController(application: Application) : AndroidViewModel(application) 
         val archive = pendingArchive ?: return
         if (exists && !unlocked) return
         work {
+            operation = "restore-decrypt-validate"
             val chars = password.toCharArray()
             val data = try {
                 withContext(Dispatchers.Default) {
@@ -428,10 +440,14 @@ class VaultController(application: Application) : AndroidViewModel(application) 
             } finally { chars.fill('\u0000') }
             if (exists) {
                 if (!backupConfigured) { message(R.string.vault_backup_required); return@work }
+                operation = "restore-safety-backup"
                 makeBackup(false) // mandatory, verified recovery archive before replacement
+                operation = "restore-replace"
                 val encoded = SnapshotCodec.encode(data)
                 try { store.put("ledger", encoded); ledger.restoreData(data) } finally { encoded.fill(0) }
                 pendingArchive?.fill(0); pendingArchive = null; restorePending = false
+                refreshConfig()
+                result(R.string.vault_restore_success)
             } else {
                 // Start after the current operation has released its busy guard.
                 viewModelScope.launch { delay(1); if (!exists) createVault(activity, extraCode, data) }

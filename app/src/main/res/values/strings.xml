@@ -61,4 +61,10 @@
     <string name="payment_card">Carte</string>
     <string name="payment_transfer">Virement</string>
     <string name="sample_date">8 novembre · exemple fictif</string>
+    <string name="vault_restore_success">Restauration terminée. Les comptes ont été remplacés par ceux de la sauvegarde. Si un coffre existait, son état précédent a été sauvegardé avant le remplacement.</string>
+    <string name="vault_restore_change">Choisir une autre sauvegarde locale</string>
+    <string name="vault_restore_selected">Sauvegarde sélectionnée. Saisissez son mot de passe pour la restaurer.</string>
+    <string name="vault_directory_unlock_first">Dossier sélectionné. Déverrouillez le coffre pour reprendre les réglages de sauvegarde.</string>
+    <string name="vault_directory_resume">Dossier de sauvegarde enregistré. Vous pouvez poursuivre la configuration dans les réglages.</string>
+    <string name="vault_configure_success">Sauvegardes configurées. Vous pouvez maintenant créer une sauvegarde locale chiffrée.</string>
 </resources>

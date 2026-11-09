@@ -1,6 +1,6 @@
 # Ma Tirelire — Android
 
-Prototype de sécurité **0.2.4-dev** du portage de Ma Tirelire Palm.
+Prototype de sécurité **0.2.5-dev** du portage de Ma Tirelire Palm.
 Android 12 minimum, téléphone et tablette, français et anglais.
 
 ## Utilisation de cette version

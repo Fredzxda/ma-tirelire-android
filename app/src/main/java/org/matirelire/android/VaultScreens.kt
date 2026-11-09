@@ -34,6 +34,13 @@ fun VaultGate(controller: VaultController, activity: FragmentActivity, content: 
         controller.pickDirectory = { directoryPicker.launch(null) }
         controller.pickRestore = { restorePicker.launch(arrayOf("*/*")) }
     }
+    controller.feedback?.let { message ->
+        if (controller.unlocked || !controller.exists) {
+            AlertDialog(onDismissRequest = controller::dismissFeedback,
+                text = { Text(stringResource(message)) },
+                confirmButton = { TextButton(onClick = controller::dismissFeedback) { Text(stringResource(android.R.string.ok)) } })
+        }
+    }
     if (controller.unlocked) {
         content()
         return
@@ -60,10 +67,14 @@ fun VaultGate(controller: VaultController, activity: FragmentActivity, content: 
                         Text(stringResource(R.string.vault_continue))
                     }
                 }
-                !controller.exists && controller.restorePending -> RestoreForm(controller, activity)
+                !controller.exists && controller.restorePending -> {
+                    RestorePicker(controller)
+                    RestoreForm(controller, activity)
+                }
                 controller.exists -> {
                     Text(stringResource(R.string.vault_locked_description))
                     if (controller.restorePending) Text(stringResource(R.string.vault_restore_unlock_first))
+                    else if (controller.directorySelected) Text(stringResource(R.string.vault_directory_unlock_first))
                     Button(onClick = { controller.unlock(activity) }, enabled = !controller.busy) {
                         Text(stringResource(R.string.vault_unlock_phone))
                     }
@@ -125,9 +136,7 @@ fun VaultSettings(controller: VaultController, activity: FragmentActivity) {
         }
         HorizontalDivider()
         Text(stringResource(R.string.vault_restore_description))
-        OutlinedButton(onClick = { controller.pickRestore?.invoke() }, enabled = !controller.busy) {
-            Text(stringResource(R.string.vault_restore_pick))
-        }
+        RestorePicker(controller)
         if (controller.restorePending) RestoreForm(controller, activity)
         HorizontalDivider()
         OutlinedButton(onClick = controller::lock, enabled = !controller.busy) { Text(stringResource(R.string.vault_lock_now)) }
@@ -145,6 +154,14 @@ fun VaultSettings(controller: VaultController, activity: FragmentActivity) {
 }
 
 @Composable
+private fun RestorePicker(controller: VaultController) {
+    OutlinedButton(onClick = { controller.pickRestore?.invoke() }, enabled = !controller.busy) {
+        Text(stringResource(if (controller.restorePending) R.string.vault_restore_change else R.string.vault_restore_pick))
+    }
+    if (controller.restorePending) Text(stringResource(R.string.vault_restore_selected))
+}
+
+@Composable
 private fun RestoreForm(controller: VaultController, activity: FragmentActivity) {
     var password by remember { mutableStateOf("") }
     var extraCode by remember { mutableStateOf("") }
@@ -152,9 +169,7 @@ private fun RestoreForm(controller: VaultController, activity: FragmentActivity)
     var accepted by remember { mutableStateOf(false) }
     ClearSecretsOnStop { password = ""; extraCode = ""; codeConfirmation = ""; accepted = false }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        OutlinedButton(onClick = { controller.pickRestore?.invoke() }, enabled = !controller.busy) {
-            Text(stringResource(R.string.vault_restore_pick))
-        }
+
         Text(stringResource(R.string.vault_restore_password_hint))
         SecretField(password, { password = it }, R.string.vault_backup_password, !controller.busy)
         if (!controller.exists) {
