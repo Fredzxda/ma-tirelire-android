@@ -7,7 +7,7 @@
     <string name="vault_continue">Continuer</string>
     <string name="vault_locked_description">Déverrouillez le coffre avec la protection Android. Vous pouvez utiliser le code, schéma ou mot de passe du téléphone ; la biométrie est facultative.</string>
     <string name="vault_restore_unlock_first">Un fichier de restauration est sélectionné. Déverrouillez ce coffre, puis revenez dans Réglages pour poursuivre.</string>
-    <string name="vault_unlock_phone">Deverrouiller avec Android (code ou empreinte)</string>
+    <string name="vault_unlock_phone">Déverrouiller avec Android (code ou empreinte)</string>
     <string name="vault_create_description">Créez un coffre local. Android vous demandera de vous authentifier pour protéger sa clé.</string>
     <string name="vault_optional_code_hint">Facultatif : ajoutez une protection supplémentaire, avec un code ou mot de passe de 8 caractères minimum. Il sera demandé après Android. Le mot de passe de sauvegarde sera distinct.</string>
     <string name="vault_optional_code">Code supplémentaire facultatif</string>
@@ -47,7 +47,7 @@
     <string name="vault_save_error">Enregistrement impossible. Ne poursuivez pas la saisie avant résolution du problème.</string>
     <string name="vault_storage_error">Accès au stockage impossible. Vérifiez le dossier, les autorisations et l’espace disponible.</string>
     <string name="vault_backup_success">Sauvegarde chiffrée créée avec succès.</string>
-    <string name="vault_data_limit">Limite du prototype atteinte : 10 000 operations ou 500 categories et moyens de paiement.</string>
-    <string name="vault_create_error">Creation du coffre impossible apres authentification Android. Aucun coffre existant n a ete remplace.</string>
-    <string name="vault_unlock_error">Ouverture du coffre impossible apres authentification Android. Les fichiers existants sont conserves.</string>
+    <string name="vault_data_limit">Limite du prototype atteinte : 10 000 opérations ou 500 catégories et moyens de paiement.</string>
+    <string name="vault_create_error">Création du coffre impossible après l’authentification Android. Les fichiers existants sont conservés.</string>
+    <string name="vault_unlock_error">Ouverture du coffre impossible après l’authentification Android. Les fichiers existants sont conservés.</string>
 </resources>

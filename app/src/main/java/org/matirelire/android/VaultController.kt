@@ -24,6 +24,7 @@ import kotlinx.coroutines.*
 import org.json.JSONArray
 import org.json.JSONObject
 import org.matirelire.android.security.VaultCrypto
+import org.matirelire.android.security.KeyEnvelope
 import java.security.KeyStore
 import java.security.SecureRandom
 import java.util.UUID
@@ -31,7 +32,6 @@ import java.io.ByteArrayOutputStream
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
-import javax.crypto.spec.GCMParameterSpec
 
 class VaultController(application: Application) : AndroidViewModel(application) {
     private val app = application
@@ -207,15 +207,13 @@ class VaultController(application: Application) : AndroidViewModel(application) 
                         finally { derived.fill(0); salt.fill(0) }
                     }
                 }
-                val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply {
-                    init(Cipher.ENCRYPT_MODE, wrappingKey()); updateAAD(aad)
-                }
+                val cipher = KeyEnvelope.prepareEncryption(wrappingKey())
                 val wrappedInner = requireNotNull(inner)
                 // Auth owns these arrays until its callback; do not put them in saved state.
                 authenticate(activity, cipher, onSuccess = { authorized ->
                     try {
                         operation = "create-seal"
-                        val envelope = authorized.iv + authorized.doFinal(wrappedInner)
+                        val envelope = KeyEnvelope.sealAfterAuthentication(authorized, wrappedInner)
                         operation = "create-envelope-write"
                         store.writeEnvelope(envelope)
                         exists = true
@@ -236,13 +234,10 @@ class VaultController(application: Application) : AndroidViewModel(application) 
         error = null
         try {
             val bytes = store.readEnvelope()
-            val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply {
-                init(Cipher.DECRYPT_MODE, wrappingKey(), GCMParameterSpec(128, bytes.copyOfRange(0, 12)))
-                updateAAD(aad)
-            }
+            val cipher = KeyEnvelope.prepareDecryption(wrappingKey(), bytes)
             authenticate(activity, cipher, { authorized ->
                 operation = "unlock-envelope"
-                val inner = authorized.doFinal(bytes.copyOfRange(12, bytes.size))
+                val inner = KeyEnvelope.openAfterAuthentication(authorized, bytes)
                 if (inner.firstOrNull() == 0.toByte() && inner.size == 33) {
                     val key = inner.copyOfRange(1, 33)
                     try { openSession(key) } finally { key.fill(0); inner.fill(0) }

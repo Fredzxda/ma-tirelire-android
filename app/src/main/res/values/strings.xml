@@ -3,8 +3,8 @@
     <string name="app_name">Ma Tirelire Démo</string>
     <string name="brand">Ma Tirelire</string>
     <string name="tagline">Vos comptes, simplement.</string>
-    <string name="demo_banner">PROTOTYPE SECURITE - Donnees fictives uniquement</string>
-    <string name="demo_detail">Le coffre est chiffre et conserve les donnees. Ne saisissez pas encore de donnees reelles.</string>
+    <string name="demo_banner">PROTOTYPE SÉCURITÉ · Données fictives uniquement</string>
+    <string name="demo_detail">Le coffre est chiffré et conserve les données. Ne saisissez pas encore de données réelles.</string>
     <string name="accounts">Comptes</string>
     <string name="transactions">Opérations</string>
     <string name="settings">Réglages</string>
@@ -40,10 +40,10 @@
     <string name="empty_transactions">Aucune opération sur ce compte.</string>
     <string name="balance">Solde total du compte</string>
     <string name="security_title">Un socle en préparation</string>
-    <string name="security_detail">Coffre SQLCipher et authentification Android. Sauvegardes chiffrees a tester sur un autre telephone avant usage reel.</string>
+    <string name="security_detail">Coffre SQLCipher et authentification Android. Sauvegardes chiffrées à tester sur un autre téléphone avant usage réel.</string>
     <string name="privacy_title">Une démo entièrement locale</string>
     <string name="privacy_detail">Aucune permission réseau. Aucun rapport transmis. Les captures des écrans applicatifs sont bloquées par Android.</string>
-    <string name="roadmap_title">Prochaine etape - 0.3.0-dev</string>
+    <string name="roadmap_title">Prochaine étape · 0.3.0-dev</string>
     <string name="roadmap_detail">Validation du coffre sur appareils, puis gestion des comptes et parcours de saisie complets.</string>
     <string name="version">Version %1$s</string>
     <string name="language_hint">La langue et les formats suivent les réglages du téléphone : français et anglais sont disponibles.</string>
