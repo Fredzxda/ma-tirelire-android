@@ -1,6 +1,6 @@
 # Ma Tirelire — Android
 
-Prototype de sécurité **0.2.1-dev** du portage de Ma Tirelire Palm.
+Prototype de sécurité **0.2.2-dev** du portage de Ma Tirelire Palm.
 Android 12 minimum, téléphone et tablette, français et anglais.
 
 ## Utilisation de cette version
@@ -96,3 +96,4 @@ Validation du 9 novembre 2026 : cinq scenarios de selection simules reussis via
 `powershell -NoProfile -File tests/check-device-selection.ps1` ; workflow complet
 execute sur ASUS en Wi-Fi, installation 0.1.3-dev et `am start -W` Status ok.
 Ce lancement ne constitue pas une revue visuelle du formulaire.
+Suivi de l authentification native et des tests materiels : [VALIDATION-0.2.2](docs/VALIDATION-0.2.2.md).

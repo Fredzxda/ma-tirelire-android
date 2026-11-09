@@ -7,8 +7,7 @@
     <string name="vault_continue">Continuer</string>
     <string name="vault_locked_description">Déverrouillez le coffre avec la protection Android. Vous pouvez utiliser le code, schéma ou mot de passe du téléphone ; la biométrie est facultative.</string>
     <string name="vault_restore_unlock_first">Un fichier de restauration est sélectionné. Déverrouillez ce coffre, puis revenez dans Réglages pour poursuivre.</string>
-    <string name="vault_unlock_phone">Utiliser le verrouillage du téléphone</string>
-    <string name="vault_unlock_biometrics">Utiliser la biométrie</string>
+    <string name="vault_unlock_phone">Deverrouiller avec Android (code ou empreinte)</string>
     <string name="vault_create_description">Créez un coffre local. Android vous demandera de vous authentifier pour protéger sa clé.</string>
     <string name="vault_optional_code_hint">Facultatif : ajoutez une protection supplémentaire, avec un code ou mot de passe de 8 caractères minimum. Il sera demandé après Android. Le mot de passe de sauvegarde sera distinct.</string>
     <string name="vault_optional_code">Code supplémentaire facultatif</string>

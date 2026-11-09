@@ -7,8 +7,7 @@
     <string name="vault_continue">Continue</string>
     <string name="vault_locked_description">Unlock the vault using Android security. You can use the phone PIN, pattern or password; biometrics are optional.</string>
     <string name="vault_restore_unlock_first">A restore file is selected. Unlock this vault, then return to Settings to continue.</string>
-    <string name="vault_unlock_phone">Use phone screen lock</string>
-    <string name="vault_unlock_biometrics">Use biometrics</string>
+    <string name="vault_unlock_phone">Unlock with Android (credential or fingerprint)</string>
     <string name="vault_create_description">Create a local vault. Android will ask you to authenticate to protect its key.</string>
     <string name="vault_optional_code_hint">Optional: add another layer with a code or password of at least 8 characters, requested after Android authentication. Your backup password will be separate.</string>
     <string name="vault_optional_code">Optional additional code</string>

@@ -9,8 +9,9 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import android.util.Log
-import androidx.biometric.BiometricManager.Authenticators.*
-import androidx.biometric.BiometricPrompt
+import android.hardware.biometrics.BiometricManager.Authenticators.*
+import android.hardware.biometrics.BiometricPrompt
+import android.os.CancellationSignal
 import androidx.compose.runtime.*
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
@@ -51,7 +52,7 @@ class VaultController(application: Application) : AndroidViewModel(application) 
     private var epoch = 0L
     private var job: Job? = null
     private var authenticating = false
-    private var prompt: BiometricPrompt? = null
+    private var authenticationCancellation: CancellationSignal? = null
     var pickDirectory: (() -> Unit)? = null
     var pickRestore: (() -> Unit)? = null
     private var resumeDestination = 0
@@ -62,7 +63,11 @@ class VaultController(application: Application) : AndroidViewModel(application) 
         // Deliberately omit messages, stack traces, payloads and all entered secrets.
         val types = generateSequence(error as Throwable) { it.cause }.take(4)
             .joinToString("/") { it.javaClass.simpleName }
-        Log.w("MaTirelireVault", "failure:$operation:$types")
+        val keyFailure = generateSequence(error as Throwable) { it.cause }
+            .filterIsInstance<android.security.KeyStoreException>().firstOrNull()
+        val code = if (android.os.Build.VERSION.SDK_INT >= 33 && keyFailure != null)
+            ":code=${keyFailure.numericErrorCode}:authRequired=${keyFailure.requiresUserAuthentication()}" else ""
+        Log.w("MaTirelireVault", "failure:$operation:$types$code")
     }
 
     internal fun bindModel(model: DemoViewModel) { ledger = model }
@@ -95,7 +100,7 @@ class VaultController(application: Application) : AndroidViewModel(application) 
         needsCode = false
         job?.cancel(); job = null
         busy = false
-        prompt?.cancelAuthentication(); prompt = null
+        authenticationCancellation?.cancel(); authenticationCancellation = null
         authenticating = false
         pendingInner?.fill(0); pendingInner = null
         if (::ledger.isInitialized) { ledger.onChange = null; ledger.clearSensitive() }
@@ -121,13 +126,12 @@ class VaultController(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    private fun authenticate(activity: FragmentActivity, cipher: Cipher, biometric: Boolean,
+    private fun authenticate(activity: FragmentActivity, cipher: Cipher,
         onSuccess: (Cipher) -> Unit, onFailure: () -> Unit = {}) {
         val ticket = epoch
         authenticating = true
         busy = true
-        prompt = BiometricPrompt(activity, ContextCompat.getMainExecutor(activity),
-            object : BiometricPrompt.AuthenticationCallback() {
+        val callback = object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     val creating = !exists
                     activity.lifecycleScope.launch {
@@ -137,7 +141,7 @@ class VaultController(application: Application) : AndroidViewModel(application) 
                             // Wait for visibility instead of discarding a legitimate result.
                             activity.lifecycle.withStateAtLeast(Lifecycle.State.RESUMED) {
                                 if (ticket == epoch) {
-                                    authenticating = false; busy = false; prompt = null
+                                    authenticating = false; busy = false; authenticationCancellation = null
                                     // Some credential implementations omit the returned CryptoObject.
                                     // Reuse the EXACT operation passed to Android: Keystore still
                                     // enforces authentication on doFinal, so no boolean bypass exists.
@@ -154,21 +158,31 @@ class VaultController(application: Application) : AndroidViewModel(application) 
                         } finally {
                             if (!completed) {
                                 onFailure()
-                                authenticating = false; busy = false; prompt = null
+                                authenticating = false; busy = false; authenticationCancellation = null
                             }
                         }
                     }
                 }
                 override fun onAuthenticationError(code: Int, text: CharSequence) {
-                    authenticating = false; busy = false; prompt = null
+                    authenticating = false; busy = false; authenticationCancellation = null
                     onFailure()
                     if (ticket == epoch) message(R.string.vault_auth_cancelled)
                 }
-            })
-        val builder = BiometricPrompt.PromptInfo.Builder().setTitle(app.getString(R.string.brand))
-            .setAllowedAuthenticators(if (biometric) BIOMETRIC_STRONG or DEVICE_CREDENTIAL else DEVICE_CREDENTIAL)
-        try { prompt!!.authenticate(builder.build(), BiometricPrompt.CryptoObject(cipher)) }
-        catch (e: Exception) { authenticating = false; busy = false; prompt = null; onFailure(); throw e }
+            }
+        // Use the platform API supported by our minimum Android 12. Both choices
+        // remain available: the credential fallback is never a simulated success.
+        val nativePrompt = BiometricPrompt.Builder(activity)
+            .setTitle(app.getString(R.string.brand))
+            .setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
+            .build()
+        val cancellation = CancellationSignal()
+        authenticationCancellation = cancellation
+        try {
+            nativePrompt.authenticate(BiometricPrompt.CryptoObject(cipher), cancellation,
+                ContextCompat.getMainExecutor(activity), callback)
+        } catch (e: Exception) {
+            authenticating = false; busy = false; authenticationCancellation = null; onFailure(); throw e
+        }
     }
 
     fun create(activity: FragmentActivity, extraCode: String) {
@@ -198,7 +212,7 @@ class VaultController(application: Application) : AndroidViewModel(application) 
                 }
                 val wrappedInner = requireNotNull(inner)
                 // Auth owns these arrays until its callback; do not put them in saved state.
-                authenticate(activity, cipher, false, onSuccess = { authorized ->
+                authenticate(activity, cipher, onSuccess = { authorized ->
                     try {
                         operation = "create-seal"
                         val envelope = authorized.iv + authorized.doFinal(wrappedInner)
@@ -217,7 +231,7 @@ class VaultController(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun unlock(activity: FragmentActivity, useBiometrics: Boolean) {
+    fun unlock(activity: FragmentActivity) {
         if (!exists || unlocked || busy || authenticating) return
         error = null
         try {
@@ -226,7 +240,7 @@ class VaultController(application: Application) : AndroidViewModel(application) 
                 init(Cipher.DECRYPT_MODE, wrappingKey(), GCMParameterSpec(128, bytes.copyOfRange(0, 12)))
                 updateAAD(aad)
             }
-            authenticate(activity, cipher, useBiometrics, { authorized ->
+            authenticate(activity, cipher, { authorized ->
                 operation = "unlock-envelope"
                 val inner = authorized.doFinal(bytes.copyOfRange(12, bytes.size))
                 if (inner.firstOrNull() == 0.toByte() && inner.size == 33) {

@@ -64,11 +64,8 @@ fun VaultGate(controller: VaultController, activity: FragmentActivity, content: 
                 controller.exists -> {
                     Text(stringResource(R.string.vault_locked_description))
                     if (controller.restorePending) Text(stringResource(R.string.vault_restore_unlock_first))
-                    Button(onClick = { controller.unlock(activity, useBiometrics = false) }, enabled = !controller.busy) {
+                    Button(onClick = { controller.unlock(activity) }, enabled = !controller.busy) {
                         Text(stringResource(R.string.vault_unlock_phone))
-                    }
-                    OutlinedButton(onClick = { controller.unlock(activity, useBiometrics = true) }, enabled = !controller.busy) {
-                        Text(stringResource(R.string.vault_unlock_biometrics))
                     }
                 }
                 else -> {
