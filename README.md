@@ -48,3 +48,26 @@ exigences validées, adaptations proposées et règles restant à établir.
 Les résultats et limites sont dans [docs/VALIDATION-0.1.2.md](docs/VALIDATION-0.1.2.md).
 Les opérations périodiques restent suivies dans [REC-001](docs/operations-periodiques.md)
 et seront implémentées dans un lot ultérieur.
+
+## Compiler et installer sur un telephone
+
+Activer le debogage USB dans les options developpeur du telephone, le brancher et
+accepter l'autorisation de cet ordinateur. Relever son identifiant avec :
+
+```powershell
+& "$env:LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe" devices -l
+```
+
+Puis, a la racine du projet :
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/build-install.ps1 -DeviceSerial IDENTIFIANT
+```
+
+Le script compile, execute tests et lint, puis installe uniquement si les controles
+passent. Il cible explicitement le telephone choisi et verifie la version installee.
+Il ne desinstalle pas l'application en cas d'echec, ne redemarre pas le telephone et
+ne lance pas l'application. La mise a jour peut arreter la session en memoire de
+la demonstration. Le script build.ps1 seul conserve son comportement sans installation.
+Validation du nouveau script : syntaxe PowerShell controlee ; installation physique
+pas encore testee. Reference : https://developer.android.com/tools/adb
