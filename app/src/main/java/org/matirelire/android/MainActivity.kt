@@ -2,7 +2,8 @@ package org.matirelire.android
 
 import android.os.Bundle
 import android.view.WindowManager
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.ViewModelProvider
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.background
@@ -35,12 +36,14 @@ import java.util.Currency
 import java.util.Locale
 import org.matirelire.android.domain.Money
 
-class MainActivity : ComponentActivity() {
-    private var paused by mutableStateOf(false)
+class MainActivity : FragmentActivity() {
+    private lateinit var vault: VaultController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        vault = ViewModelProvider(this)[VaultController::class.java]
+        vault.bindModel(ViewModelProvider(this)[DemoViewModel::class.java])
         setContent {
             MaterialTheme(
                 colorScheme = lightColorScheme(
@@ -52,13 +55,13 @@ class MainActivity : ComponentActivity() {
                     onPrimaryContainer = Color(0xFF163B32),
                 ),
             ) {
-                DemoApp(paused) { paused = false }
+                VaultGate(vault, this@MainActivity) { DemoApp(vault, this@MainActivity) }
             }
         }
     }
 
     override fun onStop() {
-        if (!isChangingConfigurations) paused = true
+        if (!isChangingConfigurations && ::vault.isInitialized) vault.onBackground()
         super.onStop()
     }
 }
@@ -88,15 +91,19 @@ internal data class EntryDraft(
     val newPayment: String = "",
 )
 
-/** Memory only: survives rotation, never writes financial values into saved state. */
+/** Session state; snapshots are persisted only through the encrypted vault callback. */
 class DemoViewModel : ViewModel() {
     internal val transactions = mutableStateListOf<DemoTransaction>()
     internal val destination = mutableIntStateOf(0)
     internal val account = mutableIntStateOf(0)
-    internal val openings = listOf(BigDecimal("500.00"), BigDecimal("3000.00"))
+    internal var openings = listOf(BigDecimal("500.00"), BigDecimal("3000.00"))
+        private set
+    internal var onChange: (() -> Unit)? = null
     internal val categories = mutableStateListOf<String>()
     internal val payments = mutableStateListOf<String>()
     internal var draft by mutableStateOf<EntryDraft?>(null)
+        private set
+    internal var limitReached by mutableStateOf(false)
         private set
     private var initialized = false
 
@@ -105,6 +112,7 @@ class DemoViewModel : ViewModel() {
             transactions.addAll(samples)
             samples.forEach { addCategory(it.category); addPayment(it.payment) }
             initialized = true
+            onChange?.invoke()
         }
     }
 
@@ -114,7 +122,10 @@ class DemoViewModel : ViewModel() {
 
     internal fun toggleCleared(id: Long) {
         val index = transactions.indexOfFirst { it.id == id }
-        if (index >= 0) transactions[index] = transactions[index].copy(cleared = !transactions[index].cleared)
+        if (index >= 0) {
+            transactions[index] = transactions[index].copy(cleared = !transactions[index].cleared)
+            onChange?.invoke()
+        }
     }
 
     private fun addReference(items: MutableList<String>, text: String): String? {
@@ -122,7 +133,9 @@ class DemoViewModel : ViewModel() {
         if (name.isBlank()) return null
         val existing = items.firstOrNull { it.equals(name, ignoreCase = true) }
         if (existing != null) return existing
+        if (items.size >= 500) { limitReached = true; return null }
         items.add(name)
+        if (initialized) onChange?.invoke()
         return name
     }
 
@@ -130,15 +143,38 @@ class DemoViewModel : ViewModel() {
     internal fun addPayment(text: String): String? = addReference(payments, text)
 
     internal fun beginEntry() {
-        if (draft == null) draft = EntryDraft(account = account.intValue,
-            category = categories.firstOrNull().orEmpty(), payment = payments.firstOrNull().orEmpty())
+        if (draft == null) {
+            draft = EntryDraft(account = account.intValue,
+                category = categories.firstOrNull().orEmpty(), payment = payments.firstOrNull().orEmpty())
+            onChange?.invoke()
+        }
     }
 
-    internal fun updateDraft(next: EntryDraft) { if (draft != null) draft = next.copy(attempted = false) }
-    internal fun cancelEntry() { draft = null }
+    internal fun updateDraft(next: EntryDraft) { if (draft != null) { draft = next.copy(attempted = false); onChange?.invoke() } }
+    internal fun cancelEntry() { draft = null; onChange?.invoke() }
+
+    internal fun exportData() = LedgerData(transactions.toList(), categories.toList(), payments.toList(), openings.toList(), draft)
+
+    internal fun restoreData(data: LedgerData) {
+        transactions.clear(); transactions.addAll(data.transactions)
+        categories.clear(); categories.addAll(data.categories)
+        payments.clear(); payments.addAll(data.payments)
+        openings = data.openings.toList()
+        draft = data.draft
+        initialized = true
+        account.intValue = data.draft?.account ?: 0
+    }
+
+    internal fun clearSensitive() {
+        onChange = null
+        transactions.clear(); categories.clear(); payments.clear(); draft = null
+        openings = listOf(BigDecimal("500.00"), BigDecimal("3000.00"))
+        destination.intValue = 0; account.intValue = 0; initialized = false; limitReached = false
+    }
 
     internal fun saveEntry(locale: Locale, date: String): Boolean {
         val current = draft ?: return false
+        if (transactions.size >= 10_000) { limitReached = true; return false }
         val amount = Money.parseAmount(current.amount, locale)
         if (amount == null || current.description.isBlank() || current.account !in openings.indices ||
             current.category !in categories || current.payment !in payments || current.addingCategory || current.addingPayment) {
@@ -151,6 +187,7 @@ class DemoViewModel : ViewModel() {
         account.intValue = current.account
         destination.intValue = 1
         draft = null
+        onChange?.invoke()
         return true
     }
 }
@@ -161,7 +198,7 @@ private fun money(amount: BigDecimal): String = NumberFormat.getCurrencyInstance
 }.format(amount)
 
 @Composable
-private fun DemoApp(paused: Boolean, onResume: () -> Unit) {
+private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
     val model: DemoViewModel = viewModel()
     val accountNames = listOf(stringResource(R.string.current_account), stringResource(R.string.savings_account))
     val salary = stringResource(R.string.sample_salary)
@@ -190,10 +227,6 @@ private fun DemoApp(paused: Boolean, onResume: () -> Unit) {
     val clearedBalances = accountNames.indices.map { model.balance(it, clearedOnly = true) }
     val labels = listOf(stringResource(R.string.accounts), stringResource(R.string.transactions), stringResource(R.string.settings))
     val symbols = listOf("◫", "≡", "⚙")
-    if (paused) {
-        PauseScreen(onResume)
-        return
-    }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val wide = maxWidth >= 720.dp
@@ -239,7 +272,7 @@ private fun DemoApp(paused: Boolean, onResume: () -> Unit) {
                         0 -> AccountsScreen(accountNames, balances, clearedBalances) { selected -> account = selected; destination = 1 }
                         1 -> TransactionsScreen(accountNames, account, balances[account], clearedBalances[account], transactions.filter { it.account == account },
                             onAccount = { account = it }, onToggle = model::toggleCleared)
-                        else -> SettingsScreen()
+                        else -> SettingsScreen(vault, activity)
                     }
                 }
             }
@@ -339,9 +372,10 @@ private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDe
 }
 
 @Composable
-private fun SettingsScreen() {
+private fun SettingsScreen(vault: VaultController, activity: FragmentActivity) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(stringResource(R.string.settings), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        VaultSettings(vault, activity)
         InfoCard(R.string.security_title, R.string.security_detail)
         InfoCard(R.string.privacy_title, R.string.privacy_detail)
         InfoCard(R.string.roadmap_title, R.string.roadmap_detail)
@@ -431,6 +465,7 @@ private fun EntryDialog(names: List<String>, model: DemoViewModel) {
                                 EntryDirection(model, draft)
                                 EntryAmounts(model, draft, compact = true)
                                 EntryReferences(model, draft, compact = true)
+                                if (model.limitReached) Text(stringResource(R.string.vault_data_limit), color = MaterialTheme.colorScheme.error)
                                 if (draft.attempted) Text(stringResource(R.string.invalid_amount), color = MaterialTheme.colorScheme.error)
                             }
                         }
@@ -439,7 +474,8 @@ private fun EntryDialog(names: List<String>, model: DemoViewModel) {
                             verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             EntryBasics(names, model, draft)
                             EntryReferences(model, draft)
-                            if (draft.attempted) Text(stringResource(R.string.invalid_amount), color = MaterialTheme.colorScheme.error)
+                            if (model.limitReached) Text(stringResource(R.string.vault_data_limit), color = MaterialTheme.colorScheme.error)
+                                if (draft.attempted) Text(stringResource(R.string.invalid_amount), color = MaterialTheme.colorScheme.error)
                         }
                     }
                 }

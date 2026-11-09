@@ -3,8 +3,8 @@
     <string name="app_name">Ma Tirelire Demo</string>
     <string name="brand">Ma Tirelire</string>
     <string name="tagline">Your accounts, made simple.</string>
-    <string name="demo_banner">DEMO · Fictional data in memory</string>
-    <string name="demo_detail">Do not enter real information. Nothing is retained when the process closes.</string>
+    <string name="demo_banner">SECURITY PROTOTYPE - Fictional data only</string>
+    <string name="demo_detail">The encrypted vault now persists data. Do not enter real financial data yet.</string>
     <string name="accounts">Accounts</string>
     <string name="transactions">Transactions</string>
     <string name="settings">Settings</string>
@@ -40,11 +40,11 @@
     <string name="empty_transactions">No transactions in this account.</string>
     <string name="balance">Account total balance</string>
     <string name="security_title">A foundation in progress</string>
-    <string name="security_detail">This first version explores screens and flows. The encrypted vault, biometrics and backups are not implemented yet.</string>
+    <string name="security_detail">SQLCipher vault and Android authentication. Test encrypted backup recovery on another phone before real use.</string>
     <string name="privacy_title">An entirely local demo</string>
     <string name="privacy_detail">No network permission. No reports sent. Android blocks screenshots of application screens.</string>
-    <string name="roadmap_title">Next step · 0.2.0-dev</string>
-    <string name="roadmap_detail">Encrypted vault prototype, Android authentication, and backup with restoration on another phone.</string>
+    <string name="roadmap_title">Next step - 0.3.0-dev</string>
+    <string name="roadmap_detail">Validate the vault on physical devices, then complete account management and entry flows.</string>
     <string name="version">Version %1$s</string>
     <string name="language_hint">Language and formats follow phone settings. French and English are available.</string>
     <string name="pause_title">The demo is paused</string>

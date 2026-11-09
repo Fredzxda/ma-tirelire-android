@@ -1,18 +1,25 @@
 # Ma Tirelire — Android
 
-Démonstration **0.1.4-dev** du portage de Ma Tirelire Palm.
+Prototype de sécurité **0.2.1-dev** du portage de Ma Tirelire Palm.
 Android 12 minimum, téléphone et tablette, français et anglais.
 
 ## Utilisation de cette version
 
-Navigation, comptes fictifs, liste d'opérations, saisie en mémoire et pointage de
-démonstration. Solde total et pointé visibles, catégories et moyens réutilisables,
-brouillon conservé à la rotation et pendant la pause dans la mémoire du ViewModel.
-Les modifications disparaissent à la fermeture du processus.
-**Ne pas saisir de données réelles.** Chiffrement, authentification biométrique,
-sauvegarde/restauration et parité Palm ne sont pas encore implémentés.
-Le masque au retour d'arrière-plan est un écran de reprise de démonstration,
-pas une authentification. Aucun accès réseau demandé.
+Comptes fictifs et parcours de saisie conservés. Le contenu est maintenant
+persisté dans un coffre SQLCipher, protégé par l'authentification Android.
+Empreinte facultative et code supplémentaire facultatif à la création.
+
+Dans Réglages : dossier local de sauvegarde, mot de passe distinct (16 caractères
+minimum), export chiffré et restauration. L'hebdomadaire due se fait à l'ouverture
+déverrouillée ; huit archives automatiques sont conservées, les manuelles restent.
+Le sélecteur de dossier peut verrouiller le coffre : réauthentifier au retour,
+puis configurer la sauvegarde. Les archives précédentes gardent leur ancien mot
+de passe si celui-ci est changé pour les prochains exports.
+
+**Utiliser uniquement des données fictives.** Le prototype et sa restauration
+croisée restent en cours de validation. Aucun accès réseau demandé.
+Le mot de passe d'une archive perdue ne peut pas être réinitialisé ; conserver
+séparément une copie du fichier chiffré si le téléphone risque d'être perdu.
 
 ## Développement
 
@@ -45,7 +52,7 @@ licences respectives ; la licence du projet ne remplace pas leurs notices.
 Le cadrage et les parcours sont dans `docs/`. Ils distinguent sources historiques,
 exigences validées, adaptations proposées et règles restant à établir.
 
-Les résultats et limites sont dans [docs/VALIDATION-0.1.4.md](docs/VALIDATION-0.1.4.md).
+Les résultats et limites du coffre sont dans [docs/VALIDATION-0.2.0.md](docs/VALIDATION-0.2.0.md) et le suivi du retour Android dans [docs/VALIDATION-0.2.1.md](docs/VALIDATION-0.2.1.md).
 Les opérations périodiques restent suivies dans [REC-001](docs/operations-periodiques.md)
 et seront implémentées dans un lot ultérieur.
 
@@ -75,7 +82,7 @@ pas encore testee. Reference : https://developer.android.com/tools/adb
 
 Depuis la racine : `powershell -NoProfile -File tools/play.ps1`.
 Ce workflow remplace le bouton Run pour nos livraisons locales : compilation,
-sept tests metier, lint, installation de la demo, verification de version et lancement.
+les tests metier et cryptographiques, lint, installation de la demo, verification de version et lancement.
 La cible est epinglee par son identite physique dans `tools/device.local.json`,
 ignore de Git ; sa connexion Wi-Fi courante est retrouvee automatiquement.
 Aucune selection d'un autre telephone si l'ASUS est absent/non autorise ou si deux
