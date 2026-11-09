@@ -392,7 +392,7 @@ private fun EntryDialog(names: List<String>, model: DemoViewModel) {
         ) {
             val twoColumns = maxWidth >= 600.dp
             Surface(
-                modifier = Modifier.widthIn(max = 960.dp).fillMaxSize(),
+                modifier = Modifier.widthIn(max = 1200.dp).fillMaxSize(),
                 shape = RoundedCornerShape(20.dp),
                 color = MaterialTheme.colorScheme.surface,
             ) {
@@ -416,18 +416,21 @@ private fun EntryDialog(names: List<String>, model: DemoViewModel) {
                         }
                     }
                     HorizontalDivider()
-                    // The actions remain reachable above the keyboard; each pane
-                    // scrolls independently when landscape leaves little height.
+                    // Account navigation stays narrow; the form owns the remaining width.
                     if (twoColumns) {
-                        Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                            Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(vertical = 8.dp),
+                        Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            Column(Modifier.width(144.dp).fillMaxHeight().verticalScroll(rememberScrollState()).padding(vertical = 8.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                EntryBasics(names, model, draft)
-                                if (draft.attempted) Text(stringResource(R.string.invalid_amount), color = MaterialTheme.colorScheme.error)
+                                Text(stringResource(R.string.accounts), style = MaterialTheme.typography.labelLarge)
+                                EntryAccounts(names, model, draft)
                             }
+                            VerticalDivider()
                             Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(vertical = 8.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                EntryReferences(model, draft)
+                                EntryDirection(model, draft)
+                                EntryAmounts(model, draft, compact = true)
+                                EntryReferences(model, draft, compact = true)
+                                if (draft.attempted) Text(stringResource(R.string.invalid_amount), color = MaterialTheme.colorScheme.error)
                             }
                         }
                     } else {
@@ -445,18 +448,63 @@ private fun EntryDialog(names: List<String>, model: DemoViewModel) {
 }
 
 @Composable
-private fun EntryBasics(names: List<String>, model: DemoViewModel, draft: EntryDraft) {
-    names.forEachIndexed { index, name -> FilterChip(selected = draft.account == index, onClick = { model.updateDraft(draft.copy(account = index)) }, label = { Text(name) }) }
+private fun EntryAccounts(names: List<String>, model: DemoViewModel, draft: EntryDraft) {
+    names.forEachIndexed { index, name -> FilterChip(selected = draft.account == index, onClick = { model.updateDraft(draft.copy(account = index)) }, modifier = Modifier.fillMaxWidth(), label = { Text(name) }) }
+}
+
+@Composable
+private fun EntryDirection(model: DemoViewModel, draft: EntryDraft) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         FilterChip(selected = !draft.income, onClick = { model.updateDraft(draft.copy(income = false)) }, label = { Text(stringResource(R.string.expense)) })
         FilterChip(selected = draft.income, onClick = { model.updateDraft(draft.copy(income = true)) }, label = { Text(stringResource(R.string.income)) })
     }
-    OutlinedTextField(value = draft.amount, onValueChange = { model.updateDraft(draft.copy(amount = it.take(30))) }, label = { Text(stringResource(R.string.amount)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true, modifier = Modifier.fillMaxWidth())
-    OutlinedTextField(value = draft.description, onValueChange = { model.updateDraft(draft.copy(description = it.take(100))) }, label = { Text(stringResource(R.string.description)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
 }
 
 @Composable
-private fun EntryReferences(model: DemoViewModel, draft: EntryDraft) {
+private fun EntryAmounts(model: DemoViewModel, draft: EntryDraft, compact: Boolean = false) {
+    if (compact) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            EntryAmount(model, draft, Modifier.weight(0.38f))
+            EntryDescription(model, draft, Modifier.weight(0.62f))
+        }
+    } else {
+        EntryAmount(model, draft, Modifier.fillMaxWidth())
+        EntryDescription(model, draft, Modifier.fillMaxWidth())
+    }
+}
+
+@Composable
+private fun EntryAmount(model: DemoViewModel, draft: EntryDraft, modifier: Modifier) {
+    OutlinedTextField(value = draft.amount, onValueChange = { model.updateDraft(draft.copy(amount = it.take(30))) }, label = { Text(stringResource(R.string.amount)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true, modifier = modifier)
+}
+
+@Composable
+private fun EntryDescription(model: DemoViewModel, draft: EntryDraft, modifier: Modifier) {
+    OutlinedTextField(value = draft.description, onValueChange = { model.updateDraft(draft.copy(description = it.take(100))) }, label = { Text(stringResource(R.string.description)) }, singleLine = true, modifier = modifier)
+}
+
+@Composable
+private fun EntryBasics(names: List<String>, model: DemoViewModel, draft: EntryDraft) {
+    EntryAccounts(names, model, draft)
+    EntryDirection(model, draft)
+    EntryAmounts(model, draft)
+}
+
+@Composable
+private fun EntryReferences(model: DemoViewModel, draft: EntryDraft, compact: Boolean = false) {
+    if (compact) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Box(Modifier.weight(1f)) { EntryCategory(model, draft) }
+            Box(Modifier.weight(1f)) { EntryPayment(model, draft) }
+        }
+    } else {
+        EntryCategory(model, draft)
+        EntryPayment(model, draft)
+    }
+}
+
+@Composable
+private fun EntryCategory(model: DemoViewModel, draft: EntryDraft) {
     ReferencePicker(
         label = stringResource(R.string.category), selected = draft.category,
         options = model.categories, onSelect = { model.updateDraft(draft.copy(category = it)) },
@@ -470,6 +518,10 @@ private fun EntryReferences(model: DemoViewModel, draft: EntryDraft) {
             }
         },
     )
+}
+
+@Composable
+private fun EntryPayment(model: DemoViewModel, draft: EntryDraft) {
     ReferencePicker(
         label = stringResource(R.string.payment), selected = draft.payment,
         options = model.payments, onSelect = { model.updateDraft(draft.copy(payment = it)) },
@@ -485,6 +537,7 @@ private fun EntryReferences(model: DemoViewModel, draft: EntryDraft) {
     )
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ReferencePicker(
     label: String, selected: String, options: List<String>, onSelect: (String) -> Unit,
@@ -508,7 +561,7 @@ private fun ReferencePicker(
         if (adding) {
             OutlinedTextField(value = newName, onValueChange = onNameChange, label = { Text(stringResource(R.string.reference_name)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
             Text(stringResource(R.string.reference_duplicate_hint), style = MaterialTheme.typography.bodySmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(onClick = onAdd, enabled = newName.isNotBlank()) { Text(stringResource(R.string.add_and_select)) }
                 TextButton(onClick = onCancelAdd) { Text(stringResource(R.string.cancel)) }
             }
