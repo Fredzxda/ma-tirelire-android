@@ -72,4 +72,10 @@
     <string name="edit_transaction">Modifier une opération</string>
     <string name="delete_transaction">Supprimer cette opération ?</string>
     <string name="delete_transaction_warning">%1$s (%2$s) sera supprimée. Les soldes seront recalculés. Cette action est définitive.</string>
+    <string name="release_notes_open">Nouveautés et points à tester</string>
+    <string name="release_notes_title">Nouveautés · %1$s</string>
+    <string name="release_notes_test_title">À vérifier avec des données fictives</string>
+    <string name="release_notes_understood">Compris</string>
+    <string name="release_notes_changes">Appuyez sur une opération pour ouvrir sa fiche et la modifier. La corbeille se trouve dans cette fiche, avec confirmation avant suppression. Le pointage reste directement accessible dans la liste.\n\nCette fenêtre présente les nouveautés de chaque version, après déverrouillage. Vous pouvez la retrouver dans les réglages.</string>
+    <string name="release_notes_tests">1. Appuyer sur une opération : la fiche doit reprendre ses informations. Modifier puis enregistrer : aucun doublon, soldes mis à jour.\n2. Toucher la corbeille : annuler conserve la ligne ; confirmer la supprime.\n3. Pointer une ligne : la fiche ne doit pas s’ouvrir.\n4. Tourner l’écran pendant la modification : le brouillon reste présent.\n5. Annuler la demande d’empreinte ou de code Android : elle ne doit pas réapparaître seule. Le bouton Déverrouiller permet de réessayer.\n6. Fermer cette fenêtre puis revenir : elle ne doit pas réapparaître pour cette version. Elle reste accessible dans les réglages.</string>
 </resources>

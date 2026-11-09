@@ -16,3 +16,7 @@
 
 - Play compile aussi l APK de tests et execute les controles SQLCipher/Keystore
   isoles sur ASUS avant de lancer l application. Le coffre utilisateur reste intact.
+
+- Chaque nouvelle version doit actualiser les ressources FR/EN release_notes_changes
+  et release_notes_tests : nouveautes et scenarios manuels realisables. Le dialogue
+  apparait apres deverrouillage et se retrouve dans les reglages.

@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -295,7 +296,7 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
                         0 -> AccountsScreen(accountNames, balances, clearedBalances) { selected -> account = selected; destination = 1 }
                         1 -> TransactionsScreen(accountNames, account, balances[account], clearedBalances[account], transactions.filter { it.account == account },
                             onAccount = { account = it }, onToggle = model::toggleCleared,
-                            onEdit = { model.editEntry(it, activity.resources.configuration.locales[0]) }, onDelete = model::deleteEntry)
+                            onEdit = { model.editEntry(it, activity.resources.configuration.locales[0]) })
                         else -> SettingsScreen(vault, activity)
                     }
                 }
@@ -303,6 +304,7 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
         }
     }
     if (model.draft != null) EntryDialog(accountNames, model)
+    if (vault.showReleaseNotes && vault.feedback == null) ReleaseNotesDialog(vault)
 }
 
 @Composable
@@ -359,16 +361,7 @@ private fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, clea
 }
 
 @Composable
-private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDecimal, clearedBalance: BigDecimal, transactions: List<DemoTransaction>, onAccount: (Int) -> Unit, onToggle: (Long) -> Unit, onEdit: (Long) -> Unit, onDelete: (Long) -> Unit) {
-    var deleteId by remember { mutableStateOf<Long?>(null) }
-    val toDelete = transactions.firstOrNull { it.id == deleteId }
-    if (toDelete != null) AlertDialog(
-        onDismissRequest = { deleteId = null },
-        title = { Text(stringResource(R.string.delete_transaction)) },
-        text = { Text(stringResource(R.string.delete_transaction_warning, toDelete.description, money(toDelete.amount))) },
-        confirmButton = { TextButton(onClick = { onDelete(toDelete.id); deleteId = null }) { Text(stringResource(R.string.delete_action)) } },
-        dismissButton = { TextButton(onClick = { deleteId = null }) { Text(stringResource(R.string.cancel)) } },
-    )
+private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDecimal, clearedBalance: BigDecimal, transactions: List<DemoTransaction>, onAccount: (Int) -> Unit, onToggle: (Long) -> Unit, onEdit: (Long) -> Unit) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 110.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -384,7 +377,7 @@ private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDe
         item { Text(stringResource(R.string.pointing_hint), style = MaterialTheme.typography.bodySmall) }
         if (transactions.isEmpty()) item { Text(stringResource(R.string.empty_transactions)) }
         items(transactions, key = { it.id }) { tx ->
-            Card(Modifier.fillMaxWidth()) {
+            Card(onClick = { onEdit(tx.id) }, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
@@ -394,10 +387,6 @@ private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDe
                         Text(money(tx.amount), fontWeight = FontWeight.Bold, color = if (tx.amount.signum() < 0) Color(0xFF944C3C) else MaterialTheme.colorScheme.primary)
                     }
                     Text("${tx.category} · ${tx.payment}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 8.dp))
-                    Row {
-                        TextButton(onClick = { onEdit(tx.id) }) { Text(stringResource(R.string.edit_action)) }
-                        TextButton(onClick = { deleteId = tx.id }) { Text(stringResource(R.string.delete_action)) }
-                    }
                     Row(Modifier.fillMaxWidth().clickable { onToggle(tx.id) }, verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(checked = tx.cleared, onCheckedChange = { onToggle(tx.id) })
                         Text(stringResource(if (tx.cleared) R.string.marked else R.string.unmarked), style = MaterialTheme.typography.labelMedium)
@@ -412,6 +401,7 @@ private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDe
 private fun SettingsScreen(vault: VaultController, activity: FragmentActivity) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(stringResource(R.string.settings), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        OutlinedButton(onClick = vault::openReleaseNotes) { Text(stringResource(R.string.release_notes_open)) }
         VaultSettings(vault, activity)
         InfoCard(R.string.security_title, R.string.security_detail)
         InfoCard(R.string.privacy_title, R.string.privacy_detail)
@@ -448,6 +438,8 @@ private fun PauseScreen(onResume: () -> Unit) {
 private fun EntryDialog(names: List<String>, model: DemoViewModel) {
     val draft = model.draft ?: return
     val locale = LocalConfiguration.current.locales[0]
+    var confirmDelete by remember { mutableStateOf(false) }
+    val toDelete = model.transactions.firstOrNull { it.id == draft.editingId }
     Dialog(
         onDismissRequest = model::cancelEntry,
         properties = DialogProperties(
@@ -469,24 +461,18 @@ private fun EntryDialog(names: List<String>, model: DemoViewModel) {
                 color = MaterialTheme.colorScheme.surface,
             ) {
                 Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(stringResource(if (draft.editingId == null) R.string.new_transaction else R.string.edit_transaction),
-                            modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.titleMedium,
-                            maxLines = 2)
-                        TextButton(onClick = model::cancelEntry) { Text(stringResource(R.string.cancel)) }
-                        Button(onClick = {
-                            val date = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter
-                                .ofLocalizedDate(java.time.format.FormatStyle.MEDIUM).withLocale(locale))
-                            model.saveEntry(locale, date)
-                        }, enabled = !draft.addingCategory && !draft.addingPayment) {
-                            Text(stringResource(R.string.save))
+                            modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                        if (draft.editingId != null) IconButton(onClick = { confirmDelete = true }) {
+                            Icon(painterResource(R.drawable.ic_delete), contentDescription = stringResource(R.string.delete_action),
+                                tint = MaterialTheme.colorScheme.error)
                         }
+                        if (twoColumns) EntryActions(model, draft, locale)
                     }
+                    if (!twoColumns) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically) { EntryActions(model, draft, locale) }
                     HorizontalDivider()
                     // Account navigation stays narrow; the form owns the remaining width.
                     if (twoColumns) {
@@ -519,6 +505,14 @@ private fun EntryDialog(names: List<String>, model: DemoViewModel) {
             }
         }
     }
+    if (confirmDelete && toDelete != null) AlertDialog(
+        onDismissRequest = { confirmDelete = false },
+        title = { Text(stringResource(R.string.delete_transaction)) },
+        text = { Text(stringResource(R.string.delete_transaction_warning, toDelete.description, money(toDelete.amount))) },
+        confirmButton = { TextButton(onClick = { model.deleteEntry(toDelete.id) }) { Text(stringResource(R.string.delete_action)) } },
+        dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.cancel)) } },
+        properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn),
+    )
 }
 
 @Composable
@@ -653,5 +647,34 @@ private fun ReferencePicker(
                 TextButton(onClick = onCancelAdd) { Text(stringResource(R.string.cancel)) }
             }
         }
+    }
+}
+
+@Composable
+private fun ReleaseNotesDialog(vault: VaultController) {
+    AlertDialog(
+        onDismissRequest = vault::acknowledgeReleaseNotes,
+        title = { Text(stringResource(R.string.release_notes_title, BuildConfig.VERSION_NAME)) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(R.string.release_notes_changes))
+                Text(stringResource(R.string.release_notes_test_title), fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.release_notes_tests))
+            }
+        },
+        confirmButton = { TextButton(onClick = vault::acknowledgeReleaseNotes) { Text(stringResource(R.string.release_notes_understood)) } },
+        properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn),
+    )
+}
+
+@Composable
+private fun EntryActions(model: DemoViewModel, draft: EntryDraft, locale: Locale) {
+    TextButton(onClick = model::cancelEntry) { Text(stringResource(R.string.cancel)) }
+    Button(onClick = {
+        val date = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter
+            .ofLocalizedDate(java.time.format.FormatStyle.MEDIUM).withLocale(locale))
+        model.saveEntry(locale, date)
+    }, enabled = !draft.addingCategory && !draft.addingPayment) {
+        Text(stringResource(R.string.save))
     }
 }

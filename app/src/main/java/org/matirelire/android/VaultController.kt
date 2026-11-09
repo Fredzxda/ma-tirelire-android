@@ -37,6 +37,7 @@ class VaultController(application: Application) : AndroidViewModel(application) 
     private val app = application
     private val store = VaultStore(app)
     private lateinit var ledger: DemoViewModel
+    var showReleaseNotes by mutableStateOf(false); private set
     var exists by mutableStateOf(store.exists); private set
     var unlocked by mutableStateOf(false); private set
     var needsCode by mutableStateOf(false); private set
@@ -102,7 +103,19 @@ class VaultController(application: Application) : AndroidViewModel(application) 
         if (!authenticating) { lock(); automaticUnlock.onLock() }
     }
 
+    fun openReleaseNotes() { if (unlocked) showReleaseNotes = true }
+
+    fun acknowledgeReleaseNotes() {
+        if (!unlocked) return
+        try {
+            val bytes = BuildConfig.VERSION_NAME.toByteArray(Charsets.UTF_8)
+            try { store.put("releaseSeen", bytes) } finally { bytes.fill(0) }
+            showReleaseNotes = false
+        } catch (_: Exception) { lock(); message(R.string.vault_save_error) }
+    }
+
     fun lock() {
+        showReleaseNotes = false
         if (unlocked && ::ledger.isInitialized) resumeDestination = ledger.destination.intValue
         epoch++
         automaticUnlock.onLock(allowAutomatic = false)
@@ -297,6 +310,9 @@ class VaultController(application: Application) : AndroidViewModel(application) 
                 try { store.put("ledger", encoded) } finally { encoded.fill(0) }
             } catch (_: Exception) { lock(); message(R.string.vault_save_error) }
         }
+        val seenRelease = store.get("releaseSeen")
+        try { showReleaseNotes = seenRelease?.toString(Charsets.UTF_8) != BuildConfig.VERSION_NAME }
+        finally { seenRelease?.fill(0) }
         unlocked = true
         ledger.destination.intValue = resumeDestination
         needsCode = false
