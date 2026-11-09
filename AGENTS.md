@@ -13,3 +13,6 @@
   publication stable, ni installation sur un autre appareil.
 - Verifier la version installee et le resultat du lancement ; ne pas confondre
   ouverture reussie et validation visuelle de l'interface.
+
+- Play compile aussi l APK de tests et execute les controles SQLCipher/Keystore
+  isoles sur ASUS avant de lancer l application. Le coffre utilisateur reste intact.

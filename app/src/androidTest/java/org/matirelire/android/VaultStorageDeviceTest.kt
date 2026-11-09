@@ -11,6 +11,29 @@ import java.util.UUID
 
 /** Isolated test DB: never touches the application's vault or Android credentials. */
 class VaultStorageDeviceTest {
+    @Test fun actualVaultStoreInitializesAndReopensAnIsolatedVault() {
+        val base = InstrumentationRegistry.getInstrumentation().targetContext
+        val directory = File(base.cacheDir, "vault-store-test-${UUID.randomUUID()}").apply { mkdirs() }
+        val isolated = object : android.content.ContextWrapper(base) {
+            override fun getNoBackupFilesDir(): File = directory
+        }
+        val store = VaultStore(isolated)
+        val key = ByteArray(32).also { SecureRandom().nextBytes(it) }
+        val value = "FAKE-VAULT-SNAPSHOT".toByteArray()
+        try {
+            store.open(key)
+            store.put("ledger", value)
+            assertArrayEquals(value, store.get("ledger"))
+            store.close()
+            store.open(key)
+            assertArrayEquals(value, store.get("ledger"))
+        } finally {
+            store.close(); key.fill(0); value.fill(0)
+            check(directory.canonicalFile.parentFile == base.cacheDir.canonicalFile)
+            directory.deleteRecursively()
+        }
+    }
+
     @Test fun perUseKeystoreKeyRefusesEncryptionWithoutItsAuthentication() {
         val alias = "matirelire-test-${UUID.randomUUID()}"
         val store = java.security.KeyStore.getInstance("AndroidKeyStore").apply { load(null) }

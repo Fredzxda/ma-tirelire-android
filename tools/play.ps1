@@ -6,4 +6,5 @@ $adb = Join-Path $env:LOCALAPPDATA 'Android/Sdk/platform-tools/adb.exe'
 if (-not (Test-Path -LiteralPath $adb)) { throw 'Android SDK Platform Tools absent.' }
 . (Join-Path $PSScriptRoot 'Resolve-AndroidDevice.ps1')
 $connection = Resolve-AndroidDevice -AdbCommand $adb -HardwareSerial $config.hardwareSerial
-& (Join-Path $PSScriptRoot 'build-install.ps1') -DeviceSerial $connection -Launch
+& (Join-Path $PSScriptRoot 'build-install.ps1') -DeviceSerial $connection -IncludeDeviceTestApk
+& (Join-Path $PSScriptRoot 'test-vault-device.ps1')

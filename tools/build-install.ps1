@@ -2,7 +2,8 @@ param(
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
     [string]$DeviceSerial,
-    [switch]$Launch
+    [switch]$Launch,
+    [switch]$IncludeDeviceTestApk
 )
 $ErrorActionPreference = 'Stop'
 $adb = Join-Path $env:LOCALAPPDATA 'Android/Sdk/platform-tools/adb.exe'
@@ -12,7 +13,11 @@ if ($LASTEXITCODE -ne 0 -or "$state".Trim() -ne 'device') {
     throw 'Telephone absent ou non autorise. Verifier le cable et accepter le debogage USB sur le telephone.'
 }
 $project = Split-Path $PSScriptRoot -Parent
-& (Join-Path $PSScriptRoot 'build.ps1')
+if ($IncludeDeviceTestApk) {
+    & (Join-Path $PSScriptRoot 'build.ps1') -Tasks @('assembleDebug', 'testDebugUnitTest', 'lintDebug', 'assembleDebugAndroidTest')
+} else {
+    & (Join-Path $PSScriptRoot 'build.ps1')
+}
 $apk = Join-Path $project 'app/build/outputs/apk/debug/app-debug.apk'
 $metadata = Get-Content -LiteralPath (Join-Path $project 'app/build/outputs/apk/debug/output-metadata.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 if ($metadata.applicationId -ne 'org.matirelire.android.demo' -or $metadata.elements[0].versionName -notmatch '-dev$') {

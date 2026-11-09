@@ -10,9 +10,9 @@ if (-not (Test-Path -LiteralPath $apk)) { throw 'Compiler assembleDebugAndroidTe
 if ($LASTEXITCODE -ne 0) { throw 'Installation du test impossible.' }
 $result = @(& $adb -s $device shell am instrument -w -r -e class org.matirelire.android.VaultStorageDeviceTest org.matirelire.android.demo.test/androidx.test.runner.AndroidJUnitRunner)
 $result | Write-Output
-if ($LASTEXITCODE -ne 0 -or -not ($result -match 'OK \([0-9]+ tests?\)') -or ($result -match 'FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed')) {
+if ($LASTEXITCODE -ne 0 -or -not ($result -match 'OK \([1-9][0-9]* tests?\)') -or ($result -match 'FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed')) {
     throw 'Test SQLCipher sur appareil en echec.'
 }
 $launch = @(& $adb -s $device shell am start -W -n org.matirelire.android.demo/org.matirelire.android.MainActivity)
 if ($LASTEXITCODE -ne 0 -or -not ($launch -match '^Status:\s*ok\s*$')) { throw 'Lancement apres test non confirme.' }
-Write-Output 'SQLCipher valide sur la base isolee ; application relancee.'
+Write-Output 'Controles SQLCipher et Keystore reussis ; application relancee.'

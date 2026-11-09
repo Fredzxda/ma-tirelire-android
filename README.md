@@ -1,6 +1,6 @@
 # Ma Tirelire — Android
 
-Prototype de sécurité **0.2.3-dev** du portage de Ma Tirelire Palm.
+Prototype de sécurité **0.2.4-dev** du portage de Ma Tirelire Palm.
 Android 12 minimum, téléphone et tablette, français et anglais.
 
 ## Utilisation de cette version
@@ -99,3 +99,5 @@ Ce lancement ne constitue pas une revue visuelle du formulaire.
 Suivi de l authentification native et des tests materiels : [VALIDATION-0.2.2](docs/VALIDATION-0.2.2.md).
 
 Correction de l ordre des operations Keystore et des accents : [VALIDATION-0.2.3](docs/VALIDATION-0.2.3.md).
+
+Ouverture du coffre confirmee sur ASUS et controle ajoute au Play : [VALIDATION-0.2.4](docs/VALIDATION-0.2.4.md).

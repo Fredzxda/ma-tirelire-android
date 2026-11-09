@@ -33,9 +33,10 @@ internal class VaultStore(context: Context) {
         try {
             opened.rawQuery("PRAGMA cipher_version", emptyArray()).use { check(it.moveToFirst()) }
             opened.rawQuery("PRAGMA journal_mode=DELETE", emptyArray()).use { it.moveToFirst() }
-            opened.execSQL("PRAGMA temp_store=MEMORY")
-            opened.execSQL("PRAGMA secure_delete=ON")
-            opened.execSQL("PRAGMA cipher_memory_security=ON")
+            opened.rawQuery("PRAGMA temp_store=MEMORY", emptyArray()).use { it.moveToFirst() }
+            // Some PRAGMA setters return a row. execSQL rejects those results.
+            opened.rawQuery("PRAGMA secure_delete=ON", emptyArray()).use { it.moveToFirst() }
+            opened.rawQuery("PRAGMA cipher_memory_security=ON", emptyArray()).use { it.moveToFirst() }
             opened.execSQL("CREATE TABLE IF NOT EXISTS state (name TEXT PRIMARY KEY, value BLOB NOT NULL)")
             db = opened
         } catch (e: Exception) { opened.close(); throw e }
