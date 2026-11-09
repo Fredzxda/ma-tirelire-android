@@ -23,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.SecureFlagPolicy
 import androidx.lifecycle.ViewModel
@@ -375,55 +376,112 @@ private fun PauseScreen(onResume: () -> Unit) {
 private fun EntryDialog(names: List<String>, model: DemoViewModel) {
     val draft = model.draft ?: return
     val locale = LocalConfiguration.current.locales[0]
-    AlertDialog(
+    Dialog(
         onDismissRequest = model::cancelEntry,
-        properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn),
-        title = { Text(stringResource(R.string.new_transaction)) },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                names.forEachIndexed { index, name -> FilterChip(selected = draft.account == index, onClick = { model.updateDraft(draft.copy(account = index)) }, label = { Text(name) }) }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(selected = !draft.income, onClick = { model.updateDraft(draft.copy(income = false)) }, label = { Text(stringResource(R.string.expense)) })
-                    FilterChip(selected = draft.income, onClick = { model.updateDraft(draft.copy(income = true)) }, label = { Text(stringResource(R.string.income)) })
+        properties = DialogProperties(
+            securePolicy = SecureFlagPolicy.SecureOn,
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false,
+        ),
+    ) {
+        // Own the available window, including IME insets, instead of the narrow
+        // platform alert width. Re-evaluated on rotation and window resizing.
+        BoxWithConstraints(
+            Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(8.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            val twoColumns = maxWidth >= 600.dp
+            Surface(
+                modifier = Modifier.widthIn(max = 960.dp).fillMaxSize(),
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surface,
+            ) {
+                Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(stringResource(R.string.new_transaction),
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 2)
+                        TextButton(onClick = model::cancelEntry) { Text(stringResource(R.string.cancel)) }
+                        Button(onClick = {
+                            val date = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter
+                                .ofLocalizedDate(java.time.format.FormatStyle.MEDIUM).withLocale(locale))
+                            model.saveEntry(locale, date)
+                        }, enabled = !draft.addingCategory && !draft.addingPayment) {
+                            Text(stringResource(R.string.save))
+                        }
+                    }
+                    HorizontalDivider()
+                    // The actions remain reachable above the keyboard; each pane
+                    // scrolls independently when landscape leaves little height.
+                    if (twoColumns) {
+                        Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                            Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(vertical = 8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                EntryBasics(names, model, draft)
+                                if (draft.attempted) Text(stringResource(R.string.invalid_amount), color = MaterialTheme.colorScheme.error)
+                            }
+                            Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(vertical = 8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                EntryReferences(model, draft)
+                            }
+                        }
+                    } else {
+                        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            EntryBasics(names, model, draft)
+                            EntryReferences(model, draft)
+                            if (draft.attempted) Text(stringResource(R.string.invalid_amount), color = MaterialTheme.colorScheme.error)
+                        }
+                    }
                 }
-                OutlinedTextField(value = draft.amount, onValueChange = { model.updateDraft(draft.copy(amount = it.take(30))) }, label = { Text(stringResource(R.string.amount)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
-                OutlinedTextField(value = draft.description, onValueChange = { model.updateDraft(draft.copy(description = it.take(100))) }, label = { Text(stringResource(R.string.description)) }, singleLine = true)
-                ReferencePicker(
-                    label = stringResource(R.string.category), selected = draft.category,
-                    options = model.categories, onSelect = { model.updateDraft(draft.copy(category = it)) },
-                    adding = draft.addingCategory, newName = draft.newCategory,
-                    onBeginAdd = { model.updateDraft(draft.copy(addingCategory = true, newCategory = "")) },
-                    onNameChange = { model.updateDraft(draft.copy(newCategory = it.take(60))) },
-                    onCancelAdd = { model.updateDraft(draft.copy(addingCategory = false, newCategory = "")) },
-                    onAdd = {
-                        model.addCategory(draft.newCategory)?.let {
-                            model.updateDraft(draft.copy(category = it, addingCategory = false, newCategory = ""))
-                        }
-                    },
-                )
-                ReferencePicker(
-                    label = stringResource(R.string.payment), selected = draft.payment,
-                    options = model.payments, onSelect = { model.updateDraft(draft.copy(payment = it)) },
-                    adding = draft.addingPayment, newName = draft.newPayment,
-                    onBeginAdd = { model.updateDraft(draft.copy(addingPayment = true, newPayment = "")) },
-                    onNameChange = { model.updateDraft(draft.copy(newPayment = it.take(60))) },
-                    onCancelAdd = { model.updateDraft(draft.copy(addingPayment = false, newPayment = "")) },
-                    onAdd = {
-                        model.addPayment(draft.newPayment)?.let {
-                            model.updateDraft(draft.copy(payment = it, addingPayment = false, newPayment = ""))
-                        }
-                    },
-                )
-                if (draft.attempted) Text(stringResource(R.string.invalid_amount), color = MaterialTheme.colorScheme.error)
+            }
+        }
+    }
+}
+
+@Composable
+private fun EntryBasics(names: List<String>, model: DemoViewModel, draft: EntryDraft) {
+    names.forEachIndexed { index, name -> FilterChip(selected = draft.account == index, onClick = { model.updateDraft(draft.copy(account = index)) }, label = { Text(name) }) }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilterChip(selected = !draft.income, onClick = { model.updateDraft(draft.copy(income = false)) }, label = { Text(stringResource(R.string.expense)) })
+        FilterChip(selected = draft.income, onClick = { model.updateDraft(draft.copy(income = true)) }, label = { Text(stringResource(R.string.income)) })
+    }
+    OutlinedTextField(value = draft.amount, onValueChange = { model.updateDraft(draft.copy(amount = it.take(30))) }, label = { Text(stringResource(R.string.amount)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true, modifier = Modifier.fillMaxWidth())
+    OutlinedTextField(value = draft.description, onValueChange = { model.updateDraft(draft.copy(description = it.take(100))) }, label = { Text(stringResource(R.string.description)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+}
+
+@Composable
+private fun EntryReferences(model: DemoViewModel, draft: EntryDraft) {
+    ReferencePicker(
+        label = stringResource(R.string.category), selected = draft.category,
+        options = model.categories, onSelect = { model.updateDraft(draft.copy(category = it)) },
+        adding = draft.addingCategory, newName = draft.newCategory,
+        onBeginAdd = { model.updateDraft(draft.copy(addingCategory = true, newCategory = "")) },
+        onNameChange = { model.updateDraft(draft.copy(newCategory = it.take(60))) },
+        onCancelAdd = { model.updateDraft(draft.copy(addingCategory = false, newCategory = "")) },
+        onAdd = {
+            model.addCategory(draft.newCategory)?.let {
+                model.updateDraft(draft.copy(category = it, addingCategory = false, newCategory = ""))
             }
         },
-        confirmButton = {
-            TextButton(onClick = {
-                val date = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM).withLocale(locale))
-                model.saveEntry(locale, date)
-            }, enabled = !draft.addingCategory && !draft.addingPayment) { Text(stringResource(R.string.save)) }
+    )
+    ReferencePicker(
+        label = stringResource(R.string.payment), selected = draft.payment,
+        options = model.payments, onSelect = { model.updateDraft(draft.copy(payment = it)) },
+        adding = draft.addingPayment, newName = draft.newPayment,
+        onBeginAdd = { model.updateDraft(draft.copy(addingPayment = true, newPayment = "")) },
+        onNameChange = { model.updateDraft(draft.copy(newPayment = it.take(60))) },
+        onCancelAdd = { model.updateDraft(draft.copy(addingPayment = false, newPayment = "")) },
+        onAdd = {
+            model.addPayment(draft.newPayment)?.let {
+                model.updateDraft(draft.copy(payment = it, addingPayment = false, newPayment = ""))
+            }
         },
-        dismissButton = { TextButton(onClick = model::cancelEntry) { Text(stringResource(R.string.cancel)) } },
     )
 }
 
