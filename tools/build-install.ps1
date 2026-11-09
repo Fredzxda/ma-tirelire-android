@@ -1,7 +1,8 @@
 param(
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
-    [string]$DeviceSerial
+    [string]$DeviceSerial,
+    [switch]$Launch
 )
 $ErrorActionPreference = 'Stop'
 $adb = Join-Path $env:LOCALAPPDATA 'Android/Sdk/platform-tools/adb.exe'
@@ -24,3 +25,11 @@ if ($LASTEXITCODE -ne 0) { throw 'Impossible de verifier la version installee.' 
 $expected = '^\s*versionName=' + [regex]::Escape($metadata.elements[0].versionName) + '\s*$'
 if (-not ($installed | Select-String -Pattern $expected)) { throw 'La version installee ne correspond pas a l''APK genere.' }
 Write-Output ('Installation verifiee : ' + $metadata.elements[0].versionName)
+
+if ($Launch) {
+    $launchResult = @(& $adb -s $DeviceSerial shell am start -W -n org.matirelire.android.demo/org.matirelire.android.MainActivity)
+    if ($LASTEXITCODE -ne 0 -or -not ($launchResult | Select-String -Pattern '^Status:\s*ok\s*$')) {
+        throw 'Installation reussie mais lancement non confirme.'
+    }
+    Write-Output 'Lancement confirme sur ASUS.'
+}
