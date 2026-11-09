@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -448,8 +449,21 @@ private fun EntryDialog(names: List<String>, model: DemoViewModel) {
 }
 
 @Composable
-private fun EntryAccounts(names: List<String>, model: DemoViewModel, draft: EntryDraft) {
-    names.forEachIndexed { index, name -> FilterChip(selected = draft.account == index, onClick = { model.updateDraft(draft.copy(account = index)) }, modifier = Modifier.fillMaxWidth(), label = { Text(name) }) }
+private fun EntryAccounts(names: List<String>, model: DemoViewModel, draft: EntryDraft, horizontal: Boolean = false) {
+    if (horizontal) {
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            names.forEachIndexed { index, name ->
+                FilterChip(selected = draft.account == index,
+                    onClick = { model.updateDraft(draft.copy(account = index)) },
+                    label = { Text(name, maxLines = 1) })
+            }
+        }
+    } else {
+        names.forEachIndexed { index, name -> FilterChip(selected = draft.account == index, onClick = { model.updateDraft(draft.copy(account = index)) }, modifier = Modifier.fillMaxWidth(), label = { Text(name) }) }
+    }
 }
 
 @Composable
@@ -485,7 +499,7 @@ private fun EntryDescription(model: DemoViewModel, draft: EntryDraft, modifier: 
 
 @Composable
 private fun EntryBasics(names: List<String>, model: DemoViewModel, draft: EntryDraft) {
-    EntryAccounts(names, model, draft)
+    EntryAccounts(names, model, draft, horizontal = true)
     EntryDirection(model, draft)
     EntryAmounts(model, draft)
 }

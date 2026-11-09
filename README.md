@@ -1,6 +1,6 @@
 # Ma Tirelire — Android
 
-Démonstration **0.1.3-dev** du portage de Ma Tirelire Palm.
+Démonstration **0.1.4-dev** du portage de Ma Tirelire Palm.
 Android 12 minimum, téléphone et tablette, français et anglais.
 
 ## Utilisation de cette version
@@ -45,7 +45,7 @@ licences respectives ; la licence du projet ne remplace pas leurs notices.
 Le cadrage et les parcours sont dans `docs/`. Ils distinguent sources historiques,
 exigences validées, adaptations proposées et règles restant à établir.
 
-Les résultats et limites sont dans [docs/VALIDATION-0.1.3.md](docs/VALIDATION-0.1.3.md).
+Les résultats et limites sont dans [docs/VALIDATION-0.1.4.md](docs/VALIDATION-0.1.4.md).
 Les opérations périodiques restent suivies dans [REC-001](docs/operations-periodiques.md)
 et seront implémentées dans un lot ultérieur.
 
