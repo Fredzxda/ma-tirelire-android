@@ -206,7 +206,7 @@ private fun RestoreForm(controller: VaultController, activity: FragmentActivity)
 @Composable
 private fun PrototypeNote() {
     Surface(color = MaterialTheme.colorScheme.tertiaryContainer, shape = MaterialTheme.shapes.medium) {
-        Text(stringResource(R.string.vault_prototype_note), modifier = Modifier.padding(12.dp),
+        Text(stringResource(R.string.vault_prototype_note, BuildConfig.VERSION_NAME), modifier = Modifier.padding(12.dp),
             color = MaterialTheme.colorScheme.onTertiaryContainer, style = MaterialTheme.typography.bodySmall)
     }
 }

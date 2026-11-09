@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:locale="fr">
     <string name="vault_title">Le coffre Ma Tirelire</string>
-    <string name="vault_prototype_note">Prototype 0.2 : stockage chiffré en cours de validation. Utilisez uniquement des données fictives, même si elles sont maintenant conservées entre les ouvertures.</string>
+    <string name="vault_prototype_note">Prototype %1$s : stockage chiffré en cours de validation. Utilisez uniquement des données fictives, même si elles sont maintenant conservées entre les ouvertures.</string>
     <string name="vault_extra_required">Confirmez le code supplémentaire du coffre.</string>
     <string name="vault_extra_code">Code supplémentaire</string>
     <string name="vault_continue">Continuer</string>

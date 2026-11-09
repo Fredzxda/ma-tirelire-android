@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="vault_title">Your Ma Tirelire vault</string>
-    <string name="vault_prototype_note">Prototype 0.2: encrypted storage is being validated. Use fictional data only, even though it is now kept between sessions.</string>
+    <string name="vault_prototype_note">Prototype %1$s: encrypted storage is being validated. Use fictional data only, even though it is now kept between sessions.</string>
     <string name="vault_extra_required">Confirm your additional vault code.</string>
     <string name="vault_extra_code">Additional code</string>
     <string name="vault_continue">Continue</string>

@@ -43,7 +43,7 @@
     <string name="security_detail">Coffre SQLCipher et authentification Android. Sauvegardes chiffrées à tester sur un autre téléphone avant usage réel.</string>
     <string name="privacy_title">Une démo entièrement locale</string>
     <string name="privacy_detail">Aucune permission réseau. Aucun rapport transmis. Les captures des écrans applicatifs sont bloquées par Android.</string>
-    <string name="roadmap_title">Prochaine étape · 0.3.0-dev</string>
+    <string name="roadmap_title">Prochaines fonctionnalités</string>
     <string name="roadmap_detail">Validation du coffre sur appareils, puis gestion des comptes et parcours de saisie complets.</string>
     <string name="version">Version %1$s</string>
     <string name="language_hint">La langue et les formats suivent les réglages du téléphone : français et anglais sont disponibles.</string>
@@ -76,6 +76,6 @@
     <string name="release_notes_title">Nouveautés · %1$s</string>
     <string name="release_notes_test_title">À vérifier avec des données fictives</string>
     <string name="release_notes_understood">Compris</string>
-    <string name="release_notes_changes">Appuyez sur une opération pour ouvrir sa fiche et la modifier. La corbeille se trouve dans cette fiche, avec confirmation avant suppression. Le pointage reste directement accessible dans la liste.\n\nCette fenêtre présente les nouveautés de chaque version, après déverrouillage. Vous pouvez la retrouver dans les réglages.</string>
-    <string name="release_notes_tests">1. Appuyer sur une opération : la fiche doit reprendre ses informations. Modifier puis enregistrer : aucun doublon, soldes mis à jour.\n2. Toucher la corbeille : annuler conserve la ligne ; confirmer la supprime.\n3. Pointer une ligne : la fiche ne doit pas s’ouvrir.\n4. Tourner l’écran pendant la modification : le brouillon reste présent.\n5. Annuler la demande d’empreinte ou de code Android : elle ne doit pas réapparaître seule. Le bouton Déverrouiller permet de réessayer.\n6. Fermer cette fenêtre puis revenir : elle ne doit pas réapparaître pour cette version. Elle reste accessible dans les réglages.</string>
+    <string name="release_notes_changes">Le numéro de version affiché sur la page de déverrouillage suit désormais automatiquement la version installée.</string>
+    <string name="release_notes_tests">1. Annuler la demande Android pour voir la page de déverrouillage : le bandeau doit afficher 0.3.2-dev.\n2. Déverrouiller : vérifier le même numéro dans les réglages et dans cette fenêtre.</string>
 </resources>

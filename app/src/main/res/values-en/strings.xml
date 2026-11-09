@@ -43,7 +43,7 @@
     <string name="security_detail">SQLCipher vault and Android authentication. Test encrypted backup recovery on another phone before real use.</string>
     <string name="privacy_title">An entirely local demo</string>
     <string name="privacy_detail">No network permission. No reports sent. Android blocks screenshots of application screens.</string>
-    <string name="roadmap_title">Next step - 0.3.0-dev</string>
+    <string name="roadmap_title">Upcoming features</string>
     <string name="roadmap_detail">Validate the vault on physical devices, then complete account management and entry flows.</string>
     <string name="version">Version %1$s</string>
     <string name="language_hint">Language and formats follow phone settings. French and English are available.</string>
@@ -76,6 +76,6 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">Tap a transaction to open its details and edit it. The trash icon is now inside that form, with confirmation before deletion. Clearing remains available directly in the list.\n\nThis window shows changes for each version after unlocking. You can reopen it in settings.</string>
-    <string name="release_notes_tests">1. Tap a transaction: its details should appear. Edit and save: no duplicate, balances updated.\n2. Tap the trash icon: cancel keeps the row; confirm deletes it.\n3. Clear a row: its details must not open.\n4. Rotate while editing: the draft remains.\n5. Cancel the Android fingerprint or credential prompt: it must not reappear by itself. The Unlock button lets you retry.\n6. Close this window and return: it must not reappear for this version. You can still open it in settings.</string>
+    <string name="release_notes_changes">The version shown on the unlock screen now automatically matches the installed application.</string>
+    <string name="release_notes_tests">1. Cancel the Android prompt to view the unlock screen: the banner should show 0.3.2-dev.\n2. Unlock: check the same version in settings and in this window.</string>
 </resources>
