@@ -15,6 +15,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.withStateAtLeast
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import java.text.DateFormat
@@ -23,6 +24,13 @@ import java.util.Date
 /** The gate is never a cosmetic pause screen: only the controller can open it. */
 @Composable
 fun VaultGate(controller: VaultController, activity: FragmentActivity, content: @Composable () -> Unit) {
+    // Await RESUMED, including after the SAF picker. Controller state survives
+    // rotation and suppresses repeated prompts after cancellation/authentication.
+    LaunchedEffect(controller.unlockGeneration, controller.unlocked, controller.busy, controller.needsCode, controller.exists) {
+        activity.lifecycle.withStateAtLeast(Lifecycle.State.RESUMED) {
+            controller.unlockAutomatically(activity)
+        }
+    }
     // Keep registrations alive even when onStop locks and disposes the settings.
     val directoryPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri != null) controller.selectDirectory(uri)

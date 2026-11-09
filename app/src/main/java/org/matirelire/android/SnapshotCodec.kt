@@ -21,7 +21,8 @@ internal object SnapshotCodec {
         val d = data.draft?.let { draft -> JSONObject().put("account", draft.account).put("income", draft.income)
             .put("amount", draft.amount).put("description", draft.description).put("category", draft.category)
             .put("payment", draft.payment).put("addingCategory", draft.addingCategory).put("addingPayment", draft.addingPayment)
-            .put("newCategory", draft.newCategory).put("newPayment", draft.newPayment) }
+            .put("newCategory", draft.newCategory).put("newPayment", draft.newPayment)
+            .put("editingId", draft.editingId ?: JSONObject.NULL) }
         val result = JSONObject().put("schema", 1).put("transactions", rows)
             .put("categories", JSONArray(data.categories)).put("payments", JSONArray(data.payments))
             .put("openings", JSONArray(data.openings.map { it.toPlainString() })).put("draft", d ?: JSONObject.NULL)
@@ -83,9 +84,11 @@ internal object SnapshotCodec {
             EntryDraft(it.getInt("account"), it.getBoolean("income"), it.getString("amount"),
                 it.getString("description"), it.getString("category"), it.getString("payment"),
                 addingCategory = it.optBoolean("addingCategory"), addingPayment = it.optBoolean("addingPayment"),
-                newCategory = it.optString("newCategory"), newPayment = it.optString("newPayment")).also { draft ->
+                newCategory = it.optString("newCategory"), newPayment = it.optString("newPayment"),
+                editingId = if (it.isNull("editingId")) null else it.getLong("editingId")).also { draft ->
                 require(draft.account in 0..1 && draft.amount.length <= 30 && draft.description.length <= 100)
                 require(draft.category in categories && draft.payment in payments)
+                require(draft.editingId == null || rows.any { row -> row.id == draft.editingId })
                 require(draft.newCategory.length <= 60 && draft.newPayment.length <= 60)
             }
         }

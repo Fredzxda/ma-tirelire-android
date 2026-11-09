@@ -53,6 +53,8 @@ class VaultController(application: Application) : AndroidViewModel(application) 
     private var pendingArchive: ByteArray? = null // ciphertext only; can survive a lock
     private var pendingDirectory: Uri? = null
     private var epoch = 0L
+    var unlockGeneration by mutableIntStateOf(0); private set
+    private val automaticUnlock = AutomaticUnlock()
     private var job: Job? = null
     private var authenticating = false
     private var authenticationCancellation: CancellationSignal? = null
@@ -91,14 +93,20 @@ class VaultController(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun unlockAutomatically(activity: FragmentActivity) {
+        if (automaticUnlock.shouldRequest(exists, unlocked, busy, needsCode)) unlock(activity)
+    }
+
     fun onBackground() {
         // Android's credential UI may stop the host; it never exposes an open ledger.
-        if (!authenticating) lock()
+        if (!authenticating) { lock(); automaticUnlock.onLock() }
     }
 
     fun lock() {
         if (unlocked && ::ledger.isInitialized) resumeDestination = ledger.destination.intValue
         epoch++
+        automaticUnlock.onLock(allowAutomatic = false)
+        unlockGeneration++
         feedback = null
         unlocked = false
         needsCode = false

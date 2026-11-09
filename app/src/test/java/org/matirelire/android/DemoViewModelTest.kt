@@ -93,4 +93,55 @@ class DemoViewModelTest {
         model.beginEntry()
         assertTrue(model.categories.contains("Travel"))
     }
+
+    @Test fun editingPreservesIdentityDateAndPointingAndRecalculatesBothAccounts() {
+        val model = model()
+        model.editEntry(2, Locale.FRANCE)
+        assertEquals("12,34", model.draft!!.amount)
+        model.updateDraft(model.draft!!.copy(account = 1, income = true, amount = "25,50", description = "Changed"))
+        // Encrypted snapshot roundtrip simulates lock/reopen and rotation.
+        val restored = DemoViewModel()
+        restored.restoreData(SnapshotCodec.decode(SnapshotCodec.encode(model.exportData())))
+        assertTrue(restored.saveEntry(Locale.FRANCE, "DIFFERENT DATE"))
+        assertEquals(4, restored.transactions.size)
+        val row = restored.transactions.single { it.id == 2L }
+        assertEquals("2026-11-08", row.date)
+        assertTrue(row.cleared)
+        assertEquals(BigDecimal("25.50"), row.amount)
+        assertEquals(BigDecimal("580.00"), restored.balance(0))
+        assertEquals(BigDecimal("600.00"), restored.balance(0, true))
+        assertEquals(BigDecimal("3055.50"), restored.balance(1))
+        assertEquals(BigDecimal("3025.50"), restored.balance(1, true))
+        assertFalse(restored.saveEntry(Locale.FRANCE, "unused"))
+    }
+
+    @Test fun cancelledAndInvalidEditsLeaveOriginalUnchanged() {
+        val model = model()
+        val before = model.transactions.toList()
+        model.editEntry(2, Locale.US)
+        model.updateDraft(model.draft!!.copy(amount = "invalid"))
+        assertFalse(model.saveEntry(Locale.US, "unused"))
+        assertEquals(before, model.transactions.toList())
+        model.cancelEntry()
+        model.editEntry(999, Locale.US)
+        assertNull(model.draft)
+        assertEquals(before, model.transactions.toList())
+    }
+
+    @Test fun deletionIsPersistedAndCannotResurrectAnEditedRow() {
+        val model = model()
+        model.editEntry(2, Locale.US)
+        var writes = 0
+        model.onChange = { writes++ }
+        model.deleteEntry(2)
+        assertEquals(1, writes)
+        assertNull(model.draft)
+        assertFalse(model.saveEntry(Locale.US, "unused"))
+        assertEquals(BigDecimal("580.00"), model.balance(0))
+        assertEquals(BigDecimal("600.00"), model.balance(0, true))
+        val restored = SnapshotCodec.decode(SnapshotCodec.encode(model.exportData()))
+        assertFalse(restored.transactions.any { it.id == 2L })
+        model.deleteEntry(2)
+        assertEquals(1, writes)
+    }
 }

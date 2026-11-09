@@ -1,9 +1,15 @@
 # Ma Tirelire — Android
 
-Prototype de sécurité **0.2.5-dev** du portage de Ma Tirelire Palm.
+Prototype de sécurité **0.3.0-dev** du portage de Ma Tirelire Palm.
 Android 12 minimum, téléphone et tablette, français et anglais.
 
 ## Utilisation de cette version
+
+Premier lot 0.3 : modification et suppression des opérations, avec recalcul
+des soldes et confirmation avant suppression. Les dates et le pointage sont
+conservés lors de la modification. Brouillons de modification chiffrés.
+Authentification Android automatique au retour ; bouton de reprise si annulée.
+Comptes personnalisables et pointage guidé restent pour les lots suivants.
 
 Comptes fictifs et parcours de saisie conservés. Le contenu est maintenant
 persisté dans un coffre SQLCipher, protégé par l'authentification Android.

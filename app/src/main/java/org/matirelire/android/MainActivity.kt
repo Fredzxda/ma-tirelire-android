@@ -89,6 +89,7 @@ internal data class EntryDraft(
     val addingPayment: Boolean = false,
     val newCategory: String = "",
     val newPayment: String = "",
+    val editingId: Long? = null,
 )
 
 /** Session state; snapshots are persisted only through the encrypted vault callback. */
@@ -150,6 +151,23 @@ class DemoViewModel : ViewModel() {
         }
     }
 
+    internal fun editEntry(id: Long, locale: Locale) {
+        if (draft != null) return
+        val row = transactions.firstOrNull { it.id == id } ?: return
+        val separator = java.text.DecimalFormatSymbols.getInstance(locale).decimalSeparator
+        draft = EntryDraft(account = row.account, income = row.amount.signum() > 0,
+            amount = row.amount.abs().toPlainString().replace('.', separator),
+            description = row.description, category = row.category, payment = row.payment, editingId = id)
+        onChange?.invoke()
+    }
+
+    internal fun deleteEntry(id: Long) {
+        if (transactions.removeAll { it.id == id }) {
+            if (draft?.editingId == id) draft = null
+            onChange?.invoke()
+        }
+    }
+
     internal fun updateDraft(next: EntryDraft) { if (draft != null) { draft = next.copy(attempted = false); onChange?.invoke() } }
     internal fun cancelEntry() { draft = null; onChange?.invoke() }
 
@@ -174,16 +192,21 @@ class DemoViewModel : ViewModel() {
 
     internal fun saveEntry(locale: Locale, date: String): Boolean {
         val current = draft ?: return false
-        if (transactions.size >= 10_000) { limitReached = true; return false }
+        if (current.editingId == null && transactions.size >= 10_000) { limitReached = true; return false }
         val amount = Money.parseAmount(current.amount, locale)
         if (amount == null || current.description.isBlank() || current.account !in openings.indices ||
             current.category !in categories || current.payment !in payments || current.addingCategory || current.addingPayment) {
             draft = current.copy(attempted = true)
             return false
         }
-        transactions.add(DemoTransaction((transactions.maxOfOrNull { it.id } ?: 0) + 1,
+        val index = current.editingId?.let { id -> transactions.indexOfFirst { it.id == id } }
+        // A missing target must never turn an edit into a new operation.
+        if (index != null && index < 0) return false
+        val previous = index?.let { transactions[it] }
+        val row = DemoTransaction(previous?.id ?: ((transactions.maxOfOrNull { it.id } ?: 0) + 1),
             current.account, current.description.trim(), if (current.income) amount else amount.negate(),
-            current.category, current.payment, date))
+            current.category, current.payment, previous?.date ?: date, previous?.cleared ?: false)
+        if (index == null) transactions.add(row) else transactions[index] = row
         account.intValue = current.account
         destination.intValue = 1
         draft = null
@@ -271,7 +294,8 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
                     when (destination) {
                         0 -> AccountsScreen(accountNames, balances, clearedBalances) { selected -> account = selected; destination = 1 }
                         1 -> TransactionsScreen(accountNames, account, balances[account], clearedBalances[account], transactions.filter { it.account == account },
-                            onAccount = { account = it }, onToggle = model::toggleCleared)
+                            onAccount = { account = it }, onToggle = model::toggleCleared,
+                            onEdit = { model.editEntry(it, activity.resources.configuration.locales[0]) }, onDelete = model::deleteEntry)
                         else -> SettingsScreen(vault, activity)
                     }
                 }
@@ -335,7 +359,16 @@ private fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, clea
 }
 
 @Composable
-private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDecimal, clearedBalance: BigDecimal, transactions: List<DemoTransaction>, onAccount: (Int) -> Unit, onToggle: (Long) -> Unit) {
+private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDecimal, clearedBalance: BigDecimal, transactions: List<DemoTransaction>, onAccount: (Int) -> Unit, onToggle: (Long) -> Unit, onEdit: (Long) -> Unit, onDelete: (Long) -> Unit) {
+    var deleteId by remember { mutableStateOf<Long?>(null) }
+    val toDelete = transactions.firstOrNull { it.id == deleteId }
+    if (toDelete != null) AlertDialog(
+        onDismissRequest = { deleteId = null },
+        title = { Text(stringResource(R.string.delete_transaction)) },
+        text = { Text(stringResource(R.string.delete_transaction_warning, toDelete.description, money(toDelete.amount))) },
+        confirmButton = { TextButton(onClick = { onDelete(toDelete.id); deleteId = null }) { Text(stringResource(R.string.delete_action)) } },
+        dismissButton = { TextButton(onClick = { deleteId = null }) { Text(stringResource(R.string.cancel)) } },
+    )
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 110.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -361,6 +394,10 @@ private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDe
                         Text(money(tx.amount), fontWeight = FontWeight.Bold, color = if (tx.amount.signum() < 0) Color(0xFF944C3C) else MaterialTheme.colorScheme.primary)
                     }
                     Text("${tx.category} · ${tx.payment}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 8.dp))
+                    Row {
+                        TextButton(onClick = { onEdit(tx.id) }) { Text(stringResource(R.string.edit_action)) }
+                        TextButton(onClick = { deleteId = tx.id }) { Text(stringResource(R.string.delete_action)) }
+                    }
                     Row(Modifier.fillMaxWidth().clickable { onToggle(tx.id) }, verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(checked = tx.cleared, onCheckedChange = { onToggle(tx.id) })
                         Text(stringResource(if (tx.cleared) R.string.marked else R.string.unmarked), style = MaterialTheme.typography.labelMedium)
@@ -437,7 +474,7 @@ private fun EntryDialog(names: List<String>, model: DemoViewModel) {
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Text(stringResource(R.string.new_transaction),
+                        Text(stringResource(if (draft.editingId == null) R.string.new_transaction else R.string.edit_transaction),
                             modifier = Modifier.weight(1f),
                             style = MaterialTheme.typography.titleMedium,
                             maxLines = 2)

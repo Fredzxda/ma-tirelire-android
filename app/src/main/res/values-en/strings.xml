@@ -67,4 +67,9 @@
     <string name="vault_directory_unlock_first">Folder selected. Unlock the vault to continue backup settings.</string>
     <string name="vault_directory_resume">Backup folder saved. You can continue configuration in settings.</string>
     <string name="vault_configure_success">Backups configured. You can now create a local encrypted backup.</string>
+    <string name="edit_action">Edit</string>
+    <string name="delete_action">Delete</string>
+    <string name="edit_transaction">Edit transaction</string>
+    <string name="delete_transaction">Delete this transaction?</string>
+    <string name="delete_transaction_warning">%1$s (%2$s) will be deleted. Balances will be recalculated. This action is permanent.</string>
 </resources>

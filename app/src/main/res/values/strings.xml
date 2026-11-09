@@ -67,4 +67,9 @@
     <string name="vault_directory_unlock_first">Dossier sélectionné. Déverrouillez le coffre pour reprendre les réglages de sauvegarde.</string>
     <string name="vault_directory_resume">Dossier de sauvegarde enregistré. Vous pouvez poursuivre la configuration dans les réglages.</string>
     <string name="vault_configure_success">Sauvegardes configurées. Vous pouvez maintenant créer une sauvegarde locale chiffrée.</string>
+    <string name="edit_action">Modifier</string>
+    <string name="delete_action">Supprimer</string>
+    <string name="edit_transaction">Modifier une opération</string>
+    <string name="delete_transaction">Supprimer cette opération ?</string>
+    <string name="delete_transaction_warning">%1$s (%2$s) sera supprimée. Les soldes seront recalculés. Cette action est définitive.</string>
 </resources>

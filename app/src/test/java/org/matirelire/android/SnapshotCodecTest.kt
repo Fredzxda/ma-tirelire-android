@@ -55,4 +55,16 @@ class SnapshotCodecTest {
         assertTrue(model.limitReached)
         assertEquals(10_000, SnapshotCodec.decode(SnapshotCodec.encode(model.exportData())).transactions.size)
     }
+
+    @Test fun legacyDraftWithoutEditingIdStillLoadsAndMissingTargetsAreRejected() {
+        val data = sample().copy(draft = sample().draft!!.copy(editingId = 1))
+        assertEquals(data, SnapshotCodec.decode(SnapshotCodec.encode(data)))
+        val oldJson = SnapshotCodec.encode(sample()).toString(Charsets.UTF_8)
+            .replace(",\"editingId\":null", "").replace("\"editingId\":null,", "")
+        assertNull(SnapshotCodec.decode(oldJson.toByteArray()).draft!!.editingId)
+        try {
+            SnapshotCodec.encode(data.copy(draft = data.draft!!.copy(editingId = 999)))
+            fail("Missing edit target accepted")
+        } catch (_: IllegalArgumentException) { }
+    }
 }
