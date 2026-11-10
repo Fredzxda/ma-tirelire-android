@@ -76,8 +76,8 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">Internal euro transfers: one entry creates two linked opposite transactions. Open either side to update the amount, date and description of both. Clearing remains independent. The trash icon deletes both sides after confirmation. Old transactions using a payment method named Transfer are not automatically linked.</string>
-    <string name="release_notes_tests">1. New entry: select Transfer to another account in this vault, choose the other account and save.\n2. Check opposite debit and credit: the vault total stays unchanged.\n3. Edit amount or date from the receiving account: both sides update without duplicates.\n4. Clear one side: the other stays unchanged.\n5. Trash: cancel keeps both rows; confirm deletes the pair.\n6. Rotate, lock and reopen a draft; test backup and restore. Do not downgrade after creating a transfer.</string>
+    <string name="release_notes_changes">Choose Transfer as the payment method: select an optional vault account beside it. No account means an external transfer with one transaction. An existing transaction can now become an internal transfer without re-entry. Internal transfer categories are hidden and excluded from the scope of future income and expense reports.</string>
+    <string name="release_notes_tests">1. Choose Transfer: the optional account appears beside it; no target means one transaction.\n2. Select a target: two opposite entries, vault total unchanged.\n3. Edit an existing expense: choose Transfer and an account. The original keeps its identity and clearing; the counterpart is uncleared.\n4. Repeat with income: its amount remains positive and the counterpart is negative.\n5. Linked internal transfers no longer offer Card. Their category is hidden.\n6. Back up and restore: links, method and clearing remain. Statistics are not yet displayed in this version.</string>
     <string name="account_add">Add account</string>
     <string name="account_edit">Account settings</string>
     <string name="account_configure">Configure %1$s</string>
@@ -103,4 +103,8 @@
     <string name="transfer_received">Incoming transfer</string>
     <string name="transfer_linked">Linked internal transfer</string>
     <string name="transfer_delete_warning">Transfer %1$s (%2$s) will be deleted in both accounts. Both balances will be recalculated. This action is permanent.</string>
+    <string name="transfer_target_label">Other account (optional)</string>
+    <string name="transfer_external">None · external transfer</string>
+    <string name="transfer_category_excluded">Internal transfer: excluded from income and expense category reports.</string>
+    <string name="transfer_conversion_hint">Selecting another account creates an opposite counterpart. The current direction and clearing are preserved; the counterpart starts uncleared.</string>
 </resources>

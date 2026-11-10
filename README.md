@@ -1,9 +1,15 @@
 # Ma Tirelire — Android
 
-Prototype de sécurité **0.4.0-dev** du portage de Ma Tirelire Palm.
+Prototype de sécurité **0.4.1-dev** du portage de Ma Tirelire Palm.
 Android 12 minimum, téléphone et tablette, français et anglais.
 
 ## Utilisation de cette version
+
+Choisir Virement dans les moyens de paiement pour afficher le compte facultatif
+à côté : sans compte, écriture externe simple ; avec compte, paire interne.
+Conversion d’une dépense ou recette existante possible, identité et pointage
+conservés, contrepartie non pointée. Les virements internes sont hors du périmètre
+des statistiques de revenus/dépenses ; leur catégorie est masquée.
 
 Virements internes EUR liés : deux écritures opposées en une saisie ; modification
 cohérente depuis chaque côté, pointages indépendants, suppression de la paire

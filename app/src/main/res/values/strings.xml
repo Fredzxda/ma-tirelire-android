@@ -76,8 +76,8 @@
     <string name="release_notes_title">Nouveautés · %1$s</string>
     <string name="release_notes_test_title">À vérifier avec des données fictives</string>
     <string name="release_notes_understood">Compris</string>
-    <string name="release_notes_changes">Virements internes en euros : une saisie crée deux écritures opposées liées. Ouvrez un côté pour modifier montant, date et libellé des deux opérations. Le pointage reste indépendant. La corbeille supprime les deux côtés après confirmation. Les anciennes opérations avec un moyen nommé Virement ne sont pas automatiquement liées.</string>
-    <string name="release_notes_tests">1. Nouvelle saisie : cocher Virement vers un autre compte du coffre, choisir l’autre compte et enregistrer.\n2. Vérifier le débit et le crédit opposés : le total du coffre ne change pas.\n3. Modifier montant ou date depuis le compte qui reçoit : les deux côtés suivent, sans doublon.\n4. Pointer un côté : l’autre reste inchangé.\n5. Corbeille : annuler conserve les deux lignes ; confirmer supprime la paire.\n6. Tourner l’écran, verrouiller et rouvrir un brouillon ; tester sauvegarde/restauration. Ne pas réinstaller une ancienne version après création d’un virement.</string>
+    <string name="release_notes_changes">Choisissez Virement comme moyen de paiement : le compte du coffre se choisit à côté. Aucun compte signifie un virement externe, avec une seule écriture. Une opération existante peut maintenant devenir un virement interne. Sa contrepartie est créée sans ressaisie. Les catégories des virements internes sont masquées et exclues du périmètre des futures statistiques de revenus et dépenses.</string>
+    <string name="release_notes_tests">1. Choisir Virement : le compte facultatif apparaît à côté ; sans cible, une seule écriture.\n2. Choisir un compte cible : deux écritures opposées, total du coffre inchangé.\n3. Modifier une dépense existante : choisir Virement et un compte. La ligne originale conserve son identité et son pointage, la contrepartie est non pointée.\n4. Faire le même essai avec un revenu : son montant reste positif et la contrepartie est négative.\n5. Un virement interne lié ne propose plus Carte. Sa catégorie est masquée.\n6. Sauvegarder et restaurer : retrouver les liens, le moyen et les pointages. Les statistiques ne sont pas encore affichées dans cette version.</string>
     <string name="account_add">Ajouter un compte</string>
     <string name="account_edit">Configurer le compte</string>
     <string name="account_configure">Configurer %1$s</string>
@@ -103,4 +103,8 @@
     <string name="transfer_received">Virement reçu</string>
     <string name="transfer_linked">Virement interne lié</string>
     <string name="transfer_delete_warning">Le virement %1$s (%2$s) sera supprimé dans les deux comptes. Les deux soldes seront recalculés. Cette action est définitive.</string>
+    <string name="transfer_target_label">Autre compte (facultatif)</string>
+    <string name="transfer_external">Aucun · virement externe</string>
+    <string name="transfer_category_excluded">Virement interne : exclu des statistiques de revenus et dépenses par catégorie.</string>
+    <string name="transfer_conversion_hint">Avec un autre compte, une contrepartie opposée sera créée. Le sens et le pointage de l’opération actuelle sont conservés ; la contrepartie ne sera pas pointée.</string>
 </resources>

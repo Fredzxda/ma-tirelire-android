@@ -183,6 +183,27 @@ class DemoViewModel : ViewModel() {
         return true
     }
     internal val categories = mutableStateListOf<String>()
+    internal var transferPayment by mutableStateOf<String?>(null)
+        private set
+    internal fun isTransferPayment(value: String) = value == transferPayment
+    internal fun ensureTransferPayment(defaultName: String) {
+        if (transferPayment != null) return
+        val designated = payments.firstOrNull { it.equals("Virement", true) || it.equals("Transfer", true) }
+            ?: addPayment(defaultName) ?: return
+        transferPayment = designated
+        val migrated = transactions.map { if (it.peerId != null) it.copy(payment = designated) else it }
+        transactions.clear(); transactions.addAll(migrated)
+        draft = draft?.let { if (it.transferTarget != null) it.copy(payment = designated, addingPayment = false, newPayment = "") else it }
+        onChange?.invoke()
+    }
+    internal fun selectDraftPayment(value: String) {
+        val current = draft ?: return
+        val linked = transactions.firstOrNull { it.id == current.editingId }?.peerId != null
+        if (linked && !isTransferPayment(value)) return
+        updateDraft(current.copy(payment = value, transferTarget = if (isTransferPayment(value)) current.transferTarget else null))
+    }
+    /** All future income/expense and category reports must use this perimeter. */
+    internal fun reportingTransactions() = transactions.filter { it.peerId == null }
     internal val payments = mutableStateListOf<String>()
     internal var draft by mutableStateOf<EntryDraft?>(null)
         private set
@@ -263,12 +284,13 @@ class DemoViewModel : ViewModel() {
     internal fun updateDraft(next: EntryDraft) { if (draft != null) { draft = next.copy(attempted = false); onChange?.invoke() } }
     internal fun cancelEntry() { draft = null; onChange?.invoke() }
 
-    internal fun exportData() = LedgerData(transactions.toList(), categories.toList(), payments.toList(), openings.toList(), draft, accountNames.toList())
+    internal fun exportData() = LedgerData(transactions.toList(), categories.toList(), payments.toList(), openings.toList(), draft, accountNames.toList(), transferPayment)
 
     internal fun restoreData(data: LedgerData) {
         transactions.clear(); transactions.addAll(data.transactions)
         categories.clear(); categories.addAll(data.categories)
         payments.clear(); payments.addAll(data.payments)
+        transferPayment = data.transferPayment
         openings = data.openings.toList()
         accountNames.clear(); accountNames.addAll(data.accountNames)
         reconciliation = null
@@ -283,14 +305,17 @@ class DemoViewModel : ViewModel() {
     internal fun clearSensitive() {
         onChange = null
         accountNames.clear(); accountDraft = null; reconciliation = null
-        transactions.clear(); categories.clear(); payments.clear(); draft = null
+        transactions.clear(); categories.clear(); payments.clear(); draft = null; transferPayment = null
         openings = listOf(BigDecimal("500.00"), BigDecimal("3000.00"))
         destination.intValue = 0; account.intValue = 0; initialized = false; limitReached = false
     }
 
     internal fun saveEntry(locale: Locale, date: String): Boolean {
         val current = draft ?: return false
-        if (current.editingId == null && transactions.size + (if (current.transferTarget == null) 1 else 2) > 10_000) { limitReached = true; return false }
+        val old = transactions.firstOrNull { it.id == current.editingId }
+        val additional = if (current.editingId == null) (if (current.transferTarget == null) 1 else 2)
+            else if (current.transferTarget != null && old?.peerId == null) 1 else 0
+        if (transactions.size + additional > 10_000) { limitReached = true; return false }
         val amount = Money.parseAmount(current.amount, locale)
         if (amount == null || current.description.isBlank() || current.account !in openings.indices ||
             current.category !in categories || current.payment !in payments || current.addingCategory || current.addingPayment ||
@@ -304,16 +329,17 @@ class DemoViewModel : ViewModel() {
         val previous = index?.let { transactions[it] }
         val peer = previous?.peerId?.let { peerId -> transactions.firstOrNull { it.id == peerId } }
         val target = current.transferTarget
-        if (previous != null && ((previous.peerId != null) != (target != null))) return false
+        if (previous?.peerId != null && target == null) return false
+        if (target != null && transferPayment != null && !isTransferPayment(current.payment)) return false
         if (target != null && (target !in openings.indices || target == current.account ||
-                (previous == null && current.income) ||
-                (previous != null && (peer == null || previous.account != current.account || peer.account != target || current.income != (previous.amount.signum() > 0))))) {
+                (previous?.peerId != null && (peer == null || previous.account != current.account || peer.account != target || current.income != (previous.amount.signum() > 0))))) {
             draft = current.copy(attempted = true); return false
         }
         val nextId = (transactions.maxOfOrNull { it.id } ?: 0) + 1
         if (previous == null && (nextId <= 0 || nextId >= Long.MAX_VALUE - 1)) return false
+        if (previous != null && target != null && peer == null && (nextId <= 0 || nextId == Long.MAX_VALUE)) return false
         val rowId = previous?.id ?: nextId
-        val peerId = if (target == null) null else peer?.id ?: (nextId + 1)
+        val peerId = if (target == null) null else peer?.id ?: (if (previous == null) nextId + 1 else nextId)
         val row = DemoTransaction(rowId,
             current.account, current.description.trim(), if (current.income) amount else amount.negate(),
             current.category, current.payment,
@@ -368,6 +394,7 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
         )
     )
     model.ensureAccountNames(listOf(stringResource(R.string.current_account), stringResource(R.string.savings_account)))
+    model.ensureTransferPayment(transfer)
     val transactions = model.transactions
     var destination by model.destination
     var account by model.account
@@ -631,7 +658,6 @@ private fun EntryDialog(names: List<String>, model: DemoViewModel) {
                                     EntryDirection(model, draft)
                                     EntryDate(model, draft)
                                 }
-                                EntryTransfer(names, model, draft)
                                 EntryAmounts(model, draft, compact = true)
                                 EntryReferences(model, draft, compact = true)
                                 if (model.limitReached) Text(stringResource(R.string.vault_data_limit), color = MaterialTheme.colorScheme.error)
@@ -719,13 +745,12 @@ private fun EntryBasics(names: List<String>, model: DemoViewModel, draft: EntryD
     EntryAccounts(names, model, draft, horizontal = true)
     EntryDirection(model, draft)
     EntryDate(model, draft)
-    EntryTransfer(names, model, draft)
     EntryAmounts(model, draft)
 }
 
 @Composable
 private fun EntryReferences(model: DemoViewModel, draft: EntryDraft, compact: Boolean = false) {
-    if (compact) {
+    if (compact && !model.isTransferPayment(draft.payment)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(Modifier.weight(1f)) { EntryCategory(model, draft) }
             Box(Modifier.weight(1f)) { EntryPayment(model, draft) }
@@ -738,6 +763,10 @@ private fun EntryReferences(model: DemoViewModel, draft: EntryDraft, compact: Bo
 
 @Composable
 private fun EntryCategory(model: DemoViewModel, draft: EntryDraft) {
+    if (draft.transferTarget != null) {
+        Text(stringResource(R.string.transfer_category_excluded), style = MaterialTheme.typography.bodySmall)
+        return
+    }
     ReferencePicker(
         label = stringResource(R.string.category), selected = draft.category,
         options = model.categories, onSelect = { model.updateDraft(draft.copy(category = it)) },
@@ -755,19 +784,28 @@ private fun EntryCategory(model: DemoViewModel, draft: EntryDraft) {
 
 @Composable
 private fun EntryPayment(model: DemoViewModel, draft: EntryDraft) {
-    ReferencePicker(
-        label = stringResource(R.string.payment), selected = draft.payment,
-        options = model.payments, onSelect = { model.updateDraft(draft.copy(payment = it)) },
-        adding = draft.addingPayment, newName = draft.newPayment,
-        onBeginAdd = { model.updateDraft(draft.copy(addingPayment = true, newPayment = "")) },
-        onNameChange = { model.updateDraft(draft.copy(newPayment = it.take(60))) },
-        onCancelAdd = { model.updateDraft(draft.copy(addingPayment = false, newPayment = "")) },
-        onAdd = {
-            model.addPayment(draft.newPayment)?.let {
-                model.updateDraft(draft.copy(payment = it, addingPayment = false, newPayment = ""))
-            }
-        },
-    )
+    val linked = model.transactions.firstOrNull { it.id == draft.editingId }?.peerId != null
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Box(Modifier.weight(1f)) {
+            ReferencePicker(
+                label = stringResource(R.string.payment), selected = draft.payment,
+                options = if (linked) model.payments.filter(model::isTransferPayment) else model.payments,
+                onSelect = model::selectDraftPayment,
+                adding = draft.addingPayment, newName = draft.newPayment,
+                onBeginAdd = { model.updateDraft(draft.copy(addingPayment = true, newPayment = "")) },
+                onNameChange = { model.updateDraft(draft.copy(newPayment = it.take(60))) },
+                onCancelAdd = { model.updateDraft(draft.copy(addingPayment = false, newPayment = "")) },
+                onAdd = {
+                    model.addPayment(draft.newPayment)?.let {
+                        model.updateDraft(draft.copy(payment = it, transferTarget = null, addingPayment = false, newPayment = ""))
+                    }
+                }, allowAdd = !linked,
+            )
+        }
+        if (model.isTransferPayment(draft.payment)) Box(Modifier.weight(1f)) { TransferTargetPicker(model, draft, linked) }
+    }
+    if (draft.transferTarget != null) Text(stringResource(if (linked) R.string.transfer_edit_hint else R.string.transfer_conversion_hint),
+        style = MaterialTheme.typography.bodySmall)
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -775,7 +813,7 @@ private fun EntryPayment(model: DemoViewModel, draft: EntryDraft) {
 private fun ReferencePicker(
     label: String, selected: String, options: List<String>, onSelect: (String) -> Unit,
     adding: Boolean, newName: String, onBeginAdd: () -> Unit, onNameChange: (String) -> Unit,
-    onCancelAdd: () -> Unit, onAdd: () -> Unit,
+    onCancelAdd: () -> Unit, onAdd: () -> Unit, allowAdd: Boolean = true,
 ) {
     var expanded by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth()) {
@@ -787,8 +825,10 @@ private fun ReferencePicker(
             }
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 options.forEach { value -> DropdownMenuItem(text = { Text(value) }, onClick = { onSelect(value); expanded = false }) }
-                HorizontalDivider()
-                DropdownMenuItem(text = { Text(stringResource(R.string.add_reference, label)) }, onClick = { expanded = false; onBeginAdd() })
+                if (allowAdd) {
+                    HorizontalDivider()
+                    DropdownMenuItem(text = { Text(stringResource(R.string.add_reference, label)) }, onClick = { expanded = false; onBeginAdd() })
+                }
             }
         }
         if (adding) {
@@ -923,33 +963,24 @@ private fun EntryDate(model: DemoViewModel, draft: EntryDraft) {
 }
 
 @Composable
-private fun EntryTransfer(names: List<String>, model: DemoViewModel, draft: EntryDraft) {
-    val isTransfer = draft.transferTarget != null
+private fun TransferTargetPicker(model: DemoViewModel, draft: EntryDraft, linked: Boolean) {
     var expanded by remember { mutableStateOf(false) }
     Column {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(checked = isTransfer, enabled = draft.editingId == null && names.size > 1,
-                onCheckedChange = { enabled ->
-                    model.updateDraft(draft.copy(transferTarget = if (enabled) names.indices.firstOrNull { it != draft.account } else null,
-                        income = if (enabled) false else draft.income))
+        Text(stringResource(R.string.transfer_target_label), style = MaterialTheme.typography.labelLarge)
+        Box {
+            OutlinedButton(onClick = { expanded = true }, enabled = !linked, modifier = Modifier.fillMaxWidth()) {
+                Text(draft.transferTarget?.let { model.accountNames[it] } ?: stringResource(R.string.transfer_external))
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                DropdownMenuItem(text = { Text(stringResource(R.string.transfer_external)) }, onClick = {
+                    model.updateDraft(draft.copy(transferTarget = null)); expanded = false
                 })
-            Text(stringResource(R.string.transfer_internal))
-        }
-        if (isTransfer) {
-            Box {
-                OutlinedButton(onClick = { expanded = true }, enabled = draft.editingId == null) {
-                    Text(stringResource(R.string.transfer_other_account, names[requireNotNull(draft.transferTarget)]))
-                }
-                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                    names.forEachIndexed { index, name ->
-                        if (index != draft.account) DropdownMenuItem(text = { Text(name) }, onClick = {
-                            model.updateDraft(draft.copy(transferTarget = index)); expanded = false
-                        })
-                    }
+                model.accountNames.forEachIndexed { index, name ->
+                    if (index != draft.account) DropdownMenuItem(text = { Text(name) }, onClick = {
+                        model.updateDraft(draft.copy(transferTarget = index)); expanded = false
+                    })
                 }
             }
-            Text(stringResource(if (draft.editingId == null) R.string.transfer_hint else R.string.transfer_edit_hint),
-                style = MaterialTheme.typography.bodySmall)
         }
     }
 }

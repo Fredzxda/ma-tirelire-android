@@ -20,3 +20,7 @@
 - Chaque nouvelle version doit actualiser les ressources FR/EN release_notes_changes
   et release_notes_tests : nouveautes et scenarios manuels realisables. Le dialogue
   apparait apres deverrouillage et se retrouve dans les reglages.
+
+- Statistiques de revenus/depenses et par categorie : utiliser le perimetre
+  reportingTransactions(), qui exclut les deux cotes des virements internes
+  via peerId. Un virement externe sans lien reste une operation ordinaire.

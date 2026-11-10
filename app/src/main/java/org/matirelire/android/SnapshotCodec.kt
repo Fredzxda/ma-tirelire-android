@@ -9,6 +9,7 @@ internal data class LedgerData(
     val transactions: List<DemoTransaction>, val categories: List<String>,
     val payments: List<String>, val openings: List<BigDecimal>, val draft: EntryDraft?,
     val accountNames: List<String> = emptyList(),
+    val transferPayment: String? = null,
 )
 
 internal object SnapshotCodec {
@@ -24,8 +25,8 @@ internal object SnapshotCodec {
             .put("payment", draft.payment).put("addingCategory", draft.addingCategory).put("addingPayment", draft.addingPayment)
             .put("newCategory", draft.newCategory).put("newPayment", draft.newPayment)
             .put("editingId", draft.editingId ?: JSONObject.NULL).put("date", draft.date).put("transferTarget", draft.transferTarget ?: JSONObject.NULL) }
-        val result = JSONObject().put("schema", if (data.transactions.any { it.peerId != null } || data.draft?.transferTarget != null) 3 else if (data.accountNames.isEmpty()) 1 else 2)
-            .put("accountNames", JSONArray(data.accountNames)).put("transactions", rows)
+        val result = JSONObject().put("schema", if (data.transferPayment != null) 4 else if (data.transactions.any { it.peerId != null } || data.draft?.transferTarget != null) 3 else if (data.accountNames.isEmpty()) 1 else 2)
+            .put("transferPayment", data.transferPayment ?: JSONObject.NULL).put("accountNames", JSONArray(data.accountNames)).put("transactions", rows)
             .put("categories", JSONArray(data.categories)).put("payments", JSONArray(data.payments))
             .put("openings", JSONArray(data.openings.map { it.toPlainString() })).put("draft", d ?: JSONObject.NULL)
             .toString().toByteArray(Charsets.UTF_8)
@@ -53,7 +54,7 @@ internal object SnapshotCodec {
         require(!quoted && depth == 0)
         val root = JSONObject(text)
         val schema = root.getInt("schema")
-        require(schema in 1..3)
+        require(schema in 1..4)
         fun names(key: String): List<String> {
             val list = root.getJSONArray(key)
             require(list.length() in 1..500)
@@ -63,6 +64,7 @@ internal object SnapshotCodec {
         }
         val categories = names("categories")
         val payments = names("payments")
+        val transferPayment = if (schema == 4) root.getString("transferPayment").also { require(it in payments) } else null
         fun amount(text: String): BigDecimal {
             require(Regex("-?[0-9]{1,12}([.][0-9]{1,2})?").matches(text))
             return text.toBigDecimal().setScale(2)
@@ -70,7 +72,7 @@ internal object SnapshotCodec {
         val openingsJson = root.getJSONArray("openings")
         require(openingsJson.length() in 1..50)
         val openings = (0 until openingsJson.length()).map { amount(openingsJson.getString(it)) }
-        val accountNames = if (schema == 1 || (schema == 3 && root.getJSONArray("accountNames").length() == 0)) {
+        val accountNames = if (schema == 1 || (schema >= 3 && root.getJSONArray("accountNames").length() == 0)) {
             require(openings.size == 2)
             emptyList()
         } else names("accountNames").also { require(it.size == openings.size) }
@@ -91,7 +93,8 @@ internal object SnapshotCodec {
         val byId = rows.associateBy { it.id }
         rows.forEach { row ->
             row.peerId?.let { id ->
-                require(schema == 3)
+                require(schema >= 3)
+                if (schema == 4) require(row.payment == transferPayment)
                 val peer = requireNotNull(byId[id])
                 require(peer.id != row.id && peer.peerId == row.id && peer.account != row.account)
                 require(row.amount.signum() != 0 && row.amount.add(peer.amount).signum() == 0)
@@ -111,12 +114,12 @@ internal object SnapshotCodec {
                 require(draft.category in categories && draft.payment in payments)
                 require(draft.editingId == null || rows.any { row -> row.id == draft.editingId })
                 draft.transferTarget?.let { target ->
-                    require(schema == 3 && target in openings.indices && target != draft.account)
-                    if (draft.editingId == null) require(!draft.income)
+                    require(schema >= 3 && target in openings.indices && target != draft.account)
+                    if (schema == 4) require(draft.payment == transferPayment)
                 }
                 draft.editingId?.let { id ->
                     val edited = requireNotNull(byId[id])
-                    require((edited.peerId != null) == (draft.transferTarget != null))
+                    if (edited.peerId != null) require(draft.transferTarget != null)
                     if (edited.peerId != null) require(draft.account == edited.account &&
                         draft.transferTarget == byId[edited.peerId]?.account && draft.income == (edited.amount.signum() > 0))
                 }
@@ -124,6 +127,6 @@ internal object SnapshotCodec {
                 require(draft.newCategory.length <= 60 && draft.newPayment.length <= 60)
             }
         }
-        return LedgerData(rows, categories, payments, openings, d, accountNames)
+        return LedgerData(rows, categories, payments, openings, d, accountNames, transferPayment)
     }
 }
