@@ -76,8 +76,8 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">Series-only settings (frequency, end date, remaining count) save directly when transaction fields are unchanged. Recorded rows and the amount/description template stay intact. The scope dialog now uses one scrolling column with three evenly spaced buttons.</string>
-    <string name="release_notes_tests">1. Change only the end date: no popup, transaction and confirmation unchanged.\n2. Repeat with remaining count and frequency.\n3. Also change amount or transaction date: the scope dialog must appear.\n4. Check complete text and all three buttons in portrait and landscape; scroll if needed.\n5. Cancel the dialog: no transaction changed.</string>
+    <string name="release_notes_changes">View upcoming recurring occurrences from Transactions: choose 30, 90 or 365 days. It uses the current schedule and amounts of active series. Transfers use the sign appropriate to the account. Viewing creates no transactions and changes no balances.</string>
+    <string name="release_notes_tests">1. In an account with an active series, open Upcoming occurrences and try 30, 90 and 365 days.\n2. Check dates, amounts and series limits. Stopped series must not appear.\n3. Edit a future series template and reopen: predictions follow while recorded transactions stay unchanged.\n4. For a transfer, check the opposite amount in the other account.\n5. Open/close repeatedly: no new transactions or balance changes.\n6. Check portrait, landscape and return after locking.</string>
     <string name="account_add">Add account</string>
     <string name="account_edit">Account settings</string>
     <string name="account_configure">Configure %1$s</string>
@@ -150,4 +150,13 @@
     <string name="repeat_remaining_hint">Number of new occurrences to generate, excluding recorded transactions. Zero ends the series; blank is unlimited. Choose a count OR an end date. The next date is after today and after already recorded/consumed occurrences.</string>
     <string name="repeat_check_parameters">Check series settings</string>
     <string name="repeat_save_series">Save series</string>
+    <string name="upcoming_open">Upcoming occurrences</string>
+    <string name="upcoming_title">Upcoming · %1$s</string>
+    <string name="upcoming_close">Close</string>
+    <string name="upcoming_days">%1$d days</string>
+    <string name="upcoming_until">After today, through %1$s inclusive</string>
+    <string name="upcoming_hint">Active recurring series only: no transactions created and no balances changed. Amounts may be adjusted when due. Already recorded transactions are not listed here.</string>
+    <string name="upcoming_empty">No new recurring occurrence in this period.</string>
+    <string name="upcoming_transfer">Internal transfer · other account: %1$s</string>
+    <string name="upcoming_truncated">Showing the first 500 occurrences. Select a shorter period.</string>
 </resources>

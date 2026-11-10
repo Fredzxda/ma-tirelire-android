@@ -76,8 +76,8 @@
     <string name="release_notes_title">Nouveautés · %1$s</string>
     <string name="release_notes_test_title">À vérifier avec des données fictives</string>
     <string name="release_notes_understood">Compris</string>
-    <string name="release_notes_changes">Les paramètres propres à la série (fréquence, date de fin, nombre restant) sont enregistrés directement quand les champs de l’opération sont inchangés. Les écritures et le modèle de montant/libellé restent intacts. Le dialogue des modifications communes utilise désormais une colonne défilante et trois boutons régulièrement espacés.</string>
-    <string name="release_notes_tests">1. Modifier seulement la date de fin : aucun popup, écriture et confirmation inchangées.\n2. Faire de même avec le nombre restant et la fréquence.\n3. Modifier aussi le montant ou la date de l’opération : le dialogue de portée doit apparaître.\n4. Vérifier le texte complet et les trois boutons en portrait et paysage ; faire défiler si nécessaire.\n5. Annuler le dialogue : aucune opération modifiée.</string>
+    <string name="release_notes_changes">Vue des échéances périodiques à venir depuis la liste des opérations : choisissez 30, 90 ou 365 jours. Elle utilise le calendrier et les montants actuels des séries actives. Les virements apparaissent avec le signe adapté au compte. Cette consultation ne crée aucune écriture et ne modifie pas les soldes.</string>
+    <string name="release_notes_tests">1. Dans un compte avec une série active, ouvrir Échéances à venir ; essayer 30, 90 et 365 jours.\n2. Vérifier les dates, montants et limites de série. Une série arrêtée ne doit pas apparaître.\n3. Modifier le modèle futur d’une série puis rouvrir la vue : les prévisions doivent suivre. Les écritures enregistrées restent inchangées.\n4. Pour un virement, vérifier le montant opposé dans l’autre compte.\n5. Ouvrir/fermer plusieurs fois : aucune nouvelle opération et aucun solde modifié.\n6. Vérifier portrait, paysage et retour après verrouillage.</string>
     <string name="account_add">Ajouter un compte</string>
     <string name="account_edit">Configurer le compte</string>
     <string name="account_configure">Configurer %1$s</string>
@@ -150,4 +150,13 @@
     <string name="repeat_remaining_hint">Nombre de nouvelles échéances à générer, hors écritures déjà enregistrées. Zéro termine la série ; vide signifie sans limite. Choisissez un nombre OU une date de fin. La prochaine date sera après aujourd’hui et après les échéances déjà enregistrées/consommées.</string>
     <string name="repeat_check_parameters">Vérifiez les paramètres de série</string>
     <string name="repeat_save_series">Enregistrer la série</string>
+    <string name="upcoming_open">Échéances à venir</string>
+    <string name="upcoming_title">À venir · %1$s</string>
+    <string name="upcoming_close">Fermer</string>
+    <string name="upcoming_days">%1$d jours</string>
+    <string name="upcoming_until">Après aujourd’hui et jusqu’au %1$s inclus</string>
+    <string name="upcoming_hint">Prévisions des séries actives uniquement : aucune écriture créée et aucun solde modifié. Les montants pourront être ajustés à l’échéance. Les opérations déjà enregistrées ne sont pas listées ici.</string>
+    <string name="upcoming_empty">Aucune nouvelle échéance périodique dans cette période.</string>
+    <string name="upcoming_transfer">Virement interne · autre compte : %1$s</string>
+    <string name="upcoming_truncated">Affichage limité aux 500 premières échéances. Choisissez une période plus courte.</string>
 </resources>

@@ -73,3 +73,10 @@ Fréquence, jour, limites, montant et références sont modifiables pour les
 prochaines générations. Cette version remplace donc la limitation de 0.5.0
 sur le changement de calendrier et la propagation de 0.5.1. Projection future
 et rappels restent différés. Voir [VALIDATION-0.5.2.md](VALIDATION-0.5.2.md).
+
+## Échéances à venir en 0.5.4-dev
+
+Première vue de projection par compte sur 30/90/365 jours, en lecture seule,
+limitée aux séries actives et aux occurrences non encore enregistrées après
+aujourd’hui. Les soldes prévisionnels globaux et les rappels restent différés.
+Voir [VALIDATION-0.5.4.md](VALIDATION-0.5.4.md).

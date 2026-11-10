@@ -1,9 +1,13 @@
 # Ma Tirelire — Android
 
-Prototype de sécurité **0.5.3-dev** du portage de Ma Tirelire Palm.
+Prototype de sécurité **0.5.4-dev** du portage de Ma Tirelire Palm.
 Android 12 minimum, téléphone et tablette, français et anglais.
 
 ## Utilisation de cette version
+
+Échéances périodiques à venir par compte sur 30, 90 ou 365 jours : consultation
+en lecture seule des séries actives, sans génération ni modification des soldes.
+Les opérations déjà enregistrées ne sont pas répétées dans cette vue.
 
 Si seuls la fréquence, la fin ou le nombre restant changent, la série est
 enregistrée directement : aucun dialogue et aucune modification de cette écriture.

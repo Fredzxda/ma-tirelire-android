@@ -19,6 +19,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -641,6 +642,9 @@ private fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, clea
 
 @Composable
 private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDecimal, clearedBalance: BigDecimal, transactions: List<DemoTransaction>, onAccount: (Int) -> Unit, onToggle: (Long) -> Unit, onReconcile: () -> Unit, onEdit: (Long) -> Unit) {
+    val model: DemoViewModel = viewModel()
+    var showUpcoming by rememberSaveable { mutableStateOf(false) }
+    if (showUpcoming) UpcomingDialog(model, account, names) { showUpcoming = false }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 110.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -653,7 +657,12 @@ private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDe
             Text(stringResource(R.string.cleared_balance), color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(top = 8.dp))
             Text(money(clearedBalance), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
         }
-        item { OutlinedButton(onClick = onReconcile) { Text(stringResource(R.string.reconcile_open)) } }
+        item {
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = onReconcile) { Text(stringResource(R.string.reconcile_open)) }
+                OutlinedButton(onClick = { showUpcoming = true }) { Text(stringResource(R.string.upcoming_open)) }
+            }
+        }
         item { Text(stringResource(R.string.pointing_hint), style = MaterialTheme.typography.bodySmall) }
         if (transactions.isEmpty()) item { Text(stringResource(R.string.empty_transactions)) }
         items(transactions, key = { it.id }) { tx ->
@@ -1238,6 +1247,59 @@ private fun RepeatEndDate(model: DemoViewModel, draft: EntryDraft) {
         }
         if (draft.repeatUntil.isNotEmpty()) TextButton(onClick = { model.selectRepeatEnd(null) }) {
             Text(stringResource(R.string.repeat_clear_end))
+        }
+    }
+}
+
+@Composable
+private fun UpcomingDialog(model: DemoViewModel, account: Int, names: List<String>, onDismiss: () -> Unit) {
+    var days by rememberSaveable { mutableIntStateOf(90) }
+    var today by remember { mutableStateOf(java.time.LocalDate.now()) }
+    val locale = LocalConfiguration.current.locales[0]
+    LaunchedEffect(Unit) {
+        while (kotlinx.coroutines.currentCoroutineContext().isActive) {
+            today = java.time.LocalDate.now()
+            kotlinx.coroutines.delay(60_000)
+        }
+    }
+    val rules = model.rules.toList()
+    val upcoming = remember(rules, account, today, days) { UpcomingOccurrences.project(rules, account, today, days) }
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn,
+        usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+        Surface(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(8.dp), shape = MaterialTheme.shapes.large) {
+            Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.upcoming_title, names[account]), style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.weight(1f))
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.upcoming_close)) }
+                }
+                Text(stringResource(R.string.upcoming_hint), style = MaterialTheme.typography.bodySmall)
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(30, 90, 365).forEach { horizon ->
+                        FilterChip(selected = days == horizon, onClick = { days = horizon },
+                            label = { Text(stringResource(R.string.upcoming_days, horizon)) })
+                    }
+                }
+                Text(stringResource(R.string.upcoming_until, OperationDates.display(today.plusDays(days.toLong()).toString(), locale)),
+                    style = MaterialTheme.typography.bodySmall)
+                LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (upcoming.items.isEmpty()) item { Text(stringResource(R.string.upcoming_empty)) }
+                    items(upcoming.items, key = { "${it.seriesId}:${it.index}" }) { item ->
+                        Card(Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(item.description, modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                                    Text(money(item.amount), fontWeight = FontWeight.Bold)
+                                }
+                                Text(OperationDates.display(item.date.toString(), locale))
+                                item.otherAccount?.let { other -> Text(stringResource(R.string.upcoming_transfer, names[other]),
+                                    style = MaterialTheme.typography.bodySmall) }
+                            }
+                        }
+                    }
+                    if (upcoming.truncated) item { Text(stringResource(R.string.upcoming_truncated)) }
+                }
+            }
         }
     }
 }
