@@ -1,5 +1,6 @@
 package org.matirelire.android
 
+import android.app.DatePickerDialog
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.fragment.app.FragmentActivity
@@ -20,6 +21,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -91,6 +93,7 @@ internal data class EntryDraft(
     val newCategory: String = "",
     val newPayment: String = "",
     val editingId: Long? = null,
+    val date: String = "",
 )
 
 internal data class ReconciliationDraft(val account: Int, val target: String = "", val selected: Set<Long>,
@@ -220,9 +223,9 @@ class DemoViewModel : ViewModel() {
     internal fun addCategory(text: String): String? = addReference(categories, text)
     internal fun addPayment(text: String): String? = addReference(payments, text)
 
-    internal fun beginEntry() {
+    internal fun beginEntry(today: java.time.LocalDate = java.time.LocalDate.now()) {
         if (draft == null) {
-            draft = EntryDraft(account = account.intValue,
+            draft = EntryDraft(account = account.intValue, date = today.toString(),
                 category = categories.firstOrNull().orEmpty(), payment = payments.firstOrNull().orEmpty())
             onChange?.invoke()
         }
@@ -234,7 +237,7 @@ class DemoViewModel : ViewModel() {
         val separator = java.text.DecimalFormatSymbols.getInstance(locale).decimalSeparator
         draft = EntryDraft(account = row.account, income = row.amount.signum() > 0,
             amount = row.amount.abs().toPlainString().replace('.', separator),
-            description = row.description, category = row.category, payment = row.payment, editingId = id)
+            description = row.description, category = row.category, payment = row.payment, editingId = id, date = if (OperationDates.parse(row.date) != null) row.date else "")
         onChange?.invoke()
     }
 
@@ -258,7 +261,9 @@ class DemoViewModel : ViewModel() {
         accountNames.clear(); accountNames.addAll(data.accountNames)
         reconciliation = null
         accountDraft = null
-        draft = data.draft
+        draft = data.draft?.let {
+            if (it.date.isEmpty() && it.editingId == null) it.copy(date = java.time.LocalDate.now().toString()) else it
+        }
         initialized = true
         account.intValue = data.draft?.account ?: 0
     }
@@ -276,7 +281,8 @@ class DemoViewModel : ViewModel() {
         if (current.editingId == null && transactions.size >= 10_000) { limitReached = true; return false }
         val amount = Money.parseAmount(current.amount, locale)
         if (amount == null || current.description.isBlank() || current.account !in openings.indices ||
-            current.category !in categories || current.payment !in payments || current.addingCategory || current.addingPayment) {
+            current.category !in categories || current.payment !in payments || current.addingCategory || current.addingPayment ||
+            (current.date.isNotEmpty() && OperationDates.parse(current.date) == null)) {
             draft = current.copy(attempted = true)
             return false
         }
@@ -286,7 +292,9 @@ class DemoViewModel : ViewModel() {
         val previous = index?.let { transactions[it] }
         val row = DemoTransaction(previous?.id ?: ((transactions.maxOfOrNull { it.id } ?: 0) + 1),
             current.account, current.description.trim(), if (current.income) amount else amount.negate(),
-            current.category, current.payment, previous?.date ?: date, previous?.cleared ?: false)
+            current.category, current.payment,
+            current.date.ifEmpty { previous?.date ?: OperationDates.parse(date)?.toString() ?: return false },
+            previous?.cleared ?: false)
         if (index == null) transactions.add(row) else transactions[index] = row
         account.intValue = current.account
         destination.intValue = 1
@@ -365,7 +373,7 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
                     }
                 },
                 floatingActionButton = {
-                    if (destination != 2) ExtendedFloatingActionButton(onClick = model::beginEntry) {
+                    if (destination != 2) ExtendedFloatingActionButton(onClick = { model.beginEntry() }) {
                         Text(stringResource(R.string.enter_transaction))
                     }
                 },
@@ -478,7 +486,7 @@ private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDe
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(tx.description, style = MaterialTheme.typography.titleMedium)
-                            Text(tx.date, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
+                            Text(OperationDates.display(tx.date, LocalConfiguration.current.locales[0]), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
                         }
                         Text(money(tx.amount), fontWeight = FontWeight.Bold, color = if (tx.amount.signum() < 0) Color(0xFF944C3C) else MaterialTheme.colorScheme.primary)
                     }
@@ -581,7 +589,10 @@ private fun EntryDialog(names: List<String>, model: DemoViewModel) {
                             VerticalDivider()
                             Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(vertical = 8.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                EntryDirection(model, draft)
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    EntryDirection(model, draft)
+                                    EntryDate(model, draft)
+                                }
                                 EntryAmounts(model, draft, compact = true)
                                 EntryReferences(model, draft, compact = true)
                                 if (model.limitReached) Text(stringResource(R.string.vault_data_limit), color = MaterialTheme.colorScheme.error)
@@ -664,6 +675,7 @@ private fun EntryDescription(model: DemoViewModel, draft: EntryDraft, modifier: 
 private fun EntryBasics(names: List<String>, model: DemoViewModel, draft: EntryDraft) {
     EntryAccounts(names, model, draft, horizontal = true)
     EntryDirection(model, draft)
+    EntryDate(model, draft)
     EntryAmounts(model, draft)
 }
 
@@ -767,8 +779,7 @@ private fun ReleaseNotesDialog(vault: VaultController) {
 private fun EntryActions(model: DemoViewModel, draft: EntryDraft, locale: Locale) {
     TextButton(onClick = model::cancelEntry) { Text(stringResource(R.string.cancel)) }
     Button(onClick = {
-        val date = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter
-            .ofLocalizedDate(java.time.format.FormatStyle.MEDIUM).withLocale(locale))
+        val date = java.time.LocalDate.now().toString()
         model.saveEntry(locale, date)
     }, enabled = !draft.addingCategory && !draft.addingPayment) {
         Text(stringResource(R.string.save))
@@ -825,7 +836,7 @@ private fun ReconciliationDialog(model: DemoViewModel, names: List<String>) {
                             Checkbox(checked = row.id in draft.selected, onCheckedChange = { model.reconciliationToggle(row.id) })
                             Column(Modifier.weight(1f)) {
                                 Text(row.description)
-                                Text(row.date, style = MaterialTheme.typography.bodySmall)
+                                Text(OperationDates.display(row.date, LocalConfiguration.current.locales[0]), style = MaterialTheme.typography.bodySmall)
                             }
                             Text(money(row.amount))
                         }
@@ -839,5 +850,30 @@ private fun ReconciliationDialog(model: DemoViewModel, names: List<String>) {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun EntryDate(model: DemoViewModel, draft: EntryDraft) {
+    val context = LocalContext.current
+    val locale = LocalConfiguration.current.locales[0]
+    var picker by remember { mutableStateOf<DatePickerDialog?>(null) }
+    DisposableEffect(Unit) { onDispose { picker?.dismiss() } }
+    val legacy = model.transactions.firstOrNull { it.id == draft.editingId }?.date
+    val shown = draft.date.ifEmpty { legacy.orEmpty() }
+    Column {
+        OutlinedButton(onClick = {
+            val date = OperationDates.parse(draft.date) ?: java.time.LocalDate.now()
+            picker?.dismiss()
+            picker = DatePickerDialog(context, { _, year, month, day ->
+                val current = model.draft
+                if (current != null) model.updateDraft(current.copy(date = java.time.LocalDate.of(year, month + 1, day).toString()))
+            }, date.year, date.monthValue - 1, date.dayOfMonth).apply {
+                window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                show()
+            }
+        }) { Text(stringResource(R.string.operation_date, OperationDates.display(shown, locale))) }
+        if (draft.date.isEmpty() && legacy != null) Text(stringResource(R.string.operation_date_legacy),
+            style = MaterialTheme.typography.bodySmall)
     }
 }

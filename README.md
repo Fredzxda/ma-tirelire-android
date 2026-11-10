@@ -1,9 +1,13 @@
 # Ma Tirelire — Android
 
-Prototype de sécurité **0.3.4-dev** du portage de Ma Tirelire Palm.
+Prototype de sécurité **0.3.5-dev** du portage de Ma Tirelire Palm.
 Android 12 minimum, téléphone et tablette, français et anglais.
 
 ## Utilisation de cette version
+
+Date modifiable dans la saisie et la modification. Une nouvelle saisie propose
+la date du jour ; le brouillon garde la date choisie. Les anciens libellés de
+date sont conservés sans interprétation et peuvent être remplacés explicitement.
 
 Appui sur une opération pour la modifier ; corbeille dans la fiche uniquement.
 Nouveautés et points à tester affichés une fois par version après déverrouillage,

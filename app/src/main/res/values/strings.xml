@@ -76,8 +76,8 @@
     <string name="release_notes_title">Nouveautés · %1$s</string>
     <string name="release_notes_test_title">À vérifier avec des données fictives</string>
     <string name="release_notes_understood">Compris</string>
-    <string name="release_notes_changes">Pointage guidé par compte : saisissez le solde du relevé bancaire, cochez les opérations et suivez le solde pointé proposé et son écart avec le relevé. La confirmation est possible quand cet écart est nul. Annuler conserve le pointage précédent.</string>
-    <string name="release_notes_tests">1. Dans les opérations, ouvrir Pointer avec un relevé. Saisir un solde cible.\n2. Cocher et décocher des opérations : vérifier le solde proposé et l’écart. Les opérations des autres comptes ne doivent pas changer.\n3. Avec un écart non nul : confirmation désactivée. Avec un écart nul : confirmer et vérifier le solde pointé.\n4. Refaire un essai puis annuler : retrouver le pointage précédent.\n5. Tourner l’écran : session conservée. Verrouiller : session non confirmée abandonnée.\n6. Après confirmation, verrouiller et rouvrir : pointage conservé.</string>
+    <string name="release_notes_changes">La date de l’opération est maintenant modifiable en saisie et en édition. Une nouvelle saisie propose la date du jour ; le brouillon conserve votre choix. Les nouvelles dates suivent le format du téléphone. Les anciens libellés de date sont préservés sans conversion supposée.</string>
+    <string name="release_notes_tests">1. Nouvelle saisie : vérifier la date du jour proposée. Choisir une date passée et enregistrer.\n2. Ouvrir cette opération et changer sa date : une seule ligne, montant et pointage conservés.\n3. Choisir une date puis tourner l’écran, verrouiller et rouvrir : le brouillon garde son choix.\n4. Annuler le calendrier : la date ne change pas.\n5. Sauvegarder et restaurer : retrouver les dates choisies.\n6. Une ancienne date en texte reste identique tant que vous ne la remplacez pas explicitement.</string>
     <string name="account_add">Ajouter un compte</string>
     <string name="account_edit">Configurer le compte</string>
     <string name="account_configure">Configurer %1$s</string>
@@ -93,4 +93,6 @@
     <string name="reconcile_difference">Écart restant (relevé − pointé) : %1$s</string>
     <string name="reconcile_invalid">Indiquez un solde valide, nul ou négatif si nécessaire.</string>
     <string name="reconcile_confirm">Confirmer le pointage</string>
+    <string name="operation_date">Date : %1$s</string>
+    <string name="operation_date_legacy">Ancienne date conservée telle quelle. Choisissez une date pour la remplacer.</string>
 </resources>

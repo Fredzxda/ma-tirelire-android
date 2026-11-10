@@ -76,8 +76,8 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">Guided reconciliation per account: enter the bank statement balance, select transactions and track the proposed cleared balance and remaining difference. Confirmation is available when the difference is zero. Cancel keeps the previous clearing state.</string>
-    <string name="release_notes_tests">1. In Transactions, open Reconcile with a statement and enter a target balance.\n2. Select and deselect transactions: check the proposed balance and difference. Other accounts must remain unchanged.\n3. A nonzero difference disables confirmation. With zero difference, confirm and check the cleared balance.\n4. Try again and cancel: previous clearing must remain.\n5. Rotate: session remains. Lock: unconfirmed session is discarded.\n6. After confirmation, lock and reopen: clearing remains.</string>
+    <string name="release_notes_changes">Transaction dates can now be changed when creating or editing. A new entry defaults to today; the draft keeps your choice. New dates follow the phone locale. Legacy date labels are preserved without guessing their meaning.</string>
+    <string name="release_notes_tests">1. New entry: check today is proposed. Choose a past date and save.\n2. Edit its date: one row only, amount and clearing preserved.\n3. Choose a date, rotate, lock and reopen: the draft keeps your choice.\n4. Cancel the calendar: no date change.\n5. Back up and restore: recover the selected dates.\n6. Legacy date text remains unchanged until explicitly replaced.</string>
     <string name="account_add">Add account</string>
     <string name="account_edit">Account settings</string>
     <string name="account_configure">Configure %1$s</string>
@@ -93,4 +93,6 @@
     <string name="reconcile_difference">Remaining difference (statement − cleared): %1$s</string>
     <string name="reconcile_invalid">Enter a valid balance, including zero or a negative amount if needed.</string>
     <string name="reconcile_confirm">Confirm reconciliation</string>
+    <string name="operation_date">Date: %1$s</string>
+    <string name="operation_date_legacy">Legacy date kept as-is. Choose a date to replace it.</string>
 </resources>
