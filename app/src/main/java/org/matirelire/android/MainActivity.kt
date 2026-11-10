@@ -78,6 +78,7 @@ internal data class DemoTransaction(
     val payment: String,
     val date: String,
     val cleared: Boolean = false,
+    val peerId: Long? = null,
 )
 
 internal data class EntryDraft(
@@ -93,6 +94,7 @@ internal data class EntryDraft(
     val newCategory: String = "",
     val newPayment: String = "",
     val editingId: Long? = null,
+    val transferTarget: Int? = null,
     val date: String = "",
 )
 
@@ -237,15 +239,25 @@ class DemoViewModel : ViewModel() {
         val separator = java.text.DecimalFormatSymbols.getInstance(locale).decimalSeparator
         draft = EntryDraft(account = row.account, income = row.amount.signum() > 0,
             amount = row.amount.abs().toPlainString().replace('.', separator),
-            description = row.description, category = row.category, payment = row.payment, editingId = id, date = if (OperationDates.parse(row.date) != null) row.date else "")
+            description = row.description, category = row.category, payment = row.payment, editingId = id,
+            transferTarget = row.peerId?.let { peer -> transactions.firstOrNull { it.id == peer }?.account }, date = if (OperationDates.parse(row.date) != null) row.date else "")
         onChange?.invoke()
     }
 
     internal fun deleteEntry(id: Long) {
-        if (transactions.removeAll { it.id == id }) {
-            if (draft?.editingId == id) draft = null
-            onChange?.invoke()
+        val row = transactions.firstOrNull { it.id == id } ?: return
+        val ids = setOfNotNull(row.id, row.peerId)
+        if (transactions.removeAll { it.id in ids }) {
+            if (draft?.editingId in ids) draft = null
+            onChange?.invoke() // one encrypted snapshot deletes both sides
         }
+    }
+
+    internal fun changeDraftAccount(index: Int) {
+        val current = draft ?: return
+        if (current.editingId != null && current.transferTarget != null) return
+        val target = if (current.transferTarget == index) openings.indices.firstOrNull { it != index } else current.transferTarget
+        updateDraft(current.copy(account = index, transferTarget = target))
     }
 
     internal fun updateDraft(next: EntryDraft) { if (draft != null) { draft = next.copy(attempted = false); onChange?.invoke() } }
@@ -278,7 +290,7 @@ class DemoViewModel : ViewModel() {
 
     internal fun saveEntry(locale: Locale, date: String): Boolean {
         val current = draft ?: return false
-        if (current.editingId == null && transactions.size >= 10_000) { limitReached = true; return false }
+        if (current.editingId == null && transactions.size + (if (current.transferTarget == null) 1 else 2) > 10_000) { limitReached = true; return false }
         val amount = Money.parseAmount(current.amount, locale)
         if (amount == null || current.description.isBlank() || current.account !in openings.indices ||
             current.category !in categories || current.payment !in payments || current.addingCategory || current.addingPayment ||
@@ -290,12 +302,35 @@ class DemoViewModel : ViewModel() {
         // A missing target must never turn an edit into a new operation.
         if (index != null && index < 0) return false
         val previous = index?.let { transactions[it] }
-        val row = DemoTransaction(previous?.id ?: ((transactions.maxOfOrNull { it.id } ?: 0) + 1),
+        val peer = previous?.peerId?.let { peerId -> transactions.firstOrNull { it.id == peerId } }
+        val target = current.transferTarget
+        if (previous != null && ((previous.peerId != null) != (target != null))) return false
+        if (target != null && (target !in openings.indices || target == current.account ||
+                (previous == null && current.income) ||
+                (previous != null && (peer == null || previous.account != current.account || peer.account != target || current.income != (previous.amount.signum() > 0))))) {
+            draft = current.copy(attempted = true); return false
+        }
+        val nextId = (transactions.maxOfOrNull { it.id } ?: 0) + 1
+        if (previous == null && (nextId <= 0 || nextId >= Long.MAX_VALUE - 1)) return false
+        val rowId = previous?.id ?: nextId
+        val peerId = if (target == null) null else peer?.id ?: (nextId + 1)
+        val row = DemoTransaction(rowId,
             current.account, current.description.trim(), if (current.income) amount else amount.negate(),
             current.category, current.payment,
             current.date.ifEmpty { previous?.date ?: OperationDates.parse(date)?.toString() ?: return false },
-            previous?.cleared ?: false)
-        if (index == null) transactions.add(row) else transactions[index] = row
+            previous?.cleared ?: false, peerId)
+        val nextRows = transactions.toMutableList()
+        if (index == null) nextRows.add(row) else nextRows[index] = row
+        if (target != null) {
+            val counterpart = row.copy(id = requireNotNull(peerId), account = target, amount = row.amount.negate(),
+                cleared = peer?.cleared ?: false, peerId = row.id)
+            val peerIndex = peer?.let { old -> nextRows.indexOfFirst { it.id == old.id } }
+            if (peerIndex == null) nextRows.add(counterpart) else nextRows[peerIndex] = counterpart
+        }
+        // Validate the complete pair before exposing it or invoking persistence.
+        val checked = SnapshotCodec.encode(exportData().copy(transactions = nextRows, draft = null))
+        checked.fill(0)
+        transactions.clear(); transactions.addAll(nextRows)
         account.intValue = current.account
         destination.intValue = 1
         draft = null
@@ -490,6 +525,9 @@ private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDe
                         }
                         Text(money(tx.amount), fontWeight = FontWeight.Bold, color = if (tx.amount.signum() < 0) Color(0xFF944C3C) else MaterialTheme.colorScheme.primary)
                     }
+                    if (tx.peerId != null) {
+                        Text(stringResource(R.string.transfer_linked), style = MaterialTheme.typography.labelMedium)
+                    }
                     Text("${tx.category} · ${tx.payment}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 8.dp))
                     Row(Modifier.fillMaxWidth().clickable { onToggle(tx.id) }, verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(checked = tx.cleared, onCheckedChange = { onToggle(tx.id) })
@@ -593,6 +631,7 @@ private fun EntryDialog(names: List<String>, model: DemoViewModel) {
                                     EntryDirection(model, draft)
                                     EntryDate(model, draft)
                                 }
+                                EntryTransfer(names, model, draft)
                                 EntryAmounts(model, draft, compact = true)
                                 EntryReferences(model, draft, compact = true)
                                 if (model.limitReached) Text(stringResource(R.string.vault_data_limit), color = MaterialTheme.colorScheme.error)
@@ -615,7 +654,7 @@ private fun EntryDialog(names: List<String>, model: DemoViewModel) {
     if (confirmDelete && toDelete != null) AlertDialog(
         onDismissRequest = { confirmDelete = false },
         title = { Text(stringResource(R.string.delete_transaction)) },
-        text = { Text(stringResource(R.string.delete_transaction_warning, toDelete.description, money(toDelete.amount))) },
+        text = { Text(stringResource(if (toDelete.peerId == null) R.string.delete_transaction_warning else R.string.transfer_delete_warning, toDelete.description, money(toDelete.amount))) },
         confirmButton = { TextButton(onClick = { model.deleteEntry(toDelete.id) }) { Text(stringResource(R.string.delete_action)) } },
         dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.cancel)) } },
         properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn),
@@ -631,17 +670,21 @@ private fun EntryAccounts(names: List<String>, model: DemoViewModel, draft: Entr
         ) {
             names.forEachIndexed { index, name ->
                 FilterChip(selected = draft.account == index,
-                    onClick = { model.updateDraft(draft.copy(account = index)) },
+                    onClick = { model.changeDraftAccount(index) }, enabled = draft.editingId == null || draft.transferTarget == null,
                     label = { Text(name, maxLines = 1) })
             }
         }
     } else {
-        names.forEachIndexed { index, name -> FilterChip(selected = draft.account == index, onClick = { model.updateDraft(draft.copy(account = index)) }, modifier = Modifier.fillMaxWidth(), label = { Text(name) }) }
+        names.forEachIndexed { index, name -> FilterChip(selected = draft.account == index, onClick = { model.changeDraftAccount(index) }, enabled = draft.editingId == null || draft.transferTarget == null, modifier = Modifier.fillMaxWidth(), label = { Text(name) }) }
     }
 }
 
 @Composable
 private fun EntryDirection(model: DemoViewModel, draft: EntryDraft) {
+    if (draft.transferTarget != null) {
+        Text(stringResource(if (draft.income) R.string.transfer_received else R.string.transfer_sent))
+        return
+    }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         FilterChip(selected = !draft.income, onClick = { model.updateDraft(draft.copy(income = false)) }, label = { Text(stringResource(R.string.expense)) })
         FilterChip(selected = draft.income, onClick = { model.updateDraft(draft.copy(income = true)) }, label = { Text(stringResource(R.string.income)) })
@@ -676,6 +719,7 @@ private fun EntryBasics(names: List<String>, model: DemoViewModel, draft: EntryD
     EntryAccounts(names, model, draft, horizontal = true)
     EntryDirection(model, draft)
     EntryDate(model, draft)
+    EntryTransfer(names, model, draft)
     EntryAmounts(model, draft)
 }
 
@@ -875,5 +919,37 @@ private fun EntryDate(model: DemoViewModel, draft: EntryDraft) {
         }) { Text(stringResource(R.string.operation_date, OperationDates.display(shown, locale))) }
         if (draft.date.isEmpty() && legacy != null) Text(stringResource(R.string.operation_date_legacy),
             style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+@Composable
+private fun EntryTransfer(names: List<String>, model: DemoViewModel, draft: EntryDraft) {
+    val isTransfer = draft.transferTarget != null
+    var expanded by remember { mutableStateOf(false) }
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = isTransfer, enabled = draft.editingId == null && names.size > 1,
+                onCheckedChange = { enabled ->
+                    model.updateDraft(draft.copy(transferTarget = if (enabled) names.indices.firstOrNull { it != draft.account } else null,
+                        income = if (enabled) false else draft.income))
+                })
+            Text(stringResource(R.string.transfer_internal))
+        }
+        if (isTransfer) {
+            Box {
+                OutlinedButton(onClick = { expanded = true }, enabled = draft.editingId == null) {
+                    Text(stringResource(R.string.transfer_other_account, names[requireNotNull(draft.transferTarget)]))
+                }
+                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    names.forEachIndexed { index, name ->
+                        if (index != draft.account) DropdownMenuItem(text = { Text(name) }, onClick = {
+                            model.updateDraft(draft.copy(transferTarget = index)); expanded = false
+                        })
+                    }
+                }
+            }
+            Text(stringResource(if (draft.editingId == null) R.string.transfer_hint else R.string.transfer_edit_hint),
+                style = MaterialTheme.typography.bodySmall)
+        }
     }
 }

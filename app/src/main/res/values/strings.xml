@@ -76,8 +76,8 @@
     <string name="release_notes_title">Nouveautés · %1$s</string>
     <string name="release_notes_test_title">À vérifier avec des données fictives</string>
     <string name="release_notes_understood">Compris</string>
-    <string name="release_notes_changes">La date de l’opération est maintenant modifiable en saisie et en édition. Une nouvelle saisie propose la date du jour ; le brouillon conserve votre choix. Les nouvelles dates suivent le format du téléphone. Les anciens libellés de date sont préservés sans conversion supposée.</string>
-    <string name="release_notes_tests">1. Nouvelle saisie : vérifier la date du jour proposée. Choisir une date passée et enregistrer.\n2. Ouvrir cette opération et changer sa date : une seule ligne, montant et pointage conservés.\n3. Choisir une date puis tourner l’écran, verrouiller et rouvrir : le brouillon garde son choix.\n4. Annuler le calendrier : la date ne change pas.\n5. Sauvegarder et restaurer : retrouver les dates choisies.\n6. Une ancienne date en texte reste identique tant que vous ne la remplacez pas explicitement.</string>
+    <string name="release_notes_changes">Virements internes en euros : une saisie crée deux écritures opposées liées. Ouvrez un côté pour modifier montant, date et libellé des deux opérations. Le pointage reste indépendant. La corbeille supprime les deux côtés après confirmation. Les anciennes opérations avec un moyen nommé Virement ne sont pas automatiquement liées.</string>
+    <string name="release_notes_tests">1. Nouvelle saisie : cocher Virement vers un autre compte du coffre, choisir l’autre compte et enregistrer.\n2. Vérifier le débit et le crédit opposés : le total du coffre ne change pas.\n3. Modifier montant ou date depuis le compte qui reçoit : les deux côtés suivent, sans doublon.\n4. Pointer un côté : l’autre reste inchangé.\n5. Corbeille : annuler conserve les deux lignes ; confirmer supprime la paire.\n6. Tourner l’écran, verrouiller et rouvrir un brouillon ; tester sauvegarde/restauration. Ne pas réinstaller une ancienne version après création d’un virement.</string>
     <string name="account_add">Ajouter un compte</string>
     <string name="account_edit">Configurer le compte</string>
     <string name="account_configure">Configurer %1$s</string>
@@ -95,4 +95,12 @@
     <string name="reconcile_confirm">Confirmer le pointage</string>
     <string name="operation_date">Date : %1$s</string>
     <string name="operation_date_legacy">Ancienne date conservée telle quelle. Choisissez une date pour la remplacer.</string>
+    <string name="transfer_internal">Virement vers un autre compte du coffre</string>
+    <string name="transfer_other_account">Autre compte : %1$s</string>
+    <string name="transfer_hint">Une seule saisie crée un débit ici et le crédit opposé dans l’autre compte. Le pointage reste indépendant.</string>
+    <string name="transfer_edit_hint">Montant, date et libellé modifient les deux côtés. Les comptes du virement sont fixes : pour les changer, supprimez la paire puis recréez le virement.</string>
+    <string name="transfer_sent">Virement émis</string>
+    <string name="transfer_received">Virement reçu</string>
+    <string name="transfer_linked">Virement interne lié</string>
+    <string name="transfer_delete_warning">Le virement %1$s (%2$s) sera supprimé dans les deux comptes. Les deux soldes seront recalculés. Cette action est définitive.</string>
 </resources>

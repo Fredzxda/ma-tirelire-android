@@ -1,9 +1,14 @@
 # Ma Tirelire — Android
 
-Prototype de sécurité **0.3.5-dev** du portage de Ma Tirelire Palm.
+Prototype de sécurité **0.4.0-dev** du portage de Ma Tirelire Palm.
 Android 12 minimum, téléphone et tablette, français et anglais.
 
 ## Utilisation de cette version
+
+Virements internes EUR liés : deux écritures opposées en une saisie ; modification
+cohérente depuis chaque côté, pointages indépendants, suppression de la paire
+après confirmation. Les comptes d’un virement enregistré sont fixes dans ce lot.
+Le format comptable v3 des virements reste incompatible avec les anciennes apps.
 
 Date modifiable dans la saisie et la modification. Une nouvelle saisie propose
 la date du jour ; le brouillon garde la date choisie. Les anciens libellés de

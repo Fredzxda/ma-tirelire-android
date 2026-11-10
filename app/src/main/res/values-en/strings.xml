@@ -76,8 +76,8 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">Transaction dates can now be changed when creating or editing. A new entry defaults to today; the draft keeps your choice. New dates follow the phone locale. Legacy date labels are preserved without guessing their meaning.</string>
-    <string name="release_notes_tests">1. New entry: check today is proposed. Choose a past date and save.\n2. Edit its date: one row only, amount and clearing preserved.\n3. Choose a date, rotate, lock and reopen: the draft keeps your choice.\n4. Cancel the calendar: no date change.\n5. Back up and restore: recover the selected dates.\n6. Legacy date text remains unchanged until explicitly replaced.</string>
+    <string name="release_notes_changes">Internal euro transfers: one entry creates two linked opposite transactions. Open either side to update the amount, date and description of both. Clearing remains independent. The trash icon deletes both sides after confirmation. Old transactions using a payment method named Transfer are not automatically linked.</string>
+    <string name="release_notes_tests">1. New entry: select Transfer to another account in this vault, choose the other account and save.\n2. Check opposite debit and credit: the vault total stays unchanged.\n3. Edit amount or date from the receiving account: both sides update without duplicates.\n4. Clear one side: the other stays unchanged.\n5. Trash: cancel keeps both rows; confirm deletes the pair.\n6. Rotate, lock and reopen a draft; test backup and restore. Do not downgrade after creating a transfer.</string>
     <string name="account_add">Add account</string>
     <string name="account_edit">Account settings</string>
     <string name="account_configure">Configure %1$s</string>
@@ -95,4 +95,12 @@
     <string name="reconcile_confirm">Confirm reconciliation</string>
     <string name="operation_date">Date: %1$s</string>
     <string name="operation_date_legacy">Legacy date kept as-is. Choose a date to replace it.</string>
+    <string name="transfer_internal">Transfer to another account in this vault</string>
+    <string name="transfer_other_account">Other account: %1$s</string>
+    <string name="transfer_hint">One entry creates a debit here and the opposite credit in the other account. Clearing remains independent.</string>
+    <string name="transfer_edit_hint">Amount, date and description update both sides. Accounts are fixed: delete the pair and create a new transfer to change them.</string>
+    <string name="transfer_sent">Outgoing transfer</string>
+    <string name="transfer_received">Incoming transfer</string>
+    <string name="transfer_linked">Linked internal transfer</string>
+    <string name="transfer_delete_warning">Transfer %1$s (%2$s) will be deleted in both accounts. Both balances will be recalculated. This action is permanent.</string>
 </resources>

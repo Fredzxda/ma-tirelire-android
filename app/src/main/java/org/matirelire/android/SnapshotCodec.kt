@@ -18,13 +18,13 @@ internal object SnapshotCodec {
         val rows = JSONArray()
         data.transactions.forEach { t -> rows.put(JSONObject().put("id", t.id).put("account", t.account)
             .put("description", t.description).put("amount", t.amount.toPlainString())
-            .put("category", t.category).put("payment", t.payment).put("date", t.date).put("cleared", t.cleared)) }
+            .put("category", t.category).put("payment", t.payment).put("date", t.date).put("cleared", t.cleared).put("peerId", t.peerId ?: JSONObject.NULL)) }
         val d = data.draft?.let { draft -> JSONObject().put("account", draft.account).put("income", draft.income)
             .put("amount", draft.amount).put("description", draft.description).put("category", draft.category)
             .put("payment", draft.payment).put("addingCategory", draft.addingCategory).put("addingPayment", draft.addingPayment)
             .put("newCategory", draft.newCategory).put("newPayment", draft.newPayment)
-            .put("editingId", draft.editingId ?: JSONObject.NULL).put("date", draft.date) }
-        val result = JSONObject().put("schema", if (data.accountNames.isEmpty()) 1 else 2)
+            .put("editingId", draft.editingId ?: JSONObject.NULL).put("date", draft.date).put("transferTarget", draft.transferTarget ?: JSONObject.NULL) }
+        val result = JSONObject().put("schema", if (data.transactions.any { it.peerId != null } || data.draft?.transferTarget != null) 3 else if (data.accountNames.isEmpty()) 1 else 2)
             .put("accountNames", JSONArray(data.accountNames)).put("transactions", rows)
             .put("categories", JSONArray(data.categories)).put("payments", JSONArray(data.payments))
             .put("openings", JSONArray(data.openings.map { it.toPlainString() })).put("draft", d ?: JSONObject.NULL)
@@ -53,7 +53,7 @@ internal object SnapshotCodec {
         require(!quoted && depth == 0)
         val root = JSONObject(text)
         val schema = root.getInt("schema")
-        require(schema in 1..2)
+        require(schema in 1..3)
         fun names(key: String): List<String> {
             val list = root.getJSONArray(key)
             require(list.length() in 1..500)
@@ -70,7 +70,7 @@ internal object SnapshotCodec {
         val openingsJson = root.getJSONArray("openings")
         require(openingsJson.length() in 1..50)
         val openings = (0 until openingsJson.length()).map { amount(openingsJson.getString(it)) }
-        val accountNames = if (schema == 1) {
+        val accountNames = if (schema == 1 || (schema == 3 && root.getJSONArray("accountNames").length() == 0)) {
             require(openings.size == 2)
             emptyList()
         } else names("accountNames").also { require(it.size == openings.size) }
@@ -80,23 +80,46 @@ internal object SnapshotCodec {
             val t = entries.getJSONObject(i)
             DemoTransaction(t.getLong("id"), t.getInt("account"), t.getString("description"),
                 amount(t.getString("amount")), t.getString("category"), t.getString("payment"),
-                t.getString("date"), t.getBoolean("cleared")).also {
+                t.getString("date"), t.getBoolean("cleared"),
+                if (t.isNull("peerId")) null else t.getLong("peerId")).also {
                 require(it.id > 0 && it.id < Long.MAX_VALUE && it.account in openings.indices)
                 require(it.description.isNotBlank() && it.description.length <= 100 && it.date.length <= 80)
                 require(it.category in categories && it.payment in payments)
             }
         }
         require(rows.map { it.id }.distinct().size == rows.size)
+        val byId = rows.associateBy { it.id }
+        rows.forEach { row ->
+            row.peerId?.let { id ->
+                require(schema == 3)
+                val peer = requireNotNull(byId[id])
+                require(peer.id != row.id && peer.peerId == row.id && peer.account != row.account)
+                require(row.amount.signum() != 0 && row.amount.add(peer.amount).signum() == 0)
+                require(row.date == peer.date && row.description == peer.description &&
+                    row.category == peer.category && row.payment == peer.payment)
+            }
+        }
         val d = root.optJSONObject("draft")?.let {
             EntryDraft(it.getInt("account"), it.getBoolean("income"), it.getString("amount"),
                 it.getString("description"), it.getString("category"), it.getString("payment"),
                 addingCategory = it.optBoolean("addingCategory"), addingPayment = it.optBoolean("addingPayment"),
                 newCategory = it.optString("newCategory"), newPayment = it.optString("newPayment"),
                 editingId = if (it.isNull("editingId")) null else it.getLong("editingId"),
-                date = it.optString("date")).also { draft ->
+                date = it.optString("date"),
+                transferTarget = if (it.isNull("transferTarget")) null else it.getInt("transferTarget")).also { draft ->
                 require(draft.account in openings.indices && draft.amount.length <= 30 && draft.description.length <= 100)
                 require(draft.category in categories && draft.payment in payments)
                 require(draft.editingId == null || rows.any { row -> row.id == draft.editingId })
+                draft.transferTarget?.let { target ->
+                    require(schema == 3 && target in openings.indices && target != draft.account)
+                    if (draft.editingId == null) require(!draft.income)
+                }
+                draft.editingId?.let { id ->
+                    val edited = requireNotNull(byId[id])
+                    require((edited.peerId != null) == (draft.transferTarget != null))
+                    if (edited.peerId != null) require(draft.account == edited.account &&
+                        draft.transferTarget == byId[edited.peerId]?.account && draft.income == (edited.amount.signum() > 0))
+                }
                 require(draft.date.isEmpty() || OperationDates.parse(draft.date) != null)
                 require(draft.newCategory.length <= 60 && draft.newPayment.length <= 60)
             }
