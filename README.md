@@ -1,9 +1,15 @@
 # Ma Tirelire — Android
 
-Prototype de sécurité **0.5.0-dev** du portage de Ma Tirelire Palm.
+Prototype de sécurité **0.5.1-dev** du portage de Ma Tirelire Palm.
 Android 12 minimum, téléphone et tablette, français et anglais.
 
 ## Utilisation de cette version
+
+Fin de périodicité au calendrier avec affichage localisé. Les échéances générées
+sont à confirmer : ajuster le montant dans leur fiche met à jour le modèle
+futur et les suivantes non confirmées/non pointées, sans toucher aux précédentes.
+Confirmation distincte du pointage bancaire. Format comptable v6, anciennes
+sauvegardes lisibles ; pas de rétrogradation.
 
 Opérations périodiques : fréquences historiques, fin par date ou nombre total,
 génération des échéances dues après déverrouillage et pendant la session ouverte.

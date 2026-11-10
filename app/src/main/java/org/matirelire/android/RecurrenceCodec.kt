@@ -8,7 +8,7 @@ internal object RecurrenceCodec {
         .put("frequency", r.frequency.name).put("account", r.account).put("target", r.target ?: JSONObject.NULL)
         .put("amount", r.amount.toPlainString()).put("description", r.description).put("category", r.category)
         .put("payment", r.payment).put("next", r.next).put("until", r.until ?: JSONObject.NULL)
-        .put("count", r.count ?: JSONObject.NULL).put("active", r.active)
+        .put("count", r.count ?: JSONObject.NULL).put("active", r.active).put("confirmedThrough", r.confirmedThrough)
 
     private fun validatedAmount(value: String): java.math.BigDecimal {
         require(Regex("-?[0-9]{1,12}([.][0-9]{1,2})?").matches(value))
@@ -20,14 +20,15 @@ internal object RecurrenceCodec {
         if (j.isNull("target")) null else j.getInt("target"), validatedAmount(j.getString("amount")),
         j.getString("description"), j.getString("category"), j.getString("payment"), j.getInt("next"),
         if (j.isNull("until")) null else j.getString("until"),
-        if (j.isNull("count")) null else j.getInt("count"), j.getBoolean("active"))
+        if (j.isNull("count")) null else j.getInt("count"), j.getBoolean("active"), j.optInt("confirmedThrough", 0))
 
     fun validate(data: LedgerData, schema: Int) {
         require(data.rules.size <= 500 && data.rules.map { it.id }.distinct().size == data.rules.size)
         val byId = data.rules.associateBy { it.id }
         data.rules.forEach { r ->
-            require(schema == 5 && r.id.length == 36 && UUID.fromString(r.id).toString() == r.id)
+            require(schema >= 5 && r.id.length == 36 && UUID.fromString(r.id).toString() == r.id)
             val anchor = requireNotNull(OperationDates.parse(r.anchor))
+            require(r.confirmedThrough in 0 until r.next)
             require(r.frequency != RepeatFrequency.NONE && r.next in 1..1_000_000)
             require(r.account in data.openings.indices && (r.target == null || (r.target in data.openings.indices && r.target != r.account)))
             require(r.description.isNotBlank() && r.description.length <= 100)
@@ -41,9 +42,10 @@ internal object RecurrenceCodec {
         data.transactions.forEach { row ->
             if (row.seriesId == null) require(row.occurrence == null)
             else {
-                require(schema == 5)
+                require(schema >= 5)
                 val rule = requireNotNull(byId[row.seriesId])
                 require(row.occurrence != null && row.occurrence in 0 until rule.next)
+                if (row.amountConfirmed) require(row.occurrence <= rule.confirmedThrough)
             }
         }
         data.transactions.filter { it.seriesId != null }.groupBy { it.seriesId to it.occurrence }.values.forEach { rows ->
@@ -51,7 +53,7 @@ internal object RecurrenceCodec {
             if (rows.size == 2) require(rows[0].peerId == rows[1].id && rows[1].peerId == rows[0].id)
         }
         data.draft?.let { d ->
-            if (d.repeatFrequency != RepeatFrequency.NONE) require(schema == 5)
+            if (d.repeatFrequency != RepeatFrequency.NONE) require(schema >= 5)
         }
     }
 }

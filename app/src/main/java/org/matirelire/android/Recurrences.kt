@@ -14,6 +14,7 @@ internal data class RecurringRule(
     val account: Int, val target: Int?, val amount: BigDecimal, val description: String,
     val category: String, val payment: String, val next: Int = 1,
     val until: String? = null, val count: Int? = null, val active: Boolean = true,
+    val confirmedThrough: Int = 0,
 ) {
     fun dateAt(index: Int): LocalDate? = runCatching {
         val start = requireNotNull(OperationDates.parse(anchor))
@@ -55,7 +56,7 @@ internal object Recurrences {
                 if (rows.none { it.seriesId == rule.id && it.occurrence == rule.next }) {
                     val first = DemoTransaction(nextId++, rule.account, rule.description, rule.amount,
                         rule.category, rule.payment, due.toString(), false,
-                        if (rule.target == null) null else nextId, rule.id, rule.next)
+                        if (rule.target == null) null else nextId, rule.id, rule.next, false)
                     rows.add(first)
                     if (rule.target != null) rows.add(first.copy(id = nextId++, account = rule.target,
                         amount = rule.amount.negate(), peerId = first.id))

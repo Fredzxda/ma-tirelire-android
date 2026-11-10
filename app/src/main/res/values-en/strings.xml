@@ -76,8 +76,8 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">Recurring transactions from a new or existing entry: historical frequencies, end date or total count. Due occurrences are generated after unlocking in batches without duplicates and start uncleared. Recurring internal transfers create an atomic pair. Stop or resume series in settings. Editing can affect this occurrence alone or the template for future ones.</string>
-    <string name="release_notes_tests">1. Enter a transaction several months ago, recurring monthly with 3 total occurrences. Check catch-up.\n2. Lock and reopen: no duplicates; new occurrences uncleared.\n3. Try a recurring internal transfer: opposite amounts for each occurrence.\n4. Edit one occurrence: without the option only this one changes; Apply to future updates the template. The schedule stays fixed.\n5. Stop/resume in Settings: history remains, catch-up on resume.\n6. Back up and restore: no duplicate occurrences. Future projection, reminders and changing series frequency are not included.</string>
+    <string name="release_notes_changes">Choose the end date in a calendar, displayed using the phone locale. A date clears the count limit and vice versa. Generated occurrences need confirmation: open, adjust the amount and confirm to update later unconfirmed and uncleared occurrences without changing history.</string>
+    <string name="release_notes_tests">1. Pick an end date in the calendar: local format, no YYYY-MM-DD entry. Cancel keeps the selection.\n2. Set a count then a date: only one limit stays active.\n3. Catch up several occurrences. Open the first pending one, change its amount and confirm.\n4. Earlier occurrences stay unchanged; later pending ones use the new amount. Clearing stays unchanged.\n5. Repeat with an internal transfer: opposite amounts and both sides confirmed together.\n6. Lock, reopen and restore: confirmations and amounts remain.</string>
     <string name="account_add">Add account</string>
     <string name="account_edit">Account settings</string>
     <string name="account_configure">Configure %1$s</string>
@@ -121,7 +121,7 @@
     <string name="repeat_two_years">Every 2 years</string>
     <string name="repeat_until">Until · YYYY-MM-DD</string>
     <string name="repeat_count">Total occurrences</string>
-    <string name="repeat_limits_hint">Unlimited: leave both fields empty. Otherwise enter an inclusive end date OR a total count including this first transaction (1 to 10,000). A precise start date is required.</string>
+    <string name="repeat_limits_hint">Unlimited: leave both fields empty. Otherwise choose an inclusive end date in the calendar OR a total count including the first transaction (1 to 10,000). Choosing one limit clears the other. A precise start date is required.</string>
     <string name="repeat_apply_future">Also apply to future occurrences</string>
     <string name="repeat_edit_hint">Without this option, only this occurrence changes. With it: future amount, description, category and payment method. The schedule stays unchanged. To change frequency, stop the series and create a new one.</string>
     <string name="repeat_manage">Recurring transactions</string>
@@ -133,6 +133,12 @@
     <string name="repeat_empty">No series saved.</string>
     <string name="repeat_occurrence">Recurring occurrence</string>
     <string name="repeat_delete_hint">Only this occurrence (or pair) is deleted. The series continues; stop it in settings if needed. This occurrence will not be recreated.</string>
-    <string name="repeat_invalid">Check amount, description and start date. End must be a valid YYYY-MM-DD date on or after the start, OR a total count from 1 to 10,000.</string>
+    <string name="repeat_invalid">Check amount, description and start date. The selected end date must be on or after the start; total count must be from 1 to 10,000.</string>
     <string name="repeat_blocked">Generation paused: storage or capacity limit reached. Remaining series and occurrences are kept. Back up before freeing space.</string>
+    <string name="repeat_pick_end">Choose end date</string>
+    <string name="repeat_end_chosen">Until: %1$s</string>
+    <string name="repeat_clear_end">Remove end date</string>
+    <string name="repeat_pending">Recurring occurrence · Needs confirmation</string>
+    <string name="repeat_confirm_occurrence">Confirm occurrence</string>
+    <string name="repeat_confirm_hint">Adjust the amount and confirm. Later unconfirmed and uncleared occurrences and the future template use this amount. Earlier and confirmed occurrences stay unchanged. Confirmation does not clear the transaction. An older confirmation does not replace a more recent confirmed amount.</string>
 </resources>

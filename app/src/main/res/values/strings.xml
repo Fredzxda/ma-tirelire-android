@@ -76,8 +76,8 @@
     <string name="release_notes_title">Nouveautés · %1$s</string>
     <string name="release_notes_test_title">À vérifier avec des données fictives</string>
     <string name="release_notes_understood">Compris</string>
-    <string name="release_notes_changes">Opérations périodiques depuis la saisie ou une opération existante : fréquences historiques, fin par date ou nombre total. Les échéances dues sont générées après déverrouillage, par lots, sans doublons ; elles commencent non pointées. Les virements périodiques créent une paire atomique. Dans les réglages, arrêtez ou reprenez une série. Une modification peut concerner cette occurrence seule ou le modèle des suivantes.</string>
-    <string name="release_notes_tests">1. Saisir une opération datée de plusieurs mois en arrière, répétée chaque mois avec un total de 3 occurrences. Vérifier le rattrapage.\n2. Verrouiller et rouvrir : aucune duplication ; nouvelles occurrences non pointées.\n3. Tester un virement périodique : deux montants opposés par échéance.\n4. Modifier une occurrence : sans option, seule celle-ci change ; avec Appliquer aux prochaines échéances, le modèle futur est modifié. Le calendrier reste fixe.\n5. Arrêter/reprendre dans Réglages : historique conservé, rattrapage à la reprise.\n6. Sauvegarder et restaurer : aucune occurrence dupliquée. Projection future, rappels et changement de fréquence de série ne sont pas inclus.</string>
+    <string name="release_notes_changes">Date de fin choisie au calendrier et affichée dans le format du téléphone. Une date efface la limite par nombre, et inversement. Les échéances générées sont À confirmer : ouvrir la fiche, ajuster le montant et confirmer met à jour les suivantes non confirmées et non pointées, sans modifier l’historique.</string>
+    <string name="release_notes_tests">1. Choisir une date de fin au calendrier : format local, pas de saisie AAAA-MM-JJ. Annuler ne change rien.\n2. Choisir un nombre puis une date : une seule limite reste active.\n3. Générer plusieurs échéances par rattrapage. Ouvrir la première À confirmer, changer son montant et confirmer.\n4. Vérifier que les précédentes restent intactes et que les suivantes non confirmées reprennent ce montant. Le pointage ne change pas.\n5. Tester le même parcours avec un virement : paire opposée et deux côtés confirmés ensemble.\n6. Verrouiller, rouvrir et restaurer une sauvegarde : confirmations et montants conservés.</string>
     <string name="account_add">Ajouter un compte</string>
     <string name="account_edit">Configurer le compte</string>
     <string name="account_configure">Configurer %1$s</string>
@@ -121,7 +121,7 @@
     <string name="repeat_two_years">Tous les 2 ans</string>
     <string name="repeat_until">Fin · AAAA-MM-JJ</string>
     <string name="repeat_count">Nombre total</string>
-    <string name="repeat_limits_hint">Sans limite : laisser les deux champs vides. Sinon choisir une date de fin incluse OU un nombre total incluant cette première opération (1 à 10 000). Une date de début précise est obligatoire.</string>
+    <string name="repeat_limits_hint">Sans limite : laisser les deux champs vides. Sinon choisir au calendrier une date de fin incluse OU un nombre total incluant la première opération (1 à 10 000). Choisir une limite efface l’autre. Une date de début précise est obligatoire.</string>
     <string name="repeat_apply_future">Appliquer aussi aux prochaines échéances</string>
     <string name="repeat_edit_hint">Sans cette option, seule cette occurrence est modifiée. Avec cette option : montant, libellé, catégorie et moyen des suivantes. Le calendrier de la série reste inchangé. Pour changer de fréquence, arrêtez la série et créez-en une nouvelle.</string>
     <string name="repeat_manage">Opérations périodiques</string>
@@ -133,6 +133,12 @@
     <string name="repeat_empty">Aucune série enregistrée.</string>
     <string name="repeat_occurrence">Occurrence périodique</string>
     <string name="repeat_delete_hint">Seule cette occurrence (ou sa paire) est supprimée. La série continue ; arrêtez-la dans les réglages si nécessaire. Cette occurrence ne sera pas recréée.</string>
-    <string name="repeat_invalid">Vérifiez le montant, le libellé et la date de début. La fin doit être une date AAAA-MM-JJ valide après le début, OU un nombre total de 1 à 10 000.</string>
+    <string name="repeat_invalid">Vérifiez le montant, le libellé et la date de début. La date de fin choisie doit être au moins égale au début ; le nombre total doit être compris entre 1 et 10 000.</string>
     <string name="repeat_blocked">Génération suspendue : limite de stockage ou de capacité atteinte. Les séries et échéances restantes sont conservées. Sauvegardez avant de libérer de la place.</string>
+    <string name="repeat_pick_end">Choisir la date de fin</string>
+    <string name="repeat_end_chosen">Fin : %1$s</string>
+    <string name="repeat_clear_end">Retirer la date de fin</string>
+    <string name="repeat_pending">Occurrence périodique · À confirmer</string>
+    <string name="repeat_confirm_occurrence">Confirmer l’occurrence</string>
+    <string name="repeat_confirm_hint">Ajustez le montant puis confirmez. Le montant des suivantes non confirmées et non pointées sera mis à jour, ainsi que le modèle futur. Les précédentes et celles déjà confirmées restent intactes. Confirmer ne pointe pas l’écriture. Une confirmation plus ancienne ne remplace pas un montant confirmé plus récent.</string>
 </resources>
