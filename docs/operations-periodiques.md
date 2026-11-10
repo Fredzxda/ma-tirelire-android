@@ -64,3 +64,12 @@ déverrouillée, rattrapage par lots, arret/reprise, édition isolée ou modèle
 et virements périodiques. La modification de fréquence/fin/début d’une série
 existante, la projection future et les rappels restent des sous-lots ultérieurs.
 Les tests unitaires ne remplacent pas la validation manuelle sur téléphone.
+
+## Nouvelle règle de gestion en 0.5.2-dev
+
+Le dialogue à l’enregistrement remplace la coche : opération seule ou modèle
+futur. Aucune autre écriture déjà enregistrée ne change, même non confirmée.
+Fréquence, jour, limites, montant et références sont modifiables pour les
+prochaines générations. Cette version remplace donc la limitation de 0.5.0
+sur le changement de calendrier et la propagation de 0.5.1. Projection future
+et rappels restent différés. Voir [VALIDATION-0.5.2.md](VALIDATION-0.5.2.md).

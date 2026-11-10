@@ -28,7 +28,7 @@ internal object SnapshotCodec {
             .put("editingId", draft.editingId ?: JSONObject.NULL).put("date", draft.date).put("transferTarget", draft.transferTarget ?: JSONObject.NULL)
             .put("repeatFrequency", draft.repeatFrequency.name).put("repeatUntil", draft.repeatUntil)
             .put("repeatCount", draft.repeatCount).put("applyToSeries", draft.applyToSeries) }
-        val result = JSONObject().put("schema", if (data.rules.isNotEmpty() || data.draft?.repeatFrequency?.let { it != RepeatFrequency.NONE } == true) 6 else if (data.transferPayment != null) 4 else if (data.transactions.any { it.peerId != null } || data.draft?.transferTarget != null) 3 else if (data.accountNames.isEmpty()) 1 else 2)
+        val result = JSONObject().put("schema", if (data.rules.isNotEmpty() || data.draft?.repeatFrequency?.let { it != RepeatFrequency.NONE } == true) 7 else if (data.transferPayment != null) 4 else if (data.transactions.any { it.peerId != null } || data.draft?.transferTarget != null) 3 else if (data.accountNames.isEmpty()) 1 else 2)
             .put("rules", JSONArray(data.rules.map(RecurrenceCodec::encode))).put("transferPayment", data.transferPayment ?: JSONObject.NULL).put("accountNames", JSONArray(data.accountNames)).put("transactions", rows)
             .put("categories", JSONArray(data.categories)).put("payments", JSONArray(data.payments))
             .put("openings", JSONArray(data.openings.map { it.toPlainString() })).put("draft", d ?: JSONObject.NULL)
@@ -57,7 +57,7 @@ internal object SnapshotCodec {
         require(!quoted && depth == 0)
         val root = JSONObject(text)
         val schema = root.getInt("schema")
-        require(schema in 1..6)
+        require(schema in 1..7)
         fun names(key: String): List<String> {
             val list = root.getJSONArray(key)
             require(list.length() in 1..500)

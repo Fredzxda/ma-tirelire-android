@@ -8,7 +8,8 @@ internal object RecurrenceCodec {
         .put("frequency", r.frequency.name).put("account", r.account).put("target", r.target ?: JSONObject.NULL)
         .put("amount", r.amount.toPlainString()).put("description", r.description).put("category", r.category)
         .put("payment", r.payment).put("next", r.next).put("until", r.until ?: JSONObject.NULL)
-        .put("count", r.count ?: JSONObject.NULL).put("active", r.active).put("confirmedThrough", r.confirmedThrough)
+        .put("count", r.count ?: JSONObject.NULL).put("active", r.active).put("confirmedThrough", r.confirmedThrough).put("scheduleBase", r.scheduleBase)
+        .put("scheduleOffset", r.scheduleOffset).put("generatedThrough", r.generatedThrough ?: JSONObject.NULL)
 
     private fun validatedAmount(value: String): java.math.BigDecimal {
         require(Regex("-?[0-9]{1,12}([.][0-9]{1,2})?").matches(value))
@@ -20,7 +21,8 @@ internal object RecurrenceCodec {
         if (j.isNull("target")) null else j.getInt("target"), validatedAmount(j.getString("amount")),
         j.getString("description"), j.getString("category"), j.getString("payment"), j.getInt("next"),
         if (j.isNull("until")) null else j.getString("until"),
-        if (j.isNull("count")) null else j.getInt("count"), j.getBoolean("active"), j.optInt("confirmedThrough", 0))
+        if (j.isNull("count")) null else j.getInt("count"), j.getBoolean("active"), j.optInt("confirmedThrough", 0), j.optInt("scheduleBase", 0), j.optInt("scheduleOffset", 0),
+        if (j.isNull("generatedThrough")) null else j.getString("generatedThrough"))
 
     fun validate(data: LedgerData, schema: Int) {
         require(data.rules.size <= 500 && data.rules.map { it.id }.distinct().size == data.rules.size)
@@ -35,7 +37,9 @@ internal object RecurrenceCodec {
             require(r.category in data.categories && r.payment in data.payments)
             require(Regex("-?[0-9]{1,12}([.][0-9]{1,2})?").matches(r.amount.toPlainString()) && r.amount.signum() != 0)
             if (r.target != null && data.transferPayment != null) require(r.payment == data.transferPayment)
-            require(r.count == null || r.count in 1..10_000)
+            require(r.count == null || r.count in 1..1_010_000)
+            require(r.scheduleBase in 0..r.next && r.scheduleOffset in 0..1_000_000)
+            require(r.generatedThrough == null || OperationDates.parse(r.generatedThrough) != null)
             require(r.until == null || requireNotNull(OperationDates.parse(r.until)) >= anchor)
             require(r.until == null || r.count == null)
         }

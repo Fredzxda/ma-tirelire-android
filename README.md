@@ -1,21 +1,21 @@
 # Ma Tirelire — Android
 
-Prototype de sécurité **0.5.1-dev** du portage de Ma Tirelire Palm.
+Prototype de sécurité **0.5.2-dev** du portage de Ma Tirelire Palm.
 Android 12 minimum, téléphone et tablette, français et anglais.
 
 ## Utilisation de cette version
 
 Fin de périodicité au calendrier avec affichage localisé. Les échéances générées
-sont à confirmer : ajuster le montant dans leur fiche met à jour le modèle
-futur et les suivantes non confirmées/non pointées, sans toucher aux précédentes.
-Confirmation distincte du pointage bancaire. Format comptable v6, anciennes
+sont à confirmer : enregistrer leur fiche demande de choisir cette opération seule ou le modèle
+futur. Aucune autre écriture déjà enregistrée, même en attente, ne change.
+Confirmation distincte du pointage bancaire. Format comptable v7, anciennes
 sauvegardes lisibles ; pas de rétrogradation.
 
 Opérations périodiques : fréquences historiques, fin par date ou nombre total,
 génération des échéances dues après déverrouillage et pendant la session ouverte.
 Gestion des séries dans Réglages ; choix entre occurrence seule et futures
 échéances lors des modifications. Les occurrences générées sont non pointées.
-Format comptable v5 : anciennes sauvegardes lisibles, pas de rétrogradation.
+Format comptable v7 : anciennes sauvegardes lisibles, pas de rétrogradation.
 
 Choisir Virement dans les moyens de paiement pour afficher le compte facultatif
 à côté : sans compte, écriture externe simple ; avec compte, paire interne.

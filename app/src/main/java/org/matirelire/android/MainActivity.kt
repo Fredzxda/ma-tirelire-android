@@ -22,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
@@ -296,6 +297,8 @@ class DemoViewModel : ViewModel() {
             amount = row.amount.abs().toPlainString().replace('.', separator),
             description = row.description, category = row.category, payment = row.payment, editingId = id,
             repeatFrequency = rules.firstOrNull { it.id == row.seriesId }?.frequency ?: RepeatFrequency.NONE,
+            repeatUntil = rules.firstOrNull { it.id == row.seriesId }?.until.orEmpty(),
+            repeatCount = rules.firstOrNull { it.id == row.seriesId }?.let { r -> r.count?.let { (it - r.next).coerceAtLeast(0).toString() } }.orEmpty(),
             transferTarget = row.peerId?.let { peer -> transactions.firstOrNull { it.id == peer }?.account }, date = if (OperationDates.parse(row.date) != null) row.date else "")
         onChange?.invoke()
     }
@@ -357,7 +360,8 @@ class DemoViewModel : ViewModel() {
         destination.intValue = 0; account.intValue = 0; initialized = false; limitReached = false
     }
 
-    internal fun saveEntry(locale: Locale, date: String): Boolean {
+    internal fun saveEntry(locale: Locale, date: String, scope: SeriesEditScope = SeriesEditScope.CURRENT,
+        today: java.time.LocalDate = java.time.LocalDate.now()): Boolean {
         val current = draft ?: return false
         val old = transactions.firstOrNull { it.id == current.editingId }
         val additional = if (current.editingId == null) (if (current.transferTarget == null) 1 else 2)
@@ -407,23 +411,15 @@ class DemoViewModel : ViewModel() {
             nextRules.add(RecurringRule(id, row.date, current.repeatFrequency, row.account, target, row.amount,
                 row.description, row.category, row.payment, until = until?.toString(), count = count))
             row = row.copy(seriesId = id, occurrence = 0)
-        } else if (oldRule != null && current.applyToSeries) {
-            val receiver = previous?.peerId != null && oldRule.target == row.account
-            nextRules[nextRules.indexOf(oldRule)] = oldRule.copy(
-                account = if (receiver) requireNotNull(target) else row.account,
-                target = if (receiver) row.account else target,
-                amount = if (receiver) row.amount.negate() else row.amount,
-                description = row.description, category = row.category, payment = row.payment)
-        }
-        val confirming = previous?.seriesId != null && !previous.amountConfirmed
-        val propagateConfirmedAmount = confirming && oldRule != null &&
-            requireNotNull(previous?.occurrence) > oldRule.confirmedThrough
-        if (propagateConfirmedAmount) {
-            val rule = requireNotNull(oldRule)
-            val receiver = previous?.peerId != null && rule.target == row.account
-            nextRules[nextRules.indexOfFirst { it.id == rule.id }] = nextRules.first { it.id == rule.id }.copy(
-                amount = if (receiver) row.amount.negate() else row.amount,
-                confirmedThrough = requireNotNull(previous?.occurrence))
+        } else if (oldRule != null) {
+            var revised = oldRule
+            if (scope == SeriesEditScope.SERIES) {
+                revised = SeriesRevision.update(oldRule, current, row, transactions.toList(), today) ?: run {
+                    draft = current.copy(attempted = true); return false
+                }
+            }
+            revised = revised.copy(confirmedThrough = maxOf(revised.confirmedThrough, requireNotNull(row.occurrence)))
+            nextRules[nextRules.indexOf(oldRule)] = revised
         }
         val nextRows = transactions.toMutableList()
         if (index == null) nextRows.add(row) else nextRows[index] = row
@@ -432,18 +428,6 @@ class DemoViewModel : ViewModel() {
                 cleared = peer?.cleared ?: false, peerId = row.id)
             val peerIndex = peer?.let { old -> nextRows.indexOfFirst { it.id == old.id } }
             if (peerIndex == null) nextRows.add(counterpart) else nextRows[peerIndex] = counterpart
-        }
-        if (propagateConfirmedAmount) {
-            val confirmed = requireNotNull(previous)
-            val value = row.amount.abs()
-            val originalById = transactions.associateBy { it.id }
-            for (i in nextRows.indices) {
-                val pending = nextRows[i]
-                if (pending.seriesId == confirmed.seriesId && requireNotNull(pending.occurrence) > requireNotNull(confirmed.occurrence) &&
-                    !pending.amountConfirmed && !pending.cleared && originalById[pending.peerId]?.cleared != true) {
-                    nextRows[i] = pending.copy(amount = if (pending.amount.signum() < 0) value.negate() else value)
-                }
-            }
         }
         // Validate the complete pair before exposing it or invoking persistence.
         val checked = SnapshotCodec.encode(exportData().copy(transactions = nextRows, draft = null, rules = nextRules))
@@ -490,7 +474,7 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
     model.ensureTransferPayment(transfer)
     LaunchedEffect(model.recurrenceEpoch) {
         while (kotlinx.coroutines.currentCoroutineContext().isActive) {
-            if (!vault.busy && model.reconciliation == null) model.generateDue()
+            if (!vault.busy && model.reconciliation == null && model.draft == null) model.generateDue()
             kotlinx.coroutines.delay(60_000)
         }
     }
@@ -973,14 +957,42 @@ private fun ReleaseNotesDialog(vault: VaultController) {
 
 @Composable
 private fun EntryActions(model: DemoViewModel, draft: EntryDraft, locale: Locale) {
+    val keyboard = LocalSoftwareKeyboardController.current
+    var chooseScope by remember { mutableStateOf(false) }
+    val row = model.transactions.firstOrNull { it.id == draft.editingId }
     TextButton(onClick = model::cancelEntry) { Text(stringResource(R.string.cancel)) }
     Button(onClick = {
-        val date = java.time.LocalDate.now().toString()
-        model.saveEntry(locale, date)
+        keyboard?.hide()
+        if (row?.seriesId != null) chooseScope = true
+        else model.saveEntry(locale, java.time.LocalDate.now().toString())
     }, enabled = !draft.addingCategory && !draft.addingPayment) {
-        val pending = model.transactions.firstOrNull { it.id == draft.editingId }?.let { it.seriesId != null && !it.amountConfirmed } == true
-        Text(stringResource(if (pending) R.string.repeat_confirm_occurrence else R.string.save))
+        Text(stringResource(if (row?.let { it.seriesId != null && !it.amountConfirmed } == true) R.string.repeat_confirm_occurrence else R.string.save))
     }
+    if (chooseScope) AlertDialog(onDismissRequest = { chooseScope = false },
+        title = { Text(stringResource(R.string.repeat_scope_title)) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.repeat_scope_description))
+                val rule = model.rules.firstOrNull { it.id == row?.seriesId }
+                val amount = Money.parseAmount(draft.amount, locale)
+                val proposed = if (rule != null && row != null && amount != null) SeriesRevision.update(rule, draft,
+                    row.copy(date = draft.date.ifEmpty { row.date }, amount = if (draft.income) amount else amount.negate()),
+                    model.transactions.toList(), java.time.LocalDate.now()) else null
+                Text(stringResource(R.string.repeat_next, proposed?.nextDate()?.let { OperationDates.display(it.toString(), locale) }
+                    ?: stringResource(if (proposed == null) R.string.repeat_check_parameters else R.string.repeat_stopped)))
+            }
+        },
+        confirmButton = { TextButton(onClick = {
+            chooseScope = false
+            model.saveEntry(locale, java.time.LocalDate.now().toString(), SeriesEditScope.SERIES)
+        }) { Text(stringResource(R.string.repeat_scope_series)) } },
+        dismissButton = { Column {
+            TextButton(onClick = {
+                chooseScope = false
+                model.saveEntry(locale, java.time.LocalDate.now().toString(), SeriesEditScope.CURRENT)
+            }) { Text(stringResource(R.string.repeat_scope_current)) }
+            TextButton(onClick = { chooseScope = false }) { Text(stringResource(R.string.cancel)) }
+        } }, properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn))
 }
 
 @Composable
@@ -1120,37 +1132,25 @@ private fun EntryRepeat(model: DemoViewModel, draft: EntryDraft) {
     var expanded by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(R.string.repeat_title), style = MaterialTheme.typography.labelLarge)
-        if (rule != null) {
-            Text(repeatLabel(rule.frequency))
-            if (row?.amountConfirmed == false) {
-                Text(stringResource(R.string.repeat_confirm_hint), style = MaterialTheme.typography.bodySmall)
-            } else {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = draft.applyToSeries, onCheckedChange = { model.updateDraft(draft.copy(applyToSeries = it)) })
-                    Text(stringResource(R.string.repeat_apply_future))
-                }
-                Text(stringResource(R.string.repeat_edit_hint), style = MaterialTheme.typography.bodySmall)
-            }
-        } else {
-            Box {
-                OutlinedButton(onClick = { expanded = true }) { Text(repeatLabel(draft.repeatFrequency)) }
-                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                    RepeatFrequency.entries.forEach { frequency ->
-                        DropdownMenuItem(text = { Text(repeatLabel(frequency)) }, onClick = {
-                            model.updateDraft(draft.copy(repeatFrequency = frequency)); expanded = false
-                        })
-                    }
+        if (rule != null) Text(stringResource(R.string.repeat_scope_hint), style = MaterialTheme.typography.bodySmall)
+        Box {
+            OutlinedButton(onClick = { expanded = true }) { Text(repeatLabel(draft.repeatFrequency)) }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                RepeatFrequency.entries.forEach { frequency ->
+                    DropdownMenuItem(text = { Text(repeatLabel(frequency)) }, onClick = {
+                        model.updateDraft(draft.copy(repeatFrequency = frequency)); expanded = false
+                    })
                 }
             }
-            if (draft.repeatFrequency != RepeatFrequency.NONE) {
-                Text(stringResource(R.string.repeat_limits_hint), style = MaterialTheme.typography.bodySmall)
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Box(Modifier.weight(1f)) { RepeatEndDate(model, draft) }
-                    OutlinedTextField(value = draft.repeatCount,
-                        onValueChange = { model.updateDraft(draft.copy(repeatCount = it.take(5), repeatUntil = if (it.isNotBlank()) "" else draft.repeatUntil)) },
-                        label = { Text(stringResource(R.string.repeat_count)) }, singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f))
-                }
+        }
+        if (draft.repeatFrequency != RepeatFrequency.NONE) {
+            Text(stringResource(if (rule == null) R.string.repeat_limits_hint else R.string.repeat_remaining_hint), style = MaterialTheme.typography.bodySmall)
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(Modifier.weight(1f)) { RepeatEndDate(model, draft) }
+                OutlinedTextField(value = draft.repeatCount,
+                    onValueChange = { model.updateDraft(draft.copy(repeatCount = it.take(5), repeatUntil = if (it.isNotBlank()) "" else draft.repeatUntil)) },
+                    label = { Text(stringResource(if (rule == null) R.string.repeat_count else R.string.repeat_remaining)) }, singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f))
             }
         }
     }

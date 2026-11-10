@@ -15,12 +15,14 @@ internal data class RecurringRule(
     val category: String, val payment: String, val next: Int = 1,
     val until: String? = null, val count: Int? = null, val active: Boolean = true,
     val confirmedThrough: Int = 0,
+    val scheduleBase: Int = 0, val scheduleOffset: Int = 0, val generatedThrough: String? = null,
 ) {
     fun dateAt(index: Int): LocalDate? = runCatching {
         val start = requireNotNull(OperationDates.parse(anchor))
-        val date = if (frequency.weeks > 0) start.plusWeeks(index.toLong() * frequency.weeks)
-            else start.plusMonths(index.toLong() * frequency.months)
-        (if (frequency.endOfMonth && index > 0) date.withDayOfMonth(date.lengthOfMonth()) else date)
+        val step = index.toLong() - scheduleBase + scheduleOffset
+        val date = if (frequency.weeks > 0) start.plusWeeks(step * frequency.weeks)
+            else start.plusMonths(step * frequency.months)
+        (if (frequency.endOfMonth && step > 0) date.withDayOfMonth(date.lengthOfMonth()) else date)
             .takeIf { it.year in 1..9999 }
     }.getOrNull()
     fun nextDate(): LocalDate? {
@@ -61,7 +63,7 @@ internal object Recurrences {
                     if (rule.target != null) rows.add(first.copy(id = nextId++, account = rule.target,
                         amount = rule.amount.negate(), peerId = first.id))
                 }
-                rule = rule.copy(next = rule.next + 1)
+                rule = rule.copy(next = rule.next + 1, generatedThrough = due.toString())
                 changed = true; made++
             }
             rules[i] = rule

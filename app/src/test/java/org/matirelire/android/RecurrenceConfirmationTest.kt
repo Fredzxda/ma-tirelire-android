@@ -38,34 +38,34 @@ class RecurrenceConfirmationTest {
         assertEquals("", model.draft!!.repeatUntil)
     }
 
-    @Test fun confirmingChangesLaterProposalsAndTemplateButNotEarlierHistoryOrClearing() {
+    @Test fun currentConfirmationPreservesEveryOtherRecordedAmountAndTemplate() {
         val model = model()
         model.generateDue(LocalDate.of(2026, 4, 1))
         confirm(model, 1, "20")
         val series = model.transactions.filter { it.seriesId != null }
         assertEquals(BigDecimal("-10.00"), series.single { it.occurrence == 0 }.amount)
         assertTrue(series.single { it.occurrence == 1 }.amountConfirmed)
-        assertTrue(series.filter { it.occurrence!! > 1 }.all { !it.amountConfirmed && it.amount == BigDecimal("-20.00") })
+        assertTrue(series.filter { it.occurrence!! > 1 }.all { !it.amountConfirmed && it.amount == BigDecimal("-10.00") })
         assertTrue(series.all { !it.cleared })
-        assertEquals(BigDecimal("-20.00"), model.rules.single().amount)
+        assertEquals(BigDecimal("-10.00"), model.rules.single().amount)
         assertEquals(1, model.rules.single().confirmedThrough)
         val restored = DemoViewModel()
         restored.restoreData(SnapshotCodec.decode(SnapshotCodec.encode(model.exportData())))
         assertEquals(model.exportData(), restored.exportData())
     }
 
-    @Test fun outOfOrderConfirmationPreservesTheMostRecentConfirmedAmount() {
+    @Test fun outOfOrderConfirmationsNeverRewriteTheTemplateOrOtherRows() {
         val model = model()
         model.generateDue(LocalDate.of(2026, 4, 1))
         confirm(model, 2, "30")
         confirm(model, 1, "20")
-        assertEquals(BigDecimal("-30.00"), model.rules.single().amount)
+        assertEquals(BigDecimal("-10.00"), model.rules.single().amount)
         assertEquals(2, model.rules.single().confirmedThrough)
-        assertEquals(BigDecimal("-30.00"), model.transactions.single { it.occurrence == 3 }.amount)
+        assertEquals(BigDecimal("-10.00"), model.transactions.single { it.occurrence == 3 }.amount)
         assertEquals(BigDecimal("-20.00"), model.transactions.single { it.occurrence == 1 }.amount)
     }
 
-    @Test fun receiverConfirmationUpdatesThePairAndProtectsAPointedLaterPair() {
+    @Test fun receiverCurrentConfirmationChangesOnlyTheSelectedPair() {
         val model = model(transfer = true)
         model.generateDue(LocalDate.of(2026, 3, 1))
         model.toggleCleared(model.transactions.single { it.occurrence == 2 && it.account == 0 }.id)
@@ -75,7 +75,7 @@ class RecurrenceConfirmationTest {
         assertEquals(0, confirmedPair.fold(BigDecimal.ZERO) { sum, row -> sum + row.amount }.signum())
         assertTrue(model.transactions.filter { it.occurrence == 2 }.all { it.amount.abs() == BigDecimal("10.00") })
         model.generateDue(LocalDate.of(2026, 4, 1))
-        assertTrue(model.transactions.filter { it.occurrence == 3 }.all { it.amount.abs() == BigDecimal("25.00") && !it.amountConfirmed })
+        assertTrue(model.transactions.filter { it.occurrence == 3 }.all { it.amount.abs() == BigDecimal("10.00") && !it.amountConfirmed })
         SnapshotCodec.decode(SnapshotCodec.encode(model.exportData()))
     }
 

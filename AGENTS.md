@@ -24,3 +24,8 @@
 - Statistiques de revenus/depenses et par categorie : utiliser le perimetre
   reportingTransactions(), qui exclut les deux cotes des virements internes
   via peerId. Un virement externe sans lien reste une operation ordinaire.
+
+- Edition de serie : choix au moment de sauvegarder, operation courante seule
+  ou modele futur. Ne jamais propager sur les autres ecritures deja enregistrees,
+  meme non confirmees. Une paire de virement reste atomique. Tester dates,
+  frequence, limites et preservation de l'historique lors des changements.

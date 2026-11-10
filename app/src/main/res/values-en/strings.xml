@@ -76,8 +76,8 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">Choose the end date in a calendar, displayed using the phone locale. A date clears the count limit and vice versa. Generated occurrences need confirmation: open, adjust the amount and confirm to update later unconfirmed and uncleared occurrences without changing history.</string>
-    <string name="release_notes_tests">1. Pick an end date in the calendar: local format, no YYYY-MM-DD entry. Cancel keeps the selection.\n2. Set a count then a date: only one limit stays active.\n3. Catch up several occurrences. Open the first pending one, change its amount and confirm.\n4. Earlier occurrences stay unchanged; later pending ones use the new amount. Clearing stays unchanged.\n5. Repeat with an internal transfer: opposite amounts and both sides confirmed together.\n6. Lock, reopen and restore: confirmations and amounts remain.</string>
+    <string name="release_notes_changes">New choice when saving a series occurrence: this transaction only, or this transaction and future series. All other recorded transactions always stay unchanged. Frequency, day, amount, description, category, payment method, end date and remaining count can update the future template. The dialog shows the next occurrence.</string>
+    <string name="release_notes_tests">1. Edit an occurrence and choose This transaction only: other rows and the template stay unchanged.\n2. Move monthly day 5 to day 6, choose the series and check the proposed next date. Other recorded rows stay unchanged.\n3. Change monthly to weekly or Monday to Wednesday: check the next date.\n4. Change amount, category, description and payment: only the edited row and future generation use them.\n5. Add an end date or remaining count; zero ends the series.\n6. Cancel the dialog: no save. Test locking and backup/restore.</string>
     <string name="account_add">Add account</string>
     <string name="account_edit">Account settings</string>
     <string name="account_configure">Configure %1$s</string>
@@ -133,12 +133,20 @@
     <string name="repeat_empty">No series saved.</string>
     <string name="repeat_occurrence">Recurring occurrence</string>
     <string name="repeat_delete_hint">Only this occurrence (or pair) is deleted. The series continues; stop it in settings if needed. This occurrence will not be recreated.</string>
-    <string name="repeat_invalid">Check amount, description and start date. The selected end date must be on or after the start; total count must be from 1 to 10,000.</string>
+    <string name="repeat_invalid">Check amount, description, dates and limit. Creation: 1 to 10,000 total occurrences; existing series: 0 to 10,000 remaining.</string>
     <string name="repeat_blocked">Generation paused: storage or capacity limit reached. Remaining series and occurrences are kept. Back up before freeing space.</string>
     <string name="repeat_pick_end">Choose end date</string>
     <string name="repeat_end_chosen">Until: %1$s</string>
     <string name="repeat_clear_end">Remove end date</string>
     <string name="repeat_pending">Recurring occurrence · Needs confirmation</string>
     <string name="repeat_confirm_occurrence">Confirm occurrence</string>
-    <string name="repeat_confirm_hint">Adjust the amount and confirm. Later unconfirmed and uncleared occurrences and the future template use this amount. Earlier and confirmed occurrences stay unchanged. Confirmation does not clear the transaction. An older confirmation does not replace a more recent confirmed amount.</string>
+    <string name="repeat_confirm_hint">On confirmation, choose this transaction only or the future series. No other recorded occurrence changes.</string>
+    <string name="repeat_scope_title">Apply changes to…</string>
+    <string name="repeat_scope_current">This transaction only</string>
+    <string name="repeat_scope_series">This transaction and future series</string>
+    <string name="repeat_scope_hint">On save, choose this transaction alone or the future series. No other recorded transaction will change.</string>
+    <string name="repeat_scope_description">This transaction: changes only its fields; series frequency and limits are ignored. With the series: updates the future template and schedule too. Other recorded transactions remain unchanged, even unconfirmed ones. An internal transfer updates both linked sides.</string>
+    <string name="repeat_remaining">Remaining occurrences</string>
+    <string name="repeat_remaining_hint">Number of new occurrences to generate, excluding recorded transactions. Zero ends the series; blank is unlimited. Choose a count OR an end date. The next date is after today and after already recorded/consumed occurrences.</string>
+    <string name="repeat_check_parameters">Check series settings</string>
 </resources>
