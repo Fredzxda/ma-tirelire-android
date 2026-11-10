@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.WindowManager
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProvider
+import kotlinx.coroutines.isActive
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.background
@@ -79,6 +80,8 @@ internal data class DemoTransaction(
     val date: String,
     val cleared: Boolean = false,
     val peerId: Long? = null,
+    val seriesId: String? = null,
+    val occurrence: Int? = null,
 )
 
 internal data class EntryDraft(
@@ -95,6 +98,10 @@ internal data class EntryDraft(
     val newPayment: String = "",
     val editingId: Long? = null,
     val transferTarget: Int? = null,
+    val repeatFrequency: RepeatFrequency = RepeatFrequency.NONE,
+    val repeatUntil: String = "",
+    val repeatCount: String = "",
+    val applyToSeries: Boolean = false,
     val date: String = "",
 )
 
@@ -191,6 +198,7 @@ class DemoViewModel : ViewModel() {
         val designated = payments.firstOrNull { it.equals("Virement", true) || it.equals("Transfer", true) }
             ?: addPayment(defaultName) ?: return
         transferPayment = designated
+        for (i in rules.indices) if (rules[i].target != null) rules[i] = rules[i].copy(payment = designated)
         val migrated = transactions.map { if (it.peerId != null) it.copy(payment = designated) else it }
         transactions.clear(); transactions.addAll(migrated)
         draft = draft?.let { if (it.transferTarget != null) it.copy(payment = designated, addingPayment = false, newPayment = "") else it }
@@ -204,6 +212,31 @@ class DemoViewModel : ViewModel() {
     }
     /** All future income/expense and category reports must use this perimeter. */
     internal fun reportingTransactions() = transactions.filter { it.peerId == null }
+    internal val rules = mutableStateListOf<RecurringRule>()
+    internal var recurrenceEpoch by mutableIntStateOf(0)
+        private set
+    internal var recurrenceBlocked by mutableStateOf(false)
+        private set
+    internal fun generateDue(today: java.time.LocalDate = java.time.LocalDate.now()): Boolean {
+        val result = Recurrences.generate(exportData(), today)
+        recurrenceBlocked = result.blocked
+        if (!result.changed) return false
+        val checked = try { SnapshotCodec.encode(result.data) }
+        catch (_: IllegalArgumentException) { recurrenceBlocked = true; return false }
+        checked.fill(0)
+        transactions.clear(); transactions.addAll(result.data.transactions)
+        rules.clear(); rules.addAll(result.data.rules)
+        recurrenceEpoch++
+        onChange?.invoke()
+        return true
+    }
+    internal fun setSeriesActive(id: String, active: Boolean) {
+        val index = rules.indexOfFirst { it.id == id }
+        if (index < 0) return
+        val next = rules[index].copy(active = active)
+        if (active && next.nextDate() == null) return
+        rules[index] = next; recurrenceEpoch++; onChange?.invoke()
+    }
     internal val payments = mutableStateListOf<String>()
     internal var draft by mutableStateOf<EntryDraft?>(null)
         private set
@@ -261,6 +294,7 @@ class DemoViewModel : ViewModel() {
         draft = EntryDraft(account = row.account, income = row.amount.signum() > 0,
             amount = row.amount.abs().toPlainString().replace('.', separator),
             description = row.description, category = row.category, payment = row.payment, editingId = id,
+            repeatFrequency = rules.firstOrNull { it.id == row.seriesId }?.frequency ?: RepeatFrequency.NONE,
             transferTarget = row.peerId?.let { peer -> transactions.firstOrNull { it.id == peer }?.account }, date = if (OperationDates.parse(row.date) != null) row.date else "")
         onChange?.invoke()
     }
@@ -284,13 +318,14 @@ class DemoViewModel : ViewModel() {
     internal fun updateDraft(next: EntryDraft) { if (draft != null) { draft = next.copy(attempted = false); onChange?.invoke() } }
     internal fun cancelEntry() { draft = null; onChange?.invoke() }
 
-    internal fun exportData() = LedgerData(transactions.toList(), categories.toList(), payments.toList(), openings.toList(), draft, accountNames.toList(), transferPayment)
+    internal fun exportData() = LedgerData(transactions.toList(), categories.toList(), payments.toList(), openings.toList(), draft, accountNames.toList(), transferPayment, rules.toList())
 
     internal fun restoreData(data: LedgerData) {
         transactions.clear(); transactions.addAll(data.transactions)
         categories.clear(); categories.addAll(data.categories)
         payments.clear(); payments.addAll(data.payments)
         transferPayment = data.transferPayment
+        rules.clear(); rules.addAll(data.rules); recurrenceEpoch++; recurrenceBlocked = false
         openings = data.openings.toList()
         accountNames.clear(); accountNames.addAll(data.accountNames)
         reconciliation = null
@@ -304,6 +339,7 @@ class DemoViewModel : ViewModel() {
 
     internal fun clearSensitive() {
         onChange = null
+        rules.clear(); recurrenceEpoch++; recurrenceBlocked = false
         accountNames.clear(); accountDraft = null; reconciliation = null
         transactions.clear(); categories.clear(); payments.clear(); draft = null; transferPayment = null
         openings = listOf(BigDecimal("500.00"), BigDecimal("3000.00"))
@@ -340,11 +376,34 @@ class DemoViewModel : ViewModel() {
         if (previous != null && target != null && peer == null && (nextId <= 0 || nextId == Long.MAX_VALUE)) return false
         val rowId = previous?.id ?: nextId
         val peerId = if (target == null) null else peer?.id ?: (if (previous == null) nextId + 1 else nextId)
-        val row = DemoTransaction(rowId,
+        var row = DemoTransaction(rowId,
             current.account, current.description.trim(), if (current.income) amount else amount.negate(),
             current.category, current.payment,
             current.date.ifEmpty { previous?.date ?: OperationDates.parse(date)?.toString() ?: return false },
-            previous?.cleared ?: false, peerId)
+            previous?.cleared ?: false, peerId, previous?.seriesId, previous?.occurrence)
+        val nextRules = rules.toMutableList()
+        val oldRule = previous?.seriesId?.let { id -> nextRules.firstOrNull { it.id == id } }
+        if (oldRule == null && current.repeatFrequency != RepeatFrequency.NONE) {
+            val anchor = OperationDates.parse(row.date)
+            val until = current.repeatUntil.takeIf { it.isNotBlank() }?.let(OperationDates::parse)
+            val count = current.repeatCount.takeIf { it.isNotBlank() }?.toIntOrNull()
+            if (anchor == null || (current.repeatUntil.isNotBlank() && (until == null || until < anchor)) ||
+                (current.repeatCount.isNotBlank() && (count == null || count !in 1..10_000)) ||
+                (current.repeatUntil.isNotBlank() && current.repeatCount.isNotBlank()) || nextRules.size >= 500) {
+                draft = current.copy(attempted = true); return false
+            }
+            val id = java.util.UUID.randomUUID().toString()
+            nextRules.add(RecurringRule(id, row.date, current.repeatFrequency, row.account, target, row.amount,
+                row.description, row.category, row.payment, until = until?.toString(), count = count))
+            row = row.copy(seriesId = id, occurrence = 0)
+        } else if (oldRule != null && current.applyToSeries) {
+            val receiver = previous?.peerId != null && oldRule.target == row.account
+            nextRules[nextRules.indexOf(oldRule)] = oldRule.copy(
+                account = if (receiver) requireNotNull(target) else row.account,
+                target = if (receiver) row.account else target,
+                amount = if (receiver) row.amount.negate() else row.amount,
+                description = row.description, category = row.category, payment = row.payment)
+        }
         val nextRows = transactions.toMutableList()
         if (index == null) nextRows.add(row) else nextRows[index] = row
         if (target != null) {
@@ -354,9 +413,10 @@ class DemoViewModel : ViewModel() {
             if (peerIndex == null) nextRows.add(counterpart) else nextRows[peerIndex] = counterpart
         }
         // Validate the complete pair before exposing it or invoking persistence.
-        val checked = SnapshotCodec.encode(exportData().copy(transactions = nextRows, draft = null))
+        val checked = SnapshotCodec.encode(exportData().copy(transactions = nextRows, draft = null, rules = nextRules))
         checked.fill(0)
         transactions.clear(); transactions.addAll(nextRows)
+        rules.clear(); rules.addAll(nextRules); recurrenceEpoch++
         account.intValue = current.account
         destination.intValue = 1
         draft = null
@@ -395,6 +455,12 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
     )
     model.ensureAccountNames(listOf(stringResource(R.string.current_account), stringResource(R.string.savings_account)))
     model.ensureTransferPayment(transfer)
+    LaunchedEffect(model.recurrenceEpoch) {
+        while (kotlinx.coroutines.currentCoroutineContext().isActive) {
+            if (!vault.busy && model.reconciliation == null) model.generateDue()
+            kotlinx.coroutines.delay(60_000)
+        }
+    }
     val transactions = model.transactions
     var destination by model.destination
     var account by model.account
@@ -552,6 +618,7 @@ private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDe
                         }
                         Text(money(tx.amount), fontWeight = FontWeight.Bold, color = if (tx.amount.signum() < 0) Color(0xFF944C3C) else MaterialTheme.colorScheme.primary)
                     }
+                    if (tx.seriesId != null) Text(stringResource(R.string.repeat_occurrence), style = MaterialTheme.typography.labelMedium)
                     if (tx.peerId != null) {
                         Text(stringResource(R.string.transfer_linked), style = MaterialTheme.typography.labelMedium)
                     }
@@ -568,9 +635,14 @@ private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDe
 
 @Composable
 private fun SettingsScreen(vault: VaultController, activity: FragmentActivity) {
+    val model: DemoViewModel = viewModel()
+    var showRules by remember { mutableStateOf(false) }
+    if (showRules) RecurringRulesDialog(model) { showRules = false }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(stringResource(R.string.settings), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         OutlinedButton(onClick = vault::openReleaseNotes) { Text(stringResource(R.string.release_notes_open)) }
+        OutlinedButton(onClick = { showRules = true }) { Text(stringResource(R.string.repeat_manage)) }
+        if (model.recurrenceBlocked) Text(stringResource(R.string.repeat_blocked), color = MaterialTheme.colorScheme.error)
         VaultSettings(vault, activity)
         InfoCard(R.string.security_title, R.string.security_detail)
         InfoCard(R.string.privacy_title, R.string.privacy_detail)
@@ -660,8 +732,9 @@ private fun EntryDialog(names: List<String>, model: DemoViewModel) {
                                 }
                                 EntryAmounts(model, draft, compact = true)
                                 EntryReferences(model, draft, compact = true)
+                                EntryRepeat(model, draft)
                                 if (model.limitReached) Text(stringResource(R.string.vault_data_limit), color = MaterialTheme.colorScheme.error)
-                                if (draft.attempted) Text(stringResource(R.string.invalid_amount), color = MaterialTheme.colorScheme.error)
+                                if (draft.attempted) Text(stringResource(if (draft.repeatFrequency == RepeatFrequency.NONE) R.string.invalid_amount else R.string.repeat_invalid), color = MaterialTheme.colorScheme.error)
                             }
                         }
                     } else {
@@ -669,8 +742,9 @@ private fun EntryDialog(names: List<String>, model: DemoViewModel) {
                             verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             EntryBasics(names, model, draft)
                             EntryReferences(model, draft)
+                            EntryRepeat(model, draft)
                             if (model.limitReached) Text(stringResource(R.string.vault_data_limit), color = MaterialTheme.colorScheme.error)
-                                if (draft.attempted) Text(stringResource(R.string.invalid_amount), color = MaterialTheme.colorScheme.error)
+                                if (draft.attempted) Text(stringResource(if (draft.repeatFrequency == RepeatFrequency.NONE) R.string.invalid_amount else R.string.repeat_invalid), color = MaterialTheme.colorScheme.error)
                         }
                     }
                 }
@@ -680,7 +754,12 @@ private fun EntryDialog(names: List<String>, model: DemoViewModel) {
     if (confirmDelete && toDelete != null) AlertDialog(
         onDismissRequest = { confirmDelete = false },
         title = { Text(stringResource(R.string.delete_transaction)) },
-        text = { Text(stringResource(if (toDelete.peerId == null) R.string.delete_transaction_warning else R.string.transfer_delete_warning, toDelete.description, money(toDelete.amount))) },
+        text = {
+            Column {
+                Text(stringResource(if (toDelete.peerId == null) R.string.delete_transaction_warning else R.string.transfer_delete_warning, toDelete.description, money(toDelete.amount)))
+                if (toDelete.seriesId != null) Text(stringResource(R.string.repeat_delete_hint))
+            }
+        },
         confirmButton = { TextButton(onClick = { model.deleteEntry(toDelete.id) }) { Text(stringResource(R.string.delete_action)) } },
         dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.cancel)) } },
         properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn),
@@ -983,4 +1062,85 @@ private fun TransferTargetPicker(model: DemoViewModel, draft: EntryDraft, linked
             }
         }
     }
+}
+
+@Composable
+private fun repeatLabel(frequency: RepeatFrequency): String = stringResource(when (frequency) {
+    RepeatFrequency.NONE -> R.string.repeat_none
+    RepeatFrequency.WEEK -> R.string.repeat_week
+    RepeatFrequency.TWO_WEEKS -> R.string.repeat_two_weeks
+    RepeatFrequency.MONTH -> R.string.repeat_month
+    RepeatFrequency.MONTH_END -> R.string.repeat_month_end
+    RepeatFrequency.TWO_MONTHS -> R.string.repeat_two_months
+    RepeatFrequency.THREE_MONTHS -> R.string.repeat_three_months
+    RepeatFrequency.FOUR_MONTHS -> R.string.repeat_four_months
+    RepeatFrequency.SIX_MONTHS -> R.string.repeat_six_months
+    RepeatFrequency.YEAR -> R.string.repeat_year
+    RepeatFrequency.TWO_YEARS -> R.string.repeat_two_years
+})
+
+@Composable
+private fun EntryRepeat(model: DemoViewModel, draft: EntryDraft) {
+    val row = model.transactions.firstOrNull { it.id == draft.editingId }
+    val rule = model.rules.firstOrNull { it.id == row?.seriesId }
+    var expanded by remember { mutableStateOf(false) }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(stringResource(R.string.repeat_title), style = MaterialTheme.typography.labelLarge)
+        if (rule != null) {
+            Text(repeatLabel(rule.frequency))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(checked = draft.applyToSeries, onCheckedChange = { model.updateDraft(draft.copy(applyToSeries = it)) })
+                Text(stringResource(R.string.repeat_apply_future))
+            }
+            Text(stringResource(R.string.repeat_edit_hint), style = MaterialTheme.typography.bodySmall)
+        } else {
+            Box {
+                OutlinedButton(onClick = { expanded = true }) { Text(repeatLabel(draft.repeatFrequency)) }
+                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    RepeatFrequency.entries.forEach { frequency ->
+                        DropdownMenuItem(text = { Text(repeatLabel(frequency)) }, onClick = {
+                            model.updateDraft(draft.copy(repeatFrequency = frequency)); expanded = false
+                        })
+                    }
+                }
+            }
+            if (draft.repeatFrequency != RepeatFrequency.NONE) {
+                Text(stringResource(R.string.repeat_limits_hint), style = MaterialTheme.typography.bodySmall)
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(value = draft.repeatUntil,
+                        onValueChange = { model.updateDraft(draft.copy(repeatUntil = it.take(10))) },
+                        label = { Text(stringResource(R.string.repeat_until)) }, singleLine = true, modifier = Modifier.weight(1f))
+                    OutlinedTextField(value = draft.repeatCount,
+                        onValueChange = { model.updateDraft(draft.copy(repeatCount = it.take(5))) },
+                        label = { Text(stringResource(R.string.repeat_count)) }, singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecurringRulesDialog(model: DemoViewModel, onDismiss: () -> Unit) {
+    val locale = LocalConfiguration.current.locales[0]
+    AlertDialog(onDismissRequest = onDismiss, title = { Text(stringResource(R.string.repeat_manage)) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(R.string.repeat_resume_hint))
+                if (model.recurrenceBlocked) Text(stringResource(R.string.repeat_blocked), color = MaterialTheme.colorScheme.error)
+                if (model.rules.isEmpty()) Text(stringResource(R.string.repeat_empty))
+                model.rules.forEach { rule ->
+                    HorizontalDivider()
+                    Text(rule.description, fontWeight = FontWeight.Bold)
+                    Text(repeatLabel(rule.frequency))
+                    Text(stringResource(R.string.repeat_next, rule.nextDate()?.let { OperationDates.display(it.toString(), locale) }
+                        ?: stringResource(R.string.repeat_stopped)))
+                    TextButton(onClick = { model.setSeriesActive(rule.id, !rule.active) },
+                        enabled = rule.active || rule.copy(active = true).nextDate() != null) {
+                        Text(stringResource(if (rule.active) R.string.repeat_pause else R.string.repeat_resume))
+                    }
+                }
+            }
+        }, confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.ok)) } },
+        properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn))
 }

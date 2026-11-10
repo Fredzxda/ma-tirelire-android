@@ -1,9 +1,8 @@
 # Exigence conservée — opérations périodiques
 
 Identifiant : REC-001. Rappel utilisateur du 8 novembre 2026.
-Statut : exigence fonctionnelle retenue pour le portage ; non implémentée dans
-0.3.4-dev. Premier lot retenu : 0.5.0-dev, après les dates modifiables en
-0.3.5-dev et les virements internes en 0.4.0-dev.
+Statut : premier lot implémenté dans 0.5.0-dev, après les dates modifiables et
+les virements internes. Validation et limites : [VALIDATION-0.5.0.md](VALIDATION-0.5.0.md).
 
 ## Comportement attendu
 
@@ -57,3 +56,11 @@ Ce document est une exigence suivie, pas l'annonce d'une fonction disponible.
 Précision du 10 novembre 2026 : génération des échéances dues au déverrouillage
 et pendant la session ouverte, sans déchiffrement en arrière-plan verrouillé.
 Projection future et rappels : sous-lots séparés. Voir [le plan détaillé](plan-saisie-2026-11-10.md).
+
+## Périmètre livré en 0.5.0-dev
+
+Fréquences historiques et fin par date ou nombre total, génération à échéance
+déverrouillée, rattrapage par lots, arret/reprise, édition isolée ou modèle futur,
+et virements périodiques. La modification de fréquence/fin/début d’une série
+existante, la projection future et les rappels restent des sous-lots ultérieurs.
+Les tests unitaires ne remplacent pas la validation manuelle sur téléphone.

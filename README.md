@@ -1,9 +1,15 @@
 # Ma Tirelire — Android
 
-Prototype de sécurité **0.4.1-dev** du portage de Ma Tirelire Palm.
+Prototype de sécurité **0.5.0-dev** du portage de Ma Tirelire Palm.
 Android 12 minimum, téléphone et tablette, français et anglais.
 
 ## Utilisation de cette version
+
+Opérations périodiques : fréquences historiques, fin par date ou nombre total,
+génération des échéances dues après déverrouillage et pendant la session ouverte.
+Gestion des séries dans Réglages ; choix entre occurrence seule et futures
+échéances lors des modifications. Les occurrences générées sont non pointées.
+Format comptable v5 : anciennes sauvegardes lisibles, pas de rétrogradation.
 
 Choisir Virement dans les moyens de paiement pour afficher le compte facultatif
 à côté : sans compte, écriture externe simple ; avec compte, paire interne.
