@@ -1,9 +1,14 @@
 # Ma Tirelire — Android
 
-Prototype de sécurité **0.5.5-dev** du portage de Ma Tirelire Palm.
+Prototype de sécurité **0.5.6-dev** du portage de Ma Tirelire Palm.
 Android 12 minimum, téléphone et tablette, français et anglais.
 
 ## Utilisation de cette version
+
+Statuts sans popup de portée quand les champs sont inchangés : Prévision →
+À confirmer → Confirmée en deux actions. Le statut intermédiaire choisi est
+persisté même avant la date prévue, sans pointage automatique. Schéma 9 ;
+archives précédentes lisibles, pas de rétrogradation.
 
 Anticipation réglable : à échéance (défaut), fin du mois, 15/30 jours. Les
 occurrences anticipées sont enregistrées et incluses dans le solde total. États

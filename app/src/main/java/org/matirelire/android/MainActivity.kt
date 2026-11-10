@@ -85,6 +85,7 @@ internal data class DemoTransaction(
     val seriesId: String? = null,
     val occurrence: Int? = null,
     val amountConfirmed: Boolean = true,
+    val readyToConfirm: Boolean = false,
 )
 
 internal data class EntryDraft(
@@ -215,7 +216,7 @@ class DemoViewModel : ViewModel() {
     }
     /** All future income/expense and category reports must use this perimeter. */
     internal fun reportingTransactions() = transactions.filter {
-        it.peerId == null && RecurringState.of(it, calendarToday) != RecurringState.FORECAST
+        it.peerId == null && !RecurringState.isFutureUnconfirmed(it, calendarToday)
     }
     internal var anticipation by mutableStateOf(Anticipation.DUE)
         private set
@@ -374,19 +375,29 @@ class DemoViewModel : ViewModel() {
         destination.intValue = 0; account.intValue = 0; initialized = false; limitReached = false
     }
 
+    internal fun operationFieldsChanged(locale: Locale): Boolean {
+        val current = draft ?: return false
+        val row = transactions.firstOrNull { it.id == current.editingId } ?: return true
+        val amount = Money.parseAmount(current.amount, locale) ?: return true
+        val signed = if (current.income) amount else amount.negate()
+        val target = row.peerId?.let { id -> transactions.firstOrNull { it.id == id }?.account }
+        return current.account != row.account || signed.compareTo(row.amount) != 0 ||
+            current.description.trim() != row.description || current.category != row.category || current.payment != row.payment ||
+            current.date.ifEmpty { row.date } != row.date || current.transferTarget != target || current.addingCategory || current.addingPayment
+    }
+
+    internal fun needsSeriesScope(locale: Locale): Boolean {
+        val row = transactions.firstOrNull { it.id == draft?.editingId } ?: return false
+        return row.seriesId != null && operationFieldsChanged(locale)
+    }
+
     internal fun seriesOnlyEdit(locale: Locale): Boolean {
         val current = draft ?: return false
         val row = transactions.firstOrNull { it.id == current.editingId } ?: return false
         val rule = rules.firstOrNull { it.id == row.seriesId } ?: return false
-        val amount = Money.parseAmount(current.amount, locale) ?: return false
-        val signed = if (current.income) amount else amount.negate()
-        val target = row.peerId?.let { id -> transactions.firstOrNull { it.id == id }?.account }
-        val operationUnchanged = current.account == row.account && signed.compareTo(row.amount) == 0 &&
-            current.description.trim() == row.description && current.category == row.category && current.payment == row.payment &&
-            current.date.ifEmpty { row.date } == row.date && current.transferTarget == target && !current.addingCategory && !current.addingPayment
         val remaining = rule.count?.let { (it - rule.next).coerceAtLeast(0) }
         val countChanged = if (current.repeatCount.isBlank()) remaining != null else current.repeatCount.toIntOrNull() == null || current.repeatCount.toIntOrNull() != remaining
-        return operationUnchanged && (current.repeatFrequency != rule.frequency || current.repeatUntil != rule.until.orEmpty() || countChanged)
+        return !operationFieldsChanged(locale) && (current.repeatFrequency != rule.frequency || current.repeatUntil != rule.until.orEmpty() || countChanged)
     }
 
     private fun saveSeriesOnly(today: java.time.LocalDate): Boolean {
@@ -423,6 +434,7 @@ class DemoViewModel : ViewModel() {
         // A missing target must never turn an edit into a new operation.
         if (index != null && index < 0) return false
         val previous = index?.let { transactions[it] }
+        val preparing = previous?.let { RecurringState.of(it, calendarToday) == RecurringState.FORECAST } == true
         val peer = previous?.peerId?.let { peerId -> transactions.firstOrNull { it.id == peerId } }
         val target = current.transferTarget
         if (previous?.peerId != null && target == null) return false
@@ -440,7 +452,7 @@ class DemoViewModel : ViewModel() {
             current.account, current.description.trim(), if (current.income) amount else amount.negate(),
             current.category, current.payment,
             current.date.ifEmpty { previous?.date ?: OperationDates.parse(date)?.toString() ?: return false },
-            previous?.cleared ?: false, peerId, previous?.seriesId, previous?.occurrence, true)
+            previous?.cleared ?: false, peerId, previous?.seriesId, previous?.occurrence, !preparing, preparing || previous?.readyToConfirm == true)
         val nextRules = rules.toMutableList()
         val oldRule = previous?.seriesId?.let { id -> nextRules.firstOrNull { it.id == id } }
         if (oldRule == null && current.repeatFrequency != RepeatFrequency.NONE) {
@@ -463,7 +475,7 @@ class DemoViewModel : ViewModel() {
                     draft = current.copy(attempted = true); return false
                 }
             }
-            revised = revised.copy(confirmedThrough = maxOf(revised.confirmedThrough, requireNotNull(row.occurrence)))
+            if (row.amountConfirmed) revised = revised.copy(confirmedThrough = maxOf(revised.confirmedThrough, requireNotNull(row.occurrence)))
             nextRules[nextRules.indexOf(oldRule)] = revised
         }
         val nextRows = transactions.toMutableList()
@@ -1020,10 +1032,12 @@ private fun EntryActions(model: DemoViewModel, draft: EntryDraft, locale: Locale
     TextButton(onClick = model::cancelEntry) { Text(stringResource(R.string.cancel)) }
     Button(onClick = {
         keyboard?.hide()
-        if (row?.seriesId != null && !model.seriesOnlyEdit(locale)) chooseScope = true
+        if (model.needsSeriesScope(locale)) chooseScope = true
         else model.saveEntry(locale, java.time.LocalDate.now().toString())
     }, enabled = !draft.addingCategory && !draft.addingPayment) {
-        Text(stringResource(if (model.seriesOnlyEdit(locale)) R.string.repeat_save_series else if (row?.let { it.seriesId != null && !it.amountConfirmed } == true) R.string.repeat_confirm_occurrence else R.string.save))
+        Text(stringResource(if (model.seriesOnlyEdit(locale)) R.string.repeat_save_series
+            else if (row?.let { RecurringState.of(it, model.calendarToday) } == RecurringState.FORECAST) R.string.repeat_prepare_occurrence
+            else if (row?.let { it.seriesId != null && !it.amountConfirmed } == true) R.string.repeat_confirm_occurrence else R.string.save))
     }
     if (chooseScope) Dialog(onDismissRequest = { chooseScope = false },
         properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn, usePlatformDefaultWidth = false)) {

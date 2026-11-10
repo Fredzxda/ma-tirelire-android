@@ -42,6 +42,9 @@ class AnticipationTest {
         assertEquals(RecurringState.FORECAST, RecurringState.of(future.copy(cleared = true), today))
         model.editEntry(future.id, Locale.US)
         assertTrue(model.saveEntry(Locale.US, "unused", SeriesEditScope.CURRENT))
+        assertEquals(RecurringState.PENDING, RecurringState.of(model.transactions.first { it.id == future.id }, today))
+        model.editEntry(future.id, Locale.US)
+        assertTrue(model.saveEntry(Locale.US, "unused", SeriesEditScope.CURRENT))
         val confirmed = model.transactions.first { it.id == future.id }
         assertEquals(RecurringState.CONFIRMED, RecurringState.of(confirmed, today))
         assertFalse(confirmed.cleared)

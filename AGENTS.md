@@ -38,3 +38,7 @@
   dans les rapports revenus/depenses tant que futures et non confirmees.
   Confirmation et pointage restent independants. Reduire un horizon ne supprime
   jamais les ecritures deja enregistrees. Le reglage reste chiffre/sauvegarde.
+
+- Statut de recurrence seul : aucun dialogue de portee. Prevision -> A confirmer
+  -> Confirmee en deux actions distinctes, etat intermediaire persiste avant
+  echeance. Aucun pointage automatique ; une paire change ses deux etats ensemble.

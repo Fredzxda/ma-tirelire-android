@@ -76,8 +76,8 @@
     <string name="release_notes_title">Nouveautés · %1$s</string>
     <string name="release_notes_test_title">À vérifier avec des données fictives</string>
     <string name="release_notes_understood">Compris</string>
-    <string name="release_notes_changes">États visibles et indépendants du pointage : Prévision pour une occurrence future non confirmée, À confirmer à son échéance, Confirmée après validation. Réglage dans Réglages : génération à l’échéance, fin du mois, 15 ou 30 jours à l’avance. Les prévisions enregistrées entrent dans le solde total ; toutes les écritures existantes restent protégées lors des changements de série.</string>
-    <string name="release_notes_tests">1. Dans Réglages, choisir Jusqu’à la fin du mois courant : vérifier toutes les occurrences prévues dans les comptes.\n2. Vérifier les trois libellés, distincts de Pointé/Non pointé. Confirmer une prévision depuis sa fiche ne doit pas la pointer.\n3. Revenir à À l’échéance : les prévisions déjà créées restent intactes.\n4. Pour un virement, vérifier les montants opposés et le total du coffre inchangé.\n5. Consulter Échéances à venir : ne pas retrouver en double les prévisions déjà enregistrées.\n6. Verrouiller/rouvrir puis sauvegarder/restaurer : réglage conservé, aucun doublon.</string>
+    <string name="release_notes_changes">Une simple action de changement de statut ne déclenche plus le dialogue de portée. Une Prévision passe d’abord À confirmer, puis une seconde action confirme l’occurrence, sans pointage automatique. Le dialogue de portée reste réservé aux véritables modifications des champs communs à l’opération et à la série.</string>
+    <string name="release_notes_tests">1. Ouvrir une Prévision sans modifier ses champs : Passer à À confirmer doit changer le statut sans popup.\n2. Rouvrir cette opération et Confirmer l’occurrence : statut Confirmée, toujours sans popup ni pointage.\n3. Verrouiller/rouvrir entre les deux actions : À confirmer doit être conservé, même avant la date.\n4. Modifier réellement le montant, la date ou le libellé : le dialogue de portée doit apparaître.\n5. Faire le même essai avec un virement : états cohérents sur les deux côtés, pointages indépendants.</string>
     <string name="account_add">Ajouter un compte</string>
     <string name="account_edit">Configurer le compte</string>
     <string name="account_configure">Configurer %1$s</string>
@@ -140,7 +140,7 @@
     <string name="repeat_clear_end">Retirer la date de fin</string>
     <string name="repeat_pending">Occurrence périodique · À confirmer</string>
     <string name="repeat_confirm_occurrence">Confirmer l’occurrence</string>
-    <string name="repeat_confirm_hint">Au moment de confirmer, choisissez cette opération seule ou la suite de la série. Aucune autre occurrence enregistrée ne sera modifiée.</string>
+    <string name="repeat_confirm_hint">Prévision : une première action la passe À confirmer. Une seconde la confirme. Aucune portée demandée si les champs restent inchangés ; le pointage reste indépendant.</string>
     <string name="repeat_scope_title">Appliquer les modifications à…</string>
     <string name="repeat_scope_current">Cette opération uniquement</string>
     <string name="repeat_scope_series">Cette opération et la suite de la série</string>
@@ -169,4 +169,5 @@
     <string name="anticipation_30">30 jours à l’avance</string>
     <string name="anticipation_hint">Les occurrences anticipées sont enregistrées dans les comptes comme Prévisions et incluses dans le solde total, sans pointage automatique. À leur date elles deviennent À confirmer. La confirmation dans leur fiche est distincte du pointage. Réduire l’avance ou modifier une série ne supprime ni ne modifie les prévisions déjà enregistrées.</string>
     <string name="anticipation_balance_hint">Le solde total comprend les prévisions périodiques enregistrées. Leur confirmation et leur pointage sont distincts.</string>
+    <string name="repeat_prepare_occurrence">Passer à « À confirmer »</string>
 </resources>

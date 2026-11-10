@@ -15,10 +15,12 @@ internal enum class Anticipation {
 internal enum class RecurringState {
     FORECAST, PENDING, CONFIRMED;
     companion object {
+        fun isFutureUnconfirmed(row: DemoTransaction, today: LocalDate): Boolean =
+            row.seriesId != null && !row.amountConfirmed && OperationDates.parse(row.date)?.let { it > today } == true
         fun of(row: DemoTransaction, today: LocalDate): RecurringState? {
             if (row.seriesId == null) return null
             if (row.amountConfirmed) return CONFIRMED
-            return if (OperationDates.parse(row.date)?.let { it > today } == true) FORECAST else PENDING
+            return if (!row.readyToConfirm && isFutureUnconfirmed(row, today)) FORECAST else PENDING
         }
     }
 }

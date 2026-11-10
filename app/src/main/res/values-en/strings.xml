@@ -76,8 +76,8 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">Visible states independent from clearing: Forecast for a future unconfirmed occurrence, Needs confirmation when due, Confirmed after validation. Settings: generate when due, through month end, or 15/30 days ahead. Recorded forecasts contribute to the total balance; series changes preserve all existing rows.</string>
-    <string name="release_notes_tests">1. In Settings choose Through the end of this month: check all scheduled occurrences in accounts.\n2. Check the three states separately from clearing. Confirming a forecast must not clear it.\n3. Return to Only when due: recorded forecasts remain unchanged.\n4. For transfers check opposite amounts and unchanged vault total.\n5. Upcoming occurrences must not duplicate already recorded forecasts.\n6. Lock/reopen and back up/restore: setting preserved, no duplicates.</string>
+    <string name="release_notes_changes">A status-only action no longer opens the scope dialog. A Forecast first moves to Needs confirmation; a second action confirms the occurrence without automatic clearing. Scope is requested only for actual changes to shared transaction/series fields.</string>
+    <string name="release_notes_tests">1. Open a Forecast without editing fields: Move to Needs confirmation changes status without a popup.\n2. Reopen and Confirm occurrence: Confirmed without scope dialog or clearing.\n3. Lock/reopen between actions: Needs confirmation persists even before the date.\n4. Change amount, date or description: the scope dialog must appear.\n5. Repeat with a transfer: matching states on both sides, independent clearing.</string>
     <string name="account_add">Add account</string>
     <string name="account_edit">Account settings</string>
     <string name="account_configure">Configure %1$s</string>
@@ -140,7 +140,7 @@
     <string name="repeat_clear_end">Remove end date</string>
     <string name="repeat_pending">Recurring occurrence · Needs confirmation</string>
     <string name="repeat_confirm_occurrence">Confirm occurrence</string>
-    <string name="repeat_confirm_hint">On confirmation, choose this transaction only or the future series. No other recorded occurrence changes.</string>
+    <string name="repeat_confirm_hint">Forecast: the first action moves it to Needs confirmation. A second confirms it. No scope choice if fields are unchanged; clearing stays independent.</string>
     <string name="repeat_scope_title">Apply changes to…</string>
     <string name="repeat_scope_current">This transaction only</string>
     <string name="repeat_scope_series">This transaction and future series</string>
@@ -169,4 +169,5 @@
     <string name="anticipation_30">30 days ahead</string>
     <string name="anticipation_hint">Anticipated occurrences are recorded as Forecasts and included in the total balance, without automatic clearing. On their date they need confirmation. Confirming in their form is separate from clearing. Reducing anticipation or editing a series does not delete or alter already recorded forecasts.</string>
     <string name="anticipation_balance_hint">The total balance includes recorded recurring forecasts. Confirmation and clearing are separate.</string>
+    <string name="repeat_prepare_occurrence">Move to Needs confirmation</string>
 </resources>

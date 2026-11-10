@@ -21,7 +21,7 @@ internal object SnapshotCodec {
         val rows = JSONArray()
         data.transactions.forEach { t -> rows.put(JSONObject().put("id", t.id).put("account", t.account)
             .put("description", t.description).put("amount", t.amount.toPlainString())
-            .put("category", t.category).put("payment", t.payment).put("date", t.date).put("cleared", t.cleared).put("peerId", t.peerId ?: JSONObject.NULL).put("seriesId", t.seriesId ?: JSONObject.NULL).put("occurrence", t.occurrence ?: JSONObject.NULL).put("amountConfirmed", t.amountConfirmed)) }
+            .put("category", t.category).put("payment", t.payment).put("date", t.date).put("cleared", t.cleared).put("peerId", t.peerId ?: JSONObject.NULL).put("seriesId", t.seriesId ?: JSONObject.NULL).put("occurrence", t.occurrence ?: JSONObject.NULL).put("amountConfirmed", t.amountConfirmed).put("readyToConfirm", t.readyToConfirm)) }
         val d = data.draft?.let { draft -> JSONObject().put("account", draft.account).put("income", draft.income)
             .put("amount", draft.amount).put("description", draft.description).put("category", draft.category)
             .put("payment", draft.payment).put("addingCategory", draft.addingCategory).put("addingPayment", draft.addingPayment)
@@ -29,7 +29,7 @@ internal object SnapshotCodec {
             .put("editingId", draft.editingId ?: JSONObject.NULL).put("date", draft.date).put("transferTarget", draft.transferTarget ?: JSONObject.NULL)
             .put("repeatFrequency", draft.repeatFrequency.name).put("repeatUntil", draft.repeatUntil)
             .put("repeatCount", draft.repeatCount).put("applyToSeries", draft.applyToSeries) }
-        val result = JSONObject().put("schema", if (data.anticipation != Anticipation.DUE) 8 else if (data.rules.isNotEmpty() || data.draft?.repeatFrequency?.let { it != RepeatFrequency.NONE } == true) 7 else if (data.transferPayment != null) 4 else if (data.transactions.any { it.peerId != null } || data.draft?.transferTarget != null) 3 else if (data.accountNames.isEmpty()) 1 else 2)
+        val result = JSONObject().put("schema", if (data.anticipation != Anticipation.DUE) 9 else if (data.rules.isNotEmpty() || data.draft?.repeatFrequency?.let { it != RepeatFrequency.NONE } == true) 9 else if (data.transferPayment != null) 4 else if (data.transactions.any { it.peerId != null } || data.draft?.transferTarget != null) 3 else if (data.accountNames.isEmpty()) 1 else 2)
             .put("anticipation", data.anticipation.name).put("rules", JSONArray(data.rules.map(RecurrenceCodec::encode))).put("transferPayment", data.transferPayment ?: JSONObject.NULL).put("accountNames", JSONArray(data.accountNames)).put("transactions", rows)
             .put("categories", JSONArray(data.categories)).put("payments", JSONArray(data.payments))
             .put("openings", JSONArray(data.openings.map { it.toPlainString() })).put("draft", d ?: JSONObject.NULL)
@@ -58,7 +58,7 @@ internal object SnapshotCodec {
         require(!quoted && depth == 0)
         val root = JSONObject(text)
         val schema = root.getInt("schema")
-        require(schema in 1..8)
+        require(schema in 1..9)
         fun names(key: String): List<String> {
             val list = root.getJSONArray(key)
             require(list.length() in 1..500)
@@ -91,7 +91,8 @@ internal object SnapshotCodec {
                 if (t.isNull("seriesId")) null else t.getString("seriesId"),
                 if (t.isNull("occurrence")) null else t.getInt("occurrence"),
                 if (schema >= 6) t.getBoolean("amountConfirmed") else
-                    (t.isNull("seriesId") || t.optInt("occurrence") == 0 || t.getBoolean("cleared"))).also {
+                    (t.isNull("seriesId") || t.optInt("occurrence") == 0 || t.getBoolean("cleared")),
+                if (schema >= 9) t.getBoolean("readyToConfirm") else false).also {
                 require(it.id > 0 && it.id < Long.MAX_VALUE && it.account in openings.indices)
                 require(it.description.isNotBlank() && it.description.length <= 100 && it.date.length <= 80)
                 require(it.category in categories && it.payment in payments)
@@ -113,7 +114,7 @@ internal object SnapshotCodec {
                 require(row.amount.signum() != 0 && row.amount.add(peer.amount).signum() == 0)
                 require(row.date == peer.date && row.description == peer.description &&
                     row.category == peer.category && row.payment == peer.payment &&
-                    row.seriesId == peer.seriesId && row.occurrence == peer.occurrence && row.amountConfirmed == peer.amountConfirmed)
+                    row.seriesId == peer.seriesId && row.occurrence == peer.occurrence && row.amountConfirmed == peer.amountConfirmed && row.readyToConfirm == peer.readyToConfirm)
             }
         }
         val d = root.optJSONObject("draft")?.let {
@@ -154,7 +155,7 @@ internal object SnapshotCodec {
                 .maxOfOrNull { row -> requireNotNull(row.occurrence) } ?: 0) else rule
         }
         val result = LedgerData(rows, categories, payments, openings, d, accountNames, transferPayment, rules,
-            if (schema == 8) Anticipation.valueOf(root.getString("anticipation")) else Anticipation.DUE)
+            if (schema >= 8) Anticipation.valueOf(root.getString("anticipation")) else Anticipation.DUE)
         RecurrenceCodec.validate(result, schema)
         return result
     }
