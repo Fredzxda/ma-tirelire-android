@@ -29,3 +29,7 @@
   ou modele futur. Ne jamais propager sur les autres ecritures deja enregistrees,
   meme non confirmees. Une paire de virement reste atomique. Tester dates,
   frequence, limites et preservation de l'historique lors des changements.
+
+- Exception au dialogue de portee : si seuls les parametres propres a la serie
+  (frequence, fin, nombre restant) changent, enregistrer directement la serie,
+  sans confirmer ni modifier cette ecriture ni remplacer les champs du modele.

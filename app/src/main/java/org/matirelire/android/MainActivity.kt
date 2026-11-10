@@ -360,9 +360,40 @@ class DemoViewModel : ViewModel() {
         destination.intValue = 0; account.intValue = 0; initialized = false; limitReached = false
     }
 
+    internal fun seriesOnlyEdit(locale: Locale): Boolean {
+        val current = draft ?: return false
+        val row = transactions.firstOrNull { it.id == current.editingId } ?: return false
+        val rule = rules.firstOrNull { it.id == row.seriesId } ?: return false
+        val amount = Money.parseAmount(current.amount, locale) ?: return false
+        val signed = if (current.income) amount else amount.negate()
+        val target = row.peerId?.let { id -> transactions.firstOrNull { it.id == id }?.account }
+        val operationUnchanged = current.account == row.account && signed.compareTo(row.amount) == 0 &&
+            current.description.trim() == row.description && current.category == row.category && current.payment == row.payment &&
+            current.date.ifEmpty { row.date } == row.date && current.transferTarget == target && !current.addingCategory && !current.addingPayment
+        val remaining = rule.count?.let { (it - rule.next).coerceAtLeast(0) }
+        val countChanged = if (current.repeatCount.isBlank()) remaining != null else current.repeatCount.toIntOrNull() == null || current.repeatCount.toIntOrNull() != remaining
+        return operationUnchanged && (current.repeatFrequency != rule.frequency || current.repeatUntil != rule.until.orEmpty() || countChanged)
+    }
+
+    private fun saveSeriesOnly(today: java.time.LocalDate): Boolean {
+        val current = draft ?: return false
+        val row = transactions.firstOrNull { it.id == current.editingId } ?: return false
+        val index = rules.indexOfFirst { it.id == row.seriesId }
+        if (index < 0) return false
+        val revised = SeriesRevision.updateSettings(rules[index], current, row, transactions.toList(), today) ?: run {
+            draft = current.copy(attempted = true); return false
+        }
+        val nextRules = rules.toMutableList().also { it[index] = revised }
+        val checked = SnapshotCodec.encode(exportData().copy(rules = nextRules, draft = null)); checked.fill(0)
+        rules.clear(); rules.addAll(nextRules)
+        draft = null; recurrenceEpoch++; onChange?.invoke()
+        return true
+    }
+
     internal fun saveEntry(locale: Locale, date: String, scope: SeriesEditScope = SeriesEditScope.CURRENT,
         today: java.time.LocalDate = java.time.LocalDate.now()): Boolean {
         val current = draft ?: return false
+        if (seriesOnlyEdit(locale)) return saveSeriesOnly(today)
         val old = transactions.firstOrNull { it.id == current.editingId }
         val additional = if (current.editingId == null) (if (current.transferTarget == null) 1 else 2)
             else if (current.transferTarget != null && old?.peerId == null) 1 else 0
@@ -963,15 +994,17 @@ private fun EntryActions(model: DemoViewModel, draft: EntryDraft, locale: Locale
     TextButton(onClick = model::cancelEntry) { Text(stringResource(R.string.cancel)) }
     Button(onClick = {
         keyboard?.hide()
-        if (row?.seriesId != null) chooseScope = true
+        if (row?.seriesId != null && !model.seriesOnlyEdit(locale)) chooseScope = true
         else model.saveEntry(locale, java.time.LocalDate.now().toString())
     }, enabled = !draft.addingCategory && !draft.addingPayment) {
-        Text(stringResource(if (row?.let { it.seriesId != null && !it.amountConfirmed } == true) R.string.repeat_confirm_occurrence else R.string.save))
+        Text(stringResource(if (model.seriesOnlyEdit(locale)) R.string.repeat_save_series else if (row?.let { it.seriesId != null && !it.amountConfirmed } == true) R.string.repeat_confirm_occurrence else R.string.save))
     }
-    if (chooseScope) AlertDialog(onDismissRequest = { chooseScope = false },
-        title = { Text(stringResource(R.string.repeat_scope_title)) },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    if (chooseScope) Dialog(onDismissRequest = { chooseScope = false },
+        properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn, usePlatformDefaultWidth = false)) {
+        Surface(Modifier.widthIn(max = 560.dp).fillMaxWidth().padding(16.dp), shape = MaterialTheme.shapes.large) {
+            Column(Modifier.heightIn(max = 600.dp).verticalScroll(rememberScrollState()).padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(R.string.repeat_scope_title), style = MaterialTheme.typography.titleLarge)
                 Text(stringResource(R.string.repeat_scope_description))
                 val rule = model.rules.firstOrNull { it.id == row?.seriesId }
                 val amount = Money.parseAmount(draft.amount, locale)
@@ -980,19 +1013,19 @@ private fun EntryActions(model: DemoViewModel, draft: EntryDraft, locale: Locale
                     model.transactions.toList(), java.time.LocalDate.now()) else null
                 Text(stringResource(R.string.repeat_next, proposed?.nextDate()?.let { OperationDates.display(it.toString(), locale) }
                     ?: stringResource(if (proposed == null) R.string.repeat_check_parameters else R.string.repeat_stopped)))
+                HorizontalDivider()
+                TextButton(onClick = {
+                    chooseScope = false
+                    model.saveEntry(locale, java.time.LocalDate.now().toString(), SeriesEditScope.SERIES)
+                }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.repeat_scope_series)) }
+                TextButton(onClick = {
+                    chooseScope = false
+                    model.saveEntry(locale, java.time.LocalDate.now().toString(), SeriesEditScope.CURRENT)
+                }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.repeat_scope_current)) }
+                TextButton(onClick = { chooseScope = false }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.cancel)) }
             }
-        },
-        confirmButton = { TextButton(onClick = {
-            chooseScope = false
-            model.saveEntry(locale, java.time.LocalDate.now().toString(), SeriesEditScope.SERIES)
-        }) { Text(stringResource(R.string.repeat_scope_series)) } },
-        dismissButton = { Column {
-            TextButton(onClick = {
-                chooseScope = false
-                model.saveEntry(locale, java.time.LocalDate.now().toString(), SeriesEditScope.CURRENT)
-            }) { Text(stringResource(R.string.repeat_scope_current)) }
-            TextButton(onClick = { chooseScope = false }) { Text(stringResource(R.string.cancel)) }
-        } }, properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn))
+        }
+    }
 }
 
 @Composable

@@ -81,9 +81,9 @@ class SeriesRevisionTest {
         model.editEntry(row.id, Locale.US)
         model.updateDraft(model.draft!!.copy(repeatCount = "", repeatUntil = "2027-02-05"))
         assertTrue(model.saveEntry(Locale.US, "unused", SeriesEditScope.SERIES, LocalDate.of(2026, 12, 31)))
-        assertEquals(LocalDate.of(2027, 1, 5), model.rules.single().nextDate())
+        assertEquals(LocalDate.of(2026, 6, 5), model.rules.single().nextDate())
         model.generateDue(LocalDate.of(2027, 3, 1))
-        assertEquals(7, model.transactions.count { it.seriesId != null })
+        assertEquals(14, model.transactions.count { it.seriesId != null })
     }
 
     @Test fun amountOnlySeriesEditKeepsMonthEndAnchorAndAllHistoricalAmounts() {

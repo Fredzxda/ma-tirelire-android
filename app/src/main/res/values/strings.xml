@@ -76,8 +76,8 @@
     <string name="release_notes_title">Nouveautés · %1$s</string>
     <string name="release_notes_test_title">À vérifier avec des données fictives</string>
     <string name="release_notes_understood">Compris</string>
-    <string name="release_notes_changes">Nouveau choix au moment d’enregistrer une occurrence : cette opération uniquement, ou cette opération et la suite de la série. Les autres écritures déjà enregistrées restent toujours intactes. Fréquence, jour, montant, libellé, catégorie, moyen de paiement, date de fin et nombre restant peuvent modifier le modèle futur. Le dialogue montre la prochaine échéance.</string>
-    <string name="release_notes_tests">1. Modifier une occurrence et choisir Cette opération uniquement : les autres lignes et le modèle restent inchangés.\n2. Passer du 5 au 6 du mois puis choisir la série : vérifier la prochaine date proposée. Aucune autre ligne déjà enregistrée ne change.\n3. Passer de mensuel à hebdomadaire ou de lundi à mercredi : vérifier la nouvelle prochaine échéance.\n4. Modifier montant, catégorie, libellé et moyen : seules l’opération courante et les prochaines générations suivent.\n5. Ajouter une date de fin ou un nombre restant ; zéro termine la série.\n6. Annuler le dialogue : aucune sauvegarde. Vérifier verrouillage et sauvegarde/restauration.</string>
+    <string name="release_notes_changes">Les paramètres propres à la série (fréquence, date de fin, nombre restant) sont enregistrés directement quand les champs de l’opération sont inchangés. Les écritures et le modèle de montant/libellé restent intacts. Le dialogue des modifications communes utilise désormais une colonne défilante et trois boutons régulièrement espacés.</string>
+    <string name="release_notes_tests">1. Modifier seulement la date de fin : aucun popup, écriture et confirmation inchangées.\n2. Faire de même avec le nombre restant et la fréquence.\n3. Modifier aussi le montant ou la date de l’opération : le dialogue de portée doit apparaître.\n4. Vérifier le texte complet et les trois boutons en portrait et paysage ; faire défiler si nécessaire.\n5. Annuler le dialogue : aucune opération modifiée.</string>
     <string name="account_add">Ajouter un compte</string>
     <string name="account_edit">Configurer le compte</string>
     <string name="account_configure">Configurer %1$s</string>
@@ -149,4 +149,5 @@
     <string name="repeat_remaining">Occurrences restantes</string>
     <string name="repeat_remaining_hint">Nombre de nouvelles échéances à générer, hors écritures déjà enregistrées. Zéro termine la série ; vide signifie sans limite. Choisissez un nombre OU une date de fin. La prochaine date sera après aujourd’hui et après les échéances déjà enregistrées/consommées.</string>
     <string name="repeat_check_parameters">Vérifiez les paramètres de série</string>
+    <string name="repeat_save_series">Enregistrer la série</string>
 </resources>

@@ -76,8 +76,8 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">New choice when saving a series occurrence: this transaction only, or this transaction and future series. All other recorded transactions always stay unchanged. Frequency, day, amount, description, category, payment method, end date and remaining count can update the future template. The dialog shows the next occurrence.</string>
-    <string name="release_notes_tests">1. Edit an occurrence and choose This transaction only: other rows and the template stay unchanged.\n2. Move monthly day 5 to day 6, choose the series and check the proposed next date. Other recorded rows stay unchanged.\n3. Change monthly to weekly or Monday to Wednesday: check the next date.\n4. Change amount, category, description and payment: only the edited row and future generation use them.\n5. Add an end date or remaining count; zero ends the series.\n6. Cancel the dialog: no save. Test locking and backup/restore.</string>
+    <string name="release_notes_changes">Series-only settings (frequency, end date, remaining count) save directly when transaction fields are unchanged. Recorded rows and the amount/description template stay intact. The scope dialog now uses one scrolling column with three evenly spaced buttons.</string>
+    <string name="release_notes_tests">1. Change only the end date: no popup, transaction and confirmation unchanged.\n2. Repeat with remaining count and frequency.\n3. Also change amount or transaction date: the scope dialog must appear.\n4. Check complete text and all three buttons in portrait and landscape; scroll if needed.\n5. Cancel the dialog: no transaction changed.</string>
     <string name="account_add">Add account</string>
     <string name="account_edit">Account settings</string>
     <string name="account_configure">Configure %1$s</string>
@@ -149,4 +149,5 @@
     <string name="repeat_remaining">Remaining occurrences</string>
     <string name="repeat_remaining_hint">Number of new occurrences to generate, excluding recorded transactions. Zero ends the series; blank is unlimited. Choose a count OR an end date. The next date is after today and after already recorded/consumed occurrences.</string>
     <string name="repeat_check_parameters">Check series settings</string>
+    <string name="repeat_save_series">Save series</string>
 </resources>

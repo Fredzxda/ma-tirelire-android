@@ -6,6 +6,25 @@ import java.time.temporal.ChronoUnit
 internal enum class SeriesEditScope { CURRENT, SERIES }
 
 internal object SeriesRevision {
+    /** A schedule-only edit never copies historical operation fields into the template. */
+    fun updateSettings(rule: RecurringRule, draft: EntryDraft, row: DemoTransaction,
+        rows: List<DemoTransaction>, today: LocalDate = LocalDate.now()): RecurringRule? {
+        if (draft.repeatFrequency == RepeatFrequency.NONE) return rule.copy(active = false)
+        if (draft.repeatFrequency != rule.frequency) {
+            val revised = update(rule, draft, row, rows, today) ?: return null
+            return revised.copy(account = rule.account, target = rule.target, amount = rule.amount,
+                description = rule.description, category = rule.category, payment = rule.payment)
+        }
+        val until = draft.repeatUntil.takeIf { it.isNotBlank() }?.let(OperationDates::parse)
+        val remaining = draft.repeatCount.takeIf { it.isNotBlank() }?.toIntOrNull()
+        if ((draft.repeatUntil.isNotBlank() && (until == null || until < requireNotNull(OperationDates.parse(rule.anchor)))) ||
+            (draft.repeatCount.isNotBlank() && (remaining == null || remaining !in 0..10_000)) ||
+            (draft.repeatUntil.isNotBlank() && draft.repeatCount.isNotBlank())) return null
+        val exhausted = rule.copy(active = true).nextDate() == null
+        return rule.copy(until = until?.toString(), count = remaining?.let { rule.next + it },
+            active = (rule.active || exhausted) && remaining != 0)
+    }
+
     /** Rebase only the not-yet-generated schedule; global occurrence numbers never rewind. */
     fun update(rule: RecurringRule, draft: EntryDraft, row: DemoTransaction, rows: List<DemoTransaction>,
         today: LocalDate): RecurringRule? {
