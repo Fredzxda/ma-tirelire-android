@@ -2,7 +2,8 @@
 
 Identifiant : REC-001. Rappel utilisateur du 8 novembre 2026.
 Statut : exigence fonctionnelle retenue pour le portage ; non implémentée dans
-0.1.1-dev. Lot prévisionnel 0.5, ajustable sans supprimer cette exigence.
+0.3.4-dev. Premier lot retenu : 0.5.0-dev, après les dates modifiables en
+0.3.5-dev et les virements internes en 0.4.0-dev.
 
 ## Comportement attendu
 
@@ -52,3 +53,7 @@ Sources :
 7. Restaurer une sauvegarde puis recalculer : pas de doublon d'occurrence.
 
 Ce document est une exigence suivie, pas l'annonce d'une fonction disponible.
+
+Précision du 10 novembre 2026 : génération des échéances dues au déverrouillage
+et pendant la session ouverte, sans déchiffrement en arrière-plan verrouillé.
+Projection future et rappels : sous-lots séparés. Voir [le plan détaillé](plan-saisie-2026-11-10.md).
