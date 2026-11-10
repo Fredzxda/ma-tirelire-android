@@ -76,8 +76,8 @@
     <string name="release_notes_title">Nouveautés · %1$s</string>
     <string name="release_notes_test_title">À vérifier avec des données fictives</string>
     <string name="release_notes_understood">Compris</string>
-    <string name="release_notes_changes">Créez vos comptes en euros depuis la vue Comptes. Le crayon permet de renommer un compte et de configurer son solde initial, y compris nul ou négatif. Les opérations et leurs pointages restent conservés. Les anciens coffres et sauvegardes restent lisibles.</string>
-    <string name="release_notes_tests">1. Ajouter un compte avec un solde initial, puis y saisir une dépense. Vérifier les soldes.\n2. Renommer le compte via le crayon, puis changer le solde initial : les deux soldes doivent suivre.\n3. Essayer un nom déjà utilisé et un montant invalide : enregistrement refusé.\n4. Tourner l’écran pendant la configuration : les champs restent présents.\n5. Verrouiller et rouvrir : les comptes enregistrés doivent être conservés.\n6. Sauvegarder, ajouter un compte, restaurer : retrouver les comptes sauvegardés. Ne pas revenir à une ancienne version de l’application après cette mise à jour.</string>
+    <string name="release_notes_changes">Pointage guidé par compte : saisissez le solde du relevé bancaire, cochez les opérations et suivez le solde pointé proposé et son écart avec le relevé. La confirmation est possible quand cet écart est nul. Annuler conserve le pointage précédent.</string>
+    <string name="release_notes_tests">1. Dans les opérations, ouvrir Pointer avec un relevé. Saisir un solde cible.\n2. Cocher et décocher des opérations : vérifier le solde proposé et l’écart. Les opérations des autres comptes ne doivent pas changer.\n3. Avec un écart non nul : confirmation désactivée. Avec un écart nul : confirmer et vérifier le solde pointé.\n4. Refaire un essai puis annuler : retrouver le pointage précédent.\n5. Tourner l’écran : session conservée. Verrouiller : session non confirmée abandonnée.\n6. Après confirmation, verrouiller et rouvrir : pointage conservé.</string>
     <string name="account_add">Ajouter un compte</string>
     <string name="account_edit">Configurer le compte</string>
     <string name="account_configure">Configurer %1$s</string>
@@ -85,4 +85,12 @@
     <string name="account_opening">Solde initial (EUR)</string>
     <string name="account_opening_hint">Le solde initial peut être nul ou négatif. Il entre dans le solde total et le solde pointé. Un changement recalcule les deux soldes sans modifier les opérations. Les modifications non enregistrées de cette fiche sont annulées au verrouillage.</string>
     <string name="account_invalid">Indiquez un nom unique et un montant valide, avec au plus deux décimales. Maximum : 50 comptes.</string>
+    <string name="reconcile_open">Pointer avec un relevé</string>
+    <string name="reconcile_title">Pointage · %1$s</string>
+    <string name="reconcile_hint">Saisissez le solde final du relevé et sélectionnez les opérations présentes sur ce relevé. Le solde initial est inclus. Rien ne change avant confirmation. Annuler ou verrouiller abandonne cette session de pointage.</string>
+    <string name="reconcile_target">Solde du relevé (EUR)</string>
+    <string name="reconcile_selected">Solde pointé proposé : %1$s</string>
+    <string name="reconcile_difference">Écart restant (relevé − pointé) : %1$s</string>
+    <string name="reconcile_invalid">Indiquez un solde valide, nul ou négatif si nécessaire.</string>
+    <string name="reconcile_confirm">Confirmer le pointage</string>
 </resources>

@@ -93,6 +93,9 @@ internal data class EntryDraft(
     val editingId: Long? = null,
 )
 
+internal data class ReconciliationDraft(val account: Int, val target: String = "", val selected: Set<Long>,
+    val original: List<DemoTransaction>, val opening: BigDecimal)
+
 internal data class AccountDraft(val index: Int?, val name: String = "", val opening: String = "0", val attempted: Boolean = false)
 
 /** Session state; snapshots are persisted only through the encrypted vault callback. */
@@ -134,6 +137,43 @@ class DemoViewModel : ViewModel() {
             openings = openings.toMutableList().also { it[current.index] = value }
         }
         accountDraft = null
+        onChange?.invoke()
+        return true
+    }
+    internal var reconciliation by mutableStateOf<ReconciliationDraft?>(null)
+        private set
+    internal fun beginReconciliation(index: Int) {
+        if (index !in openings.indices) return
+        val rows = transactions.filter { it.account == index }
+        reconciliation = ReconciliationDraft(index, selected = rows.filter { it.cleared }.map { it.id }.toSet(),
+            original = rows, opening = openings[index])
+    }
+    internal fun reconciliationTarget(value: String) { reconciliation = reconciliation?.copy(target = value.take(30)) }
+    internal fun reconciliationToggle(id: Long) {
+        val current = reconciliation ?: return
+        if (current.original.none { it.id == id }) return
+        reconciliation = current.copy(selected = if (id in current.selected) current.selected - id else current.selected + id)
+    }
+    internal fun reconciliationBalance(): BigDecimal? = reconciliation?.let { d ->
+        d.original.filter { it.id in d.selected }.fold(d.opening) { sum, row -> sum + row.amount }
+    }
+    internal fun reconciliationDifference(locale: Locale): BigDecimal? {
+        val current = reconciliation ?: return null
+        val target = Money.parseOpening(current.target, locale) ?: return null
+        return target - requireNotNull(reconciliationBalance())
+    }
+    internal fun cancelReconciliation() { reconciliation = null }
+    internal fun confirmReconciliation(locale: Locale): Boolean {
+        val current = reconciliation ?: return false
+        if (reconciliationDifference(locale)?.signum() != 0 ||
+            transactions.filter { it.account == current.account } != current.original ||
+            openings.getOrNull(current.account) != current.opening) return false
+        // Apply all flags in one persisted snapshot, after checking the exact target.
+        transactions.indices.forEach { i ->
+            val row = transactions[i]
+            if (row.account == current.account) transactions[i] = row.copy(cleared = row.id in current.selected)
+        }
+        reconciliation = null
         onChange?.invoke()
         return true
     }
@@ -216,6 +256,7 @@ class DemoViewModel : ViewModel() {
         payments.clear(); payments.addAll(data.payments)
         openings = data.openings.toList()
         accountNames.clear(); accountNames.addAll(data.accountNames)
+        reconciliation = null
         accountDraft = null
         draft = data.draft
         initialized = true
@@ -224,7 +265,7 @@ class DemoViewModel : ViewModel() {
 
     internal fun clearSensitive() {
         onChange = null
-        accountNames.clear(); accountDraft = null
+        accountNames.clear(); accountDraft = null; reconciliation = null
         transactions.clear(); categories.clear(); payments.clear(); draft = null
         openings = listOf(BigDecimal("500.00"), BigDecimal("3000.00"))
         destination.intValue = 0; account.intValue = 0; initialized = false; limitReached = false
@@ -339,6 +380,7 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
                             onAccount = { selected -> account = selected; destination = 1 })
                         1 -> TransactionsScreen(accountNames, account, balances[account], clearedBalances[account], transactions.filter { it.account == account },
                             onAccount = { account = it }, onToggle = model::toggleCleared,
+                            onReconcile = { model.beginReconciliation(account) },
                             onEdit = { model.editEntry(it, activity.resources.configuration.locales[0]) })
                         else -> SettingsScreen(vault, activity)
                     }
@@ -348,6 +390,7 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
     }
     if (model.draft != null) EntryDialog(accountNames, model)
     if (model.accountDraft != null) AccountDialog(model)
+    if (model.reconciliation != null) ReconciliationDialog(model, accountNames)
     if (vault.showReleaseNotes && vault.feedback == null) ReleaseNotesDialog(vault)
 }
 
@@ -413,7 +456,7 @@ private fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, clea
 }
 
 @Composable
-private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDecimal, clearedBalance: BigDecimal, transactions: List<DemoTransaction>, onAccount: (Int) -> Unit, onToggle: (Long) -> Unit, onEdit: (Long) -> Unit) {
+private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDecimal, clearedBalance: BigDecimal, transactions: List<DemoTransaction>, onAccount: (Int) -> Unit, onToggle: (Long) -> Unit, onReconcile: () -> Unit, onEdit: (Long) -> Unit) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 110.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -426,6 +469,7 @@ private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDe
             Text(stringResource(R.string.cleared_balance), color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(top = 8.dp))
             Text(money(clearedBalance), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
         }
+        item { OutlinedButton(onClick = onReconcile) { Text(stringResource(R.string.reconcile_open)) } }
         item { Text(stringResource(R.string.pointing_hint), style = MaterialTheme.typography.bodySmall) }
         if (transactions.isEmpty()) item { Text(stringResource(R.string.empty_transactions)) }
         items(transactions, key = { it.id }) { tx ->
@@ -752,4 +796,48 @@ private fun AccountDialog(model: DemoViewModel) {
         dismissButton = { TextButton(onClick = model::cancelAccount) { Text(stringResource(R.string.cancel)) } },
         properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn),
     )
+}
+
+@Composable
+private fun ReconciliationDialog(model: DemoViewModel, names: List<String>) {
+    val draft = model.reconciliation ?: return
+    val locale = LocalConfiguration.current.locales[0]
+    val difference = model.reconciliationDifference(locale)
+    Dialog(onDismissRequest = model::cancelReconciliation,
+        properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn,
+            usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+        Surface(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(8.dp),
+            shape = MaterialTheme.shapes.large) {
+            Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.reconcile_title, names[draft.account]), style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.reconcile_hint), style = MaterialTheme.typography.bodySmall)
+                OutlinedTextField(value = draft.target, onValueChange = model::reconciliationTarget,
+                    label = { Text(stringResource(R.string.reconcile_target)) }, singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth())
+                Text(stringResource(R.string.reconcile_selected, money(requireNotNull(model.reconciliationBalance()))))
+                Text(if (difference == null) stringResource(R.string.reconcile_invalid)
+                    else stringResource(R.string.reconcile_difference, money(difference)),
+                    color = if (difference?.signum() == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
+                LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    items(draft.original, key = { it.id }) { row ->
+                        Row(Modifier.fillMaxWidth().clickable { model.reconciliationToggle(row.id) }.padding(4.dp),
+                            verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = row.id in draft.selected, onCheckedChange = { model.reconciliationToggle(row.id) })
+                            Column(Modifier.weight(1f)) {
+                                Text(row.description)
+                                Text(row.date, style = MaterialTheme.typography.bodySmall)
+                            }
+                            Text(money(row.amount))
+                        }
+                    }
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = model::cancelReconciliation) { Text(stringResource(R.string.cancel)) }
+                    Button(onClick = { model.confirmReconciliation(locale) }, enabled = difference?.signum() == 0) {
+                        Text(stringResource(R.string.reconcile_confirm))
+                    }
+                }
+            }
+        }
+    }
 }

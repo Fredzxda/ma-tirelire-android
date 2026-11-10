@@ -1,6 +1,6 @@
 # Ma Tirelire — Android
 
-Prototype de sécurité **0.3.3-dev** du portage de Ma Tirelire Palm.
+Prototype de sécurité **0.3.4-dev** du portage de Ma Tirelire Palm.
 Android 12 minimum, téléphone et tablette, français et anglais.
 
 ## Utilisation de cette version
@@ -14,7 +14,9 @@ des soldes et confirmation avant suppression. Les dates et le pointage sont
 conservés lors de la modification. Brouillons de modification chiffrés.
 Authentification Android automatique au retour ; bouton de reprise si annulée.
 Comptes personnalisables en euros : création, nom et solde initial.
-Pointage guidé et devises restent pour les lots suivants.
+Pointage guidé : solde cible, sélection provisoire et confirmation à écart nul.
+Annuler ou verrouiller abandonne la session non confirmée. Les devises restent
+pour les lots suivants.
 Les sauvegardes historiques sont lisibles ; le nouveau format comptable v2
 ne doit pas être ouvert avec une ancienne version de l’application.
 
