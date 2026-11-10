@@ -8,6 +8,7 @@ import java.math.BigDecimal
 internal data class LedgerData(
     val transactions: List<DemoTransaction>, val categories: List<String>,
     val payments: List<String>, val openings: List<BigDecimal>, val draft: EntryDraft?,
+    val accountNames: List<String> = emptyList(),
 )
 
 internal object SnapshotCodec {
@@ -23,7 +24,8 @@ internal object SnapshotCodec {
             .put("payment", draft.payment).put("addingCategory", draft.addingCategory).put("addingPayment", draft.addingPayment)
             .put("newCategory", draft.newCategory).put("newPayment", draft.newPayment)
             .put("editingId", draft.editingId ?: JSONObject.NULL) }
-        val result = JSONObject().put("schema", 1).put("transactions", rows)
+        val result = JSONObject().put("schema", if (data.accountNames.isEmpty()) 1 else 2)
+            .put("accountNames", JSONArray(data.accountNames)).put("transactions", rows)
             .put("categories", JSONArray(data.categories)).put("payments", JSONArray(data.payments))
             .put("openings", JSONArray(data.openings.map { it.toPlainString() })).put("draft", d ?: JSONObject.NULL)
             .toString().toByteArray(Charsets.UTF_8)
@@ -50,7 +52,8 @@ internal object SnapshotCodec {
         }
         require(!quoted && depth == 0)
         val root = JSONObject(text)
-        require(root.getInt("schema") == 1)
+        val schema = root.getInt("schema")
+        require(schema in 1..2)
         fun names(key: String): List<String> {
             val list = root.getJSONArray(key)
             require(list.length() in 1..500)
@@ -65,8 +68,12 @@ internal object SnapshotCodec {
             return text.toBigDecimal().setScale(2)
         }
         val openingsJson = root.getJSONArray("openings")
-        require(openingsJson.length() == 2)
-        val openings = (0..1).map { amount(openingsJson.getString(it)) }
+        require(openingsJson.length() in 1..50)
+        val openings = (0 until openingsJson.length()).map { amount(openingsJson.getString(it)) }
+        val accountNames = if (schema == 1) {
+            require(openings.size == 2)
+            emptyList()
+        } else names("accountNames").also { require(it.size == openings.size) }
         val entries = root.getJSONArray("transactions")
         require(entries.length() <= 10_000)
         val rows = (0 until entries.length()).map { i ->
@@ -74,7 +81,7 @@ internal object SnapshotCodec {
             DemoTransaction(t.getLong("id"), t.getInt("account"), t.getString("description"),
                 amount(t.getString("amount")), t.getString("category"), t.getString("payment"),
                 t.getString("date"), t.getBoolean("cleared")).also {
-                require(it.id > 0 && it.id < Long.MAX_VALUE && it.account in 0..1)
+                require(it.id > 0 && it.id < Long.MAX_VALUE && it.account in openings.indices)
                 require(it.description.isNotBlank() && it.description.length <= 100 && it.date.length <= 80)
                 require(it.category in categories && it.payment in payments)
             }
@@ -86,12 +93,12 @@ internal object SnapshotCodec {
                 addingCategory = it.optBoolean("addingCategory"), addingPayment = it.optBoolean("addingPayment"),
                 newCategory = it.optString("newCategory"), newPayment = it.optString("newPayment"),
                 editingId = if (it.isNull("editingId")) null else it.getLong("editingId")).also { draft ->
-                require(draft.account in 0..1 && draft.amount.length <= 30 && draft.description.length <= 100)
+                require(draft.account in openings.indices && draft.amount.length <= 30 && draft.description.length <= 100)
                 require(draft.category in categories && draft.payment in payments)
                 require(draft.editingId == null || rows.any { row -> row.id == draft.editingId })
                 require(draft.newCategory.length <= 60 && draft.newPayment.length <= 60)
             }
         }
-        return LedgerData(rows, categories, payments, openings, d)
+        return LedgerData(rows, categories, payments, openings, d, accountNames)
     }
 }

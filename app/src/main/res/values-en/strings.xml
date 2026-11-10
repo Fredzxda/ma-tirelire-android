@@ -76,6 +76,13 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">The version shown on the unlock screen now automatically matches the installed application.</string>
-    <string name="release_notes_tests">1. Cancel the Android prompt to view the unlock screen: the banner should show 0.3.2-dev.\n2. Unlock: check the same version in settings and in this window.</string>
+    <string name="release_notes_changes">Create euro accounts from the Accounts screen. The pencil lets you rename an account and set its opening balance, including zero or negative values. Transactions and clearing are preserved. Existing vaults and backups remain readable.</string>
+    <string name="release_notes_tests">1. Add an account with an opening balance, then add an expense. Check balances.\n2. Rename it with the pencil and change its opening balance: both balances should update.\n3. Try a duplicate name and an invalid amount: saving must be refused.\n4. Rotate while configuring: fields remain.\n5. Lock and reopen: saved accounts remain.\n6. Back up, add an account and restore: recover the backed up accounts. Do not downgrade the application after this update.</string>
+    <string name="account_add">Add account</string>
+    <string name="account_edit">Account settings</string>
+    <string name="account_configure">Configure %1$s</string>
+    <string name="account_name">Account name</string>
+    <string name="account_opening">Opening balance (EUR)</string>
+    <string name="account_opening_hint">The opening balance may be zero or negative. It contributes to both total and cleared balances. Changing it recalculates both without changing transactions. Unsaved changes in this form are discarded when locking.</string>
+    <string name="account_invalid">Enter a unique name and a valid amount with at most two decimal places. Maximum: 50 accounts.</string>
 </resources>

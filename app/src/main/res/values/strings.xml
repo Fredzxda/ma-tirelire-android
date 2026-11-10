@@ -76,6 +76,13 @@
     <string name="release_notes_title">Nouveautés · %1$s</string>
     <string name="release_notes_test_title">À vérifier avec des données fictives</string>
     <string name="release_notes_understood">Compris</string>
-    <string name="release_notes_changes">Le numéro de version affiché sur la page de déverrouillage suit désormais automatiquement la version installée.</string>
-    <string name="release_notes_tests">1. Annuler la demande Android pour voir la page de déverrouillage : le bandeau doit afficher 0.3.2-dev.\n2. Déverrouiller : vérifier le même numéro dans les réglages et dans cette fenêtre.</string>
+    <string name="release_notes_changes">Créez vos comptes en euros depuis la vue Comptes. Le crayon permet de renommer un compte et de configurer son solde initial, y compris nul ou négatif. Les opérations et leurs pointages restent conservés. Les anciens coffres et sauvegardes restent lisibles.</string>
+    <string name="release_notes_tests">1. Ajouter un compte avec un solde initial, puis y saisir une dépense. Vérifier les soldes.\n2. Renommer le compte via le crayon, puis changer le solde initial : les deux soldes doivent suivre.\n3. Essayer un nom déjà utilisé et un montant invalide : enregistrement refusé.\n4. Tourner l’écran pendant la configuration : les champs restent présents.\n5. Verrouiller et rouvrir : les comptes enregistrés doivent être conservés.\n6. Sauvegarder, ajouter un compte, restaurer : retrouver les comptes sauvegardés. Ne pas revenir à une ancienne version de l’application après cette mise à jour.</string>
+    <string name="account_add">Ajouter un compte</string>
+    <string name="account_edit">Configurer le compte</string>
+    <string name="account_configure">Configurer %1$s</string>
+    <string name="account_name">Nom du compte</string>
+    <string name="account_opening">Solde initial (EUR)</string>
+    <string name="account_opening_hint">Le solde initial peut être nul ou négatif. Il entre dans le solde total et le solde pointé. Un changement recalcule les deux soldes sans modifier les opérations. Les modifications non enregistrées de cette fiche sont annulées au verrouillage.</string>
+    <string name="account_invalid">Indiquez un nom unique et un montant valide, avec au plus deux décimales. Maximum : 50 comptes.</string>
 </resources>

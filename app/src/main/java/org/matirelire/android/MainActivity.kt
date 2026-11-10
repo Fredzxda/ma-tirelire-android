@@ -93,14 +93,50 @@ internal data class EntryDraft(
     val editingId: Long? = null,
 )
 
+internal data class AccountDraft(val index: Int?, val name: String = "", val opening: String = "0", val attempted: Boolean = false)
+
 /** Session state; snapshots are persisted only through the encrypted vault callback. */
 class DemoViewModel : ViewModel() {
     internal val transactions = mutableStateListOf<DemoTransaction>()
     internal val destination = mutableIntStateOf(0)
     internal val account = mutableIntStateOf(0)
-    internal var openings = listOf(BigDecimal("500.00"), BigDecimal("3000.00"))
+    internal var openings by mutableStateOf(listOf(BigDecimal("500.00"), BigDecimal("3000.00")))
         private set
     internal var onChange: (() -> Unit)? = null
+    internal val accountNames = mutableStateListOf<String>()
+    internal var accountDraft by mutableStateOf<AccountDraft?>(null)
+        private set
+    internal fun ensureAccountNames(defaults: List<String>) {
+        if (accountNames.isEmpty()) { accountNames.addAll(defaults); onChange?.invoke() }
+    }
+    internal fun beginAccount(index: Int?, locale: Locale) {
+        if (index != null && index !in openings.indices) return
+        val separator = java.text.DecimalFormatSymbols.getInstance(locale).decimalSeparator
+        accountDraft = AccountDraft(index, index?.let { accountNames[it] }.orEmpty(),
+            index?.let { openings[it].toPlainString().replace('.', separator) } ?: "0")
+    }
+    internal fun updateAccountDraft(value: AccountDraft) { accountDraft = value.copy(attempted = false) }
+    internal fun cancelAccount() { accountDraft = null }
+    internal fun saveAccount(locale: Locale): Boolean {
+        val current = accountDraft ?: return false
+        val name = current.name.trim()
+        val value = Money.parseOpening(current.opening, locale)
+        if (name.isEmpty() || name.length > 60 || value == null ||
+            accountNames.withIndex().any { it.index != current.index && it.value.equals(name, true) } ||
+            (current.index == null && accountNames.size >= 50) ||
+            (current.index != null && current.index !in openings.indices)) {
+            accountDraft = current.copy(attempted = true); return false
+        }
+        if (current.index == null) {
+            accountNames.add(name); openings = openings + value
+        } else {
+            accountNames[current.index] = name
+            openings = openings.toMutableList().also { it[current.index] = value }
+        }
+        accountDraft = null
+        onChange?.invoke()
+        return true
+    }
     internal val categories = mutableStateListOf<String>()
     internal val payments = mutableStateListOf<String>()
     internal var draft by mutableStateOf<EntryDraft?>(null)
@@ -172,13 +208,15 @@ class DemoViewModel : ViewModel() {
     internal fun updateDraft(next: EntryDraft) { if (draft != null) { draft = next.copy(attempted = false); onChange?.invoke() } }
     internal fun cancelEntry() { draft = null; onChange?.invoke() }
 
-    internal fun exportData() = LedgerData(transactions.toList(), categories.toList(), payments.toList(), openings.toList(), draft)
+    internal fun exportData() = LedgerData(transactions.toList(), categories.toList(), payments.toList(), openings.toList(), draft, accountNames.toList())
 
     internal fun restoreData(data: LedgerData) {
         transactions.clear(); transactions.addAll(data.transactions)
         categories.clear(); categories.addAll(data.categories)
         payments.clear(); payments.addAll(data.payments)
         openings = data.openings.toList()
+        accountNames.clear(); accountNames.addAll(data.accountNames)
+        accountDraft = null
         draft = data.draft
         initialized = true
         account.intValue = data.draft?.account ?: 0
@@ -186,6 +224,7 @@ class DemoViewModel : ViewModel() {
 
     internal fun clearSensitive() {
         onChange = null
+        accountNames.clear(); accountDraft = null
         transactions.clear(); categories.clear(); payments.clear(); draft = null
         openings = listOf(BigDecimal("500.00"), BigDecimal("3000.00"))
         destination.intValue = 0; account.intValue = 0; initialized = false; limitReached = false
@@ -224,7 +263,7 @@ private fun money(amount: BigDecimal): String = NumberFormat.getCurrencyInstance
 @Composable
 private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
     val model: DemoViewModel = viewModel()
-    val accountNames = listOf(stringResource(R.string.current_account), stringResource(R.string.savings_account))
+    val accountNames = model.accountNames
     val salary = stringResource(R.string.sample_salary)
     val groceries = stringResource(R.string.sample_groceries)
     val cafe = stringResource(R.string.sample_cafe)
@@ -244,6 +283,7 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
             DemoTransaction(4, 1, deposit, BigDecimal("250.00"), savingsCategory, transfer, date, true),
         )
     )
+    model.ensureAccountNames(listOf(stringResource(R.string.current_account), stringResource(R.string.savings_account)))
     val transactions = model.transactions
     var destination by model.destination
     var account by model.account
@@ -293,7 +333,10 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
                     BrandHeader()
                     DemoBanner()
                     when (destination) {
-                        0 -> AccountsScreen(accountNames, balances, clearedBalances) { selected -> account = selected; destination = 1 }
+                        0 -> AccountsScreen(accountNames, balances, clearedBalances,
+                            onConfigure = { model.beginAccount(it, activity.resources.configuration.locales[0]) },
+                            onAdd = { model.beginAccount(null, activity.resources.configuration.locales[0]) },
+                            onAccount = { selected -> account = selected; destination = 1 })
                         1 -> TransactionsScreen(accountNames, account, balances[account], clearedBalances[account], transactions.filter { it.account == account },
                             onAccount = { account = it }, onToggle = model::toggleCleared,
                             onEdit = { model.editEntry(it, activity.resources.configuration.locales[0]) })
@@ -304,6 +347,7 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
         }
     }
     if (model.draft != null) EntryDialog(accountNames, model)
+    if (model.accountDraft != null) AccountDialog(model)
     if (vault.showReleaseNotes && vault.feedback == null) ReleaseNotesDialog(vault)
 }
 
@@ -329,7 +373,7 @@ private fun DemoBanner() {
 }
 
 @Composable
-private fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, clearedBalances: List<BigDecimal>, onAccount: (Int) -> Unit) {
+private fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, clearedBalances: List<BigDecimal>, onConfigure: (Int) -> Unit, onAdd: () -> Unit, onAccount: (Int) -> Unit) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 110.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item { Text(stringResource(R.string.overview), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold) }
         item {
@@ -341,7 +385,12 @@ private fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, clea
                 }
             }
         }
-        item { Text(stringResource(R.string.your_accounts), style = MaterialTheme.typography.titleMedium) }
+        item {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.your_accounts), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                TextButton(onClick = onAdd, enabled = names.size < 50) { Text(stringResource(R.string.account_add)) }
+            }
+        }
         items(names.indices.toList()) { index ->
             Card(Modifier.fillMaxWidth().clickable { onAccount(index) }) {
                 Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -352,6 +401,9 @@ private fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, clea
                     Column(horizontalAlignment = Alignment.End) {
                         Text(stringResource(R.string.total_short, money(balances[index])), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         Text(stringResource(R.string.cleared_short, money(clearedBalances[index])), style = MaterialTheme.typography.bodySmall)
+                    }
+                    IconButton(onClick = { onConfigure(index) }) {
+                        Icon(painterResource(R.drawable.ic_edit_account), contentDescription = stringResource(R.string.account_configure, names[index]))
                     }
                 }
             }
@@ -364,7 +416,7 @@ private fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, clea
 private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDecimal, clearedBalance: BigDecimal, transactions: List<DemoTransaction>, onAccount: (Int) -> Unit, onToggle: (Long) -> Unit, onEdit: (Long) -> Unit) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 110.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 names.forEachIndexed { index, name -> FilterChip(selected = index == account, onClick = { onAccount(index) }, label = { Text(name) }) }
             }
         }
@@ -677,4 +729,27 @@ private fun EntryActions(model: DemoViewModel, draft: EntryDraft, locale: Locale
     }, enabled = !draft.addingCategory && !draft.addingPayment) {
         Text(stringResource(R.string.save))
     }
+}
+
+@Composable
+private fun AccountDialog(model: DemoViewModel) {
+    val draft = model.accountDraft ?: return
+    val locale = LocalConfiguration.current.locales[0]
+    AlertDialog(onDismissRequest = model::cancelAccount,
+        title = { Text(stringResource(if (draft.index == null) R.string.account_add else R.string.account_edit)) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(value = draft.name, onValueChange = { model.updateAccountDraft(draft.copy(name = it.take(60))) },
+                    label = { Text(stringResource(R.string.account_name)) }, singleLine = true)
+                OutlinedTextField(value = draft.opening, onValueChange = { model.updateAccountDraft(draft.copy(opening = it.take(30))) },
+                    label = { Text(stringResource(R.string.account_opening)) }, singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                Text(stringResource(R.string.account_opening_hint))
+                if (draft.attempted) Text(stringResource(R.string.account_invalid), color = MaterialTheme.colorScheme.error)
+            }
+        },
+        confirmButton = { TextButton(onClick = { model.saveAccount(locale) }) { Text(stringResource(R.string.save)) } },
+        dismissButton = { TextButton(onClick = model::cancelAccount) { Text(stringResource(R.string.cancel)) } },
+        properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn),
+    )
 }

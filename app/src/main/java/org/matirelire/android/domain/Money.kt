@@ -6,6 +6,13 @@ import java.util.Locale
 
 /** Strict demo entry: no grouping, exponent, sign or silent rounding. */
 object Money {
+    fun parseOpening(text: String, locale: Locale): BigDecimal? {
+        val separator = DecimalFormatSymbols.getInstance(locale).decimalSeparator
+        val input = text.trim()
+        if (!Regex("-?[0-9]{1,12}(" + Regex.escape(separator.toString()) + "[0-9]{1,2})?").matches(input)) return null
+        return input.replace(separator, '.').toBigDecimalOrNull()?.setScale(2)
+    }
+
     fun parseAmount(text: String, locale: Locale): BigDecimal? {
         val separator = DecimalFormatSymbols.getInstance(locale).decimalSeparator
         val pattern = Regex("[0-9]{1,12}(" + Regex.escape(separator.toString()) + "[0-9]{1,2})?")
