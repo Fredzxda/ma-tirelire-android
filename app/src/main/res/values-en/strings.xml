@@ -76,8 +76,8 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">View upcoming recurring occurrences from Transactions: choose 30, 90 or 365 days. It uses the current schedule and amounts of active series. Transfers use the sign appropriate to the account. Viewing creates no transactions and changes no balances.</string>
-    <string name="release_notes_tests">1. In an account with an active series, open Upcoming occurrences and try 30, 90 and 365 days.\n2. Check dates, amounts and series limits. Stopped series must not appear.\n3. Edit a future series template and reopen: predictions follow while recorded transactions stay unchanged.\n4. For a transfer, check the opposite amount in the other account.\n5. Open/close repeatedly: no new transactions or balance changes.\n6. Check portrait, landscape and return after locking.</string>
+    <string name="release_notes_changes">Visible states independent from clearing: Forecast for a future unconfirmed occurrence, Needs confirmation when due, Confirmed after validation. Settings: generate when due, through month end, or 15/30 days ahead. Recorded forecasts contribute to the total balance; series changes preserve all existing rows.</string>
+    <string name="release_notes_tests">1. In Settings choose Through the end of this month: check all scheduled occurrences in accounts.\n2. Check the three states separately from clearing. Confirming a forecast must not clear it.\n3. Return to Only when due: recorded forecasts remain unchanged.\n4. For transfers check opposite amounts and unchanged vault total.\n5. Upcoming occurrences must not duplicate already recorded forecasts.\n6. Lock/reopen and back up/restore: setting preserved, no duplicates.</string>
     <string name="account_add">Add account</string>
     <string name="account_edit">Account settings</string>
     <string name="account_configure">Configure %1$s</string>
@@ -155,8 +155,18 @@
     <string name="upcoming_close">Close</string>
     <string name="upcoming_days">%1$d days</string>
     <string name="upcoming_until">After today, through %1$s inclusive</string>
-    <string name="upcoming_hint">Active recurring series only: no transactions created and no balances changed. Amounts may be adjusted when due. Already recorded transactions are not listed here.</string>
+    <string name="upcoming_hint">Active series forecasts not yet recorded only: viewing creates no transactions and changes no balances. Already generated forecasts are in the transaction list.</string>
     <string name="upcoming_empty">No new recurring occurrence in this period.</string>
     <string name="upcoming_transfer">Internal transfer · other account: %1$s</string>
     <string name="upcoming_truncated">Showing the first 500 occurrences. Select a shorter period.</string>
+    <string name="recurring_forecast">Forecast</string>
+    <string name="recurring_pending">Needs confirmation</string>
+    <string name="recurring_confirmed">Confirmed</string>
+    <string name="anticipation_title">Recurring transaction anticipation</string>
+    <string name="anticipation_due">Only when due</string>
+    <string name="anticipation_month_end">Through the end of this month</string>
+    <string name="anticipation_15">15 days ahead</string>
+    <string name="anticipation_30">30 days ahead</string>
+    <string name="anticipation_hint">Anticipated occurrences are recorded as Forecasts and included in the total balance, without automatic clearing. On their date they need confirmation. Confirming in their form is separate from clearing. Reducing anticipation or editing a series does not delete or alter already recorded forecasts.</string>
+    <string name="anticipation_balance_hint">The total balance includes recorded recurring forecasts. Confirmation and clearing are separate.</string>
 </resources>

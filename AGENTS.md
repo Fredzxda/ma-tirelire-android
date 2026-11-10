@@ -33,3 +33,8 @@
 - Exception au dialogue de portee : si seuls les parametres propres a la serie
   (frequence, fin, nombre restant) changent, enregistrer directement la serie,
   sans confirmer ni modifier cette ecriture ni remplacer les champs du modele.
+
+- Anticipation : les previsions generees entrent dans le solde total mais pas
+  dans les rapports revenus/depenses tant que futures et non confirmees.
+  Confirmation et pointage restent independants. Reduire un horizon ne supprime
+  jamais les ecritures deja enregistrees. Le reglage reste chiffre/sauvegarde.

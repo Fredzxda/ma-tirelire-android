@@ -38,6 +38,7 @@ internal object Recurrences {
     /** Cursor and complete occurrences are returned together for one atomic snapshot. */
     fun generate(data: LedgerData, today: LocalDate, budget: Int = 256): RepeatGeneration {
         require(budget in 1..1000)
+        val horizon = data.anticipation.horizon(today)
         val rows = data.transactions.toMutableList()
         val rules = data.rules.toMutableList()
         var nextId = (rows.maxOfOrNull { it.id } ?: 0) + 1
@@ -49,7 +50,7 @@ internal object Recurrences {
             while (rule.active) {
                 val due = rule.nextDate()
                 if (due == null) { rule = rule.copy(active = false); changed = true; break }
-                if (due > today || made >= budget) break
+                if (due > horizon || made >= budget) break
                 val needed = if (rule.target == null) 1 else 2
                 if (rows.size + needed > 10_000 || nextId <= 0 || nextId >= Long.MAX_VALUE - 1 || rule.next >= 1_000_000) {
                     blocked = true; break

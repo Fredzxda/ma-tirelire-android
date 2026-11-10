@@ -80,3 +80,12 @@ Première vue de projection par compte sur 30/90/365 jours, en lecture seule,
 limitée aux séries actives et aux occurrences non encore enregistrées après
 aujourd’hui. Les soldes prévisionnels globaux et les rappels restent différés.
 Voir [VALIDATION-0.5.4.md](VALIDATION-0.5.4.md).
+
+## Anticipation et états en 0.5.5-dev
+
+Réglage chiffré : à échéance par défaut, fin du mois civil, 15 ou 30 jours.
+Les occurrences anticipées sont enregistrées, incluses dans le total et jamais
+pointées automatiquement. Prévision / À confirmer / Confirmée sont distincts
+du pointage. Réduire l’avance conserve les écritures et curseurs existants.
+La projection distincte exclut ces occurrences déjà générées. Voir
+[VALIDATION-0.5.5.md](VALIDATION-0.5.5.md) pour les effets sur rapports et soldes.

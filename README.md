@@ -1,9 +1,16 @@
 # Ma Tirelire — Android
 
-Prototype de sécurité **0.5.4-dev** du portage de Ma Tirelire Palm.
+Prototype de sécurité **0.5.5-dev** du portage de Ma Tirelire Palm.
 Android 12 minimum, téléphone et tablette, français et anglais.
 
 ## Utilisation de cette version
+
+Anticipation réglable : à échéance (défaut), fin du mois, 15/30 jours. Les
+occurrences anticipées sont enregistrées et incluses dans le solde total. États
+Prévision / À confirmer / Confirmée, indépendants du pointage bancaire. Les
+prévisions futures non confirmées sont hors des flux de revenus/dépenses.
+Réduire l’horizon conserve les écritures existantes. Réglage chiffré sauvegardé
+avec le coffre ; schéma 8 si anticipation active, anciennes archives lisibles.
 
 Échéances périodiques à venir par compte sur 30, 90 ou 365 jours : consultation
 en lecture seule des séries actives, sans génération ni modification des soldes.

@@ -214,13 +214,24 @@ class DemoViewModel : ViewModel() {
         updateDraft(current.copy(payment = value, transferTarget = if (isTransferPayment(value)) current.transferTarget else null))
     }
     /** All future income/expense and category reports must use this perimeter. */
-    internal fun reportingTransactions() = transactions.filter { it.peerId == null }
+    internal fun reportingTransactions() = transactions.filter {
+        it.peerId == null && RecurringState.of(it, calendarToday) != RecurringState.FORECAST
+    }
+    internal var anticipation by mutableStateOf(Anticipation.DUE)
+        private set
+    internal var calendarToday by mutableStateOf(java.time.LocalDate.now())
+        private set
+    internal fun setAnticipation(value: Anticipation) {
+        if (anticipation == value) return
+        anticipation = value; recurrenceEpoch++; onChange?.invoke()
+    }
     internal val rules = mutableStateListOf<RecurringRule>()
     internal var recurrenceEpoch by mutableIntStateOf(0)
         private set
     internal var recurrenceBlocked by mutableStateOf(false)
         private set
     internal fun generateDue(today: java.time.LocalDate = java.time.LocalDate.now()): Boolean {
+        calendarToday = today
         val result = Recurrences.generate(exportData(), today)
         recurrenceBlocked = result.blocked
         if (!result.changed) return false
@@ -333,13 +344,14 @@ class DemoViewModel : ViewModel() {
     }
     internal fun cancelEntry() { draft = null; onChange?.invoke() }
 
-    internal fun exportData() = LedgerData(transactions.toList(), categories.toList(), payments.toList(), openings.toList(), draft, accountNames.toList(), transferPayment, rules.toList())
+    internal fun exportData() = LedgerData(transactions.toList(), categories.toList(), payments.toList(), openings.toList(), draft, accountNames.toList(), transferPayment, rules.toList(), anticipation)
 
     internal fun restoreData(data: LedgerData) {
         transactions.clear(); transactions.addAll(data.transactions)
         categories.clear(); categories.addAll(data.categories)
         payments.clear(); payments.addAll(data.payments)
         transferPayment = data.transferPayment
+        anticipation = data.anticipation; calendarToday = java.time.LocalDate.now()
         rules.clear(); rules.addAll(data.rules); recurrenceEpoch++; recurrenceBlocked = false
         openings = data.openings.toList()
         accountNames.clear(); accountNames.addAll(data.accountNames)
@@ -355,6 +367,7 @@ class DemoViewModel : ViewModel() {
     internal fun clearSensitive() {
         onChange = null
         rules.clear(); recurrenceEpoch++; recurrenceBlocked = false
+        anticipation = Anticipation.DUE; calendarToday = java.time.LocalDate.now()
         accountNames.clear(); accountDraft = null; reconciliation = null
         transactions.clear(); categories.clear(); payments.clear(); draft = null; transferPayment = null
         openings = listOf(BigDecimal("500.00"), BigDecimal("3000.00"))
@@ -558,6 +571,9 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
                 Column(Modifier.padding(padding).fillMaxSize()) {
                     BrandHeader()
                     DemoBanner()
+                    if (model.transactions.any { RecurringState.of(it, model.calendarToday) == RecurringState.FORECAST })
+                        Text(stringResource(R.string.anticipation_balance_hint), modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
                     when (destination) {
                         0 -> AccountsScreen(accountNames, balances, clearedBalances,
                             onConfigure = { model.beginAccount(it, activity.resources.configuration.locales[0]) },
@@ -675,7 +691,7 @@ private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDe
                         }
                         Text(money(tx.amount), fontWeight = FontWeight.Bold, color = if (tx.amount.signum() < 0) Color(0xFF944C3C) else MaterialTheme.colorScheme.primary)
                     }
-                    if (tx.seriesId != null) Text(stringResource(if (tx.amountConfirmed) R.string.repeat_occurrence else R.string.repeat_pending), style = MaterialTheme.typography.labelMedium)
+                    RecurringBadge(tx, model.calendarToday)
                     if (tx.peerId != null) {
                         Text(stringResource(R.string.transfer_linked), style = MaterialTheme.typography.labelMedium)
                     }
@@ -700,6 +716,7 @@ private fun SettingsScreen(vault: VaultController, activity: FragmentActivity) {
         OutlinedButton(onClick = vault::openReleaseNotes) { Text(stringResource(R.string.release_notes_open)) }
         OutlinedButton(onClick = { showRules = true }) { Text(stringResource(R.string.repeat_manage)) }
         if (model.recurrenceBlocked) Text(stringResource(R.string.repeat_blocked), color = MaterialTheme.colorScheme.error)
+        AnticipationSettings(model, enabled = !vault.busy)
         VaultSettings(vault, activity)
         InfoCard(R.string.security_title, R.string.security_detail)
         InfoCard(R.string.privacy_title, R.string.privacy_detail)
@@ -1300,6 +1317,45 @@ private fun UpcomingDialog(model: DemoViewModel, account: Int, names: List<Strin
                     if (upcoming.truncated) item { Text(stringResource(R.string.upcoming_truncated)) }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun RecurringBadge(row: DemoTransaction, today: java.time.LocalDate) {
+    val state = RecurringState.of(row, today) ?: return
+    val color = when (state) {
+        RecurringState.FORECAST -> MaterialTheme.colorScheme.secondaryContainer
+        RecurringState.PENDING -> MaterialTheme.colorScheme.tertiaryContainer
+        RecurringState.CONFIRMED -> MaterialTheme.colorScheme.primaryContainer
+    }
+    val label = when (state) {
+        RecurringState.FORECAST -> R.string.recurring_forecast
+        RecurringState.PENDING -> R.string.recurring_pending
+        RecurringState.CONFIRMED -> R.string.recurring_confirmed
+    }
+    Surface(color = color, shape = MaterialTheme.shapes.small) {
+        Text(stringResource(label), modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.labelMedium)
+    }
+}
+
+@Composable
+private fun AnticipationSettings(model: DemoViewModel, enabled: Boolean) {
+    HorizontalDivider()
+    Text(stringResource(R.string.anticipation_title), style = MaterialTheme.typography.titleMedium)
+    Text(stringResource(R.string.anticipation_hint), style = MaterialTheme.typography.bodySmall)
+    Anticipation.entries.forEach { value ->
+        val label = when (value) {
+            Anticipation.DUE -> R.string.anticipation_due
+            Anticipation.MONTH_END -> R.string.anticipation_month_end
+            Anticipation.DAYS_15 -> R.string.anticipation_15
+            Anticipation.DAYS_30 -> R.string.anticipation_30
+        }
+        Row(Modifier.fillMaxWidth().clickable(enabled = enabled) { model.setAnticipation(value) },
+            verticalAlignment = Alignment.CenterVertically) {
+            RadioButton(selected = model.anticipation == value, onClick = { model.setAnticipation(value) }, enabled = enabled)
+            Text(stringResource(label))
         }
     }
 }
