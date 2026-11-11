@@ -15,42 +15,66 @@ import androidx.compose.ui.window.SecureFlagPolicy
 
 /** Kept only in the unlocked ViewModel; never serialized into an Android saved-state Bundle. */
 @Suppress("UNCHECKED_CAST")
-private fun <T> referenceMemory(model: DemoViewModel, key: String, init: () -> T): MutableState<T> =
+internal fun <T> referenceMemory(model: DemoViewModel, key: String, init: () -> T): MutableState<T> =
     model.referenceUiStates.getOrPut(key) { mutableStateOf(init()) } as MutableState<T>
 
-/** Reference management stays outside the compact Operations header. */
+/** Reference management shares the same hierarchy as operation entry. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun ReferenceManagementDialog(model: DemoViewModel, onDismiss: () -> Unit) {
     var category by referenceMemory(model, "dialog-category") { true }
     var selected by referenceMemory(model, "dialog-selected-$category") { "" }
+    var creating by referenceMemory(model, "dialog-creating-$category") { false }
     val names = if (category) model.categories else model.payments
     val current = selected.takeIf { it in names } ?: names.firstOrNull()
+    fun closeCreate() {
+        creating = false
+        model.referenceUiStates.keys.removeAll { it.startsWith("management-create-") }
+    }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(
         usePlatformDefaultWidth = false, securePolicy = SecureFlagPolicy.SecureOn)) {
-        Surface(Modifier.padding(12.dp).widthIn(max = 640.dp).fillMaxWidth(),
+        Surface(Modifier.padding(12.dp).widthIn(max = 980.dp).fillMaxWidth().fillMaxHeight(.92f),
             shape = MaterialTheme.shapes.large) {
             Column(Modifier.padding(16.dp).imePadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.refs_title), style = MaterialTheme.typography.titleLarge)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(selected = category, onClick = { category = true },
-                        label = { Text(stringResource(R.string.refs_categories)) })
-                    FilterChip(selected = !category, onClick = { category = false },
-                        label = { Text(stringResource(R.string.refs_payments)) })
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.refs_title), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.refs_close)) }
                 }
-                Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    ReferenceChoice(stringResource(if (category) R.string.category else R.string.payment),
-                        current.orEmpty(), names.map { it to it }, { selected = it })
-                    if (current != null) key(category, current) {
-                        ReferenceEditor(model, category, current) { selected = it }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(selected = category, onClick = { category = true }, label = { Text(stringResource(R.string.refs_categories)) })
+                    FilterChip(selected = !category, onClick = { category = false }, label = { Text(stringResource(R.string.refs_payments)) })
+                    OutlinedButton(onClick = { creating = true }) { Text(stringResource(if (category) R.string.refs_new_category else R.string.refs_new_payment)) }
+                }
+                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+                    val wide = maxWidth >= 600.dp
+                    val treeHeight = 190.dp.coerceAtMost(maxHeight * .45f)
+                    val picker: @Composable (Modifier) -> Unit = { modifier ->
+                        if (category) CategoryTree(model, current.orEmpty(), model.categories, "management-categories", { selected = it }, modifier)
+                        else Column(modifier.verticalScroll(rememberScrollState())) {
+                            names.forEach { name -> TextButton(onClick = { selected = name }, modifier = Modifier.fillMaxWidth()) {
+                                Text(name + if (name == current) " ✓" else "")
+                            } }
+                        }
                     }
-                }
-                TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
-                    Text(stringResource(R.string.refs_close))
+                    val editor: @Composable (Modifier) -> Unit = { modifier ->
+                        Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            if (current != null) key(category, current) { ReferenceEditor(model, category, current) { selected = it } }
+                        }
+                    }
+                    if (wide) Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                        picker(Modifier.weight(1f).fillMaxHeight())
+                        editor(Modifier.weight(1f).fillMaxHeight())
+                    } else Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        picker(Modifier.fillMaxWidth().height(treeHeight))
+                        HorizontalDivider()
+                        editor(Modifier.weight(1f).fillMaxWidth())
+                    }
                 }
             }
         }
     }
+    if (creating) ReferenceCreateDialog(model, category, if (category) current else null, "management-create-$category",
+        onCreated = { selected = it; closeCreate() }, onDismiss = { closeCreate() })
 }
 
 @Composable
@@ -72,11 +96,9 @@ private fun ReferenceEditor(model: DemoViewModel, category: Boolean, original: S
     PinnedLabelField(name, { name = it; edited() }, stringResource(R.string.reference_name),
         Modifier.fillMaxWidth(), maxLength = 60)
     if (category) {
-        val noParent = stringResource(R.string.refs_no_parent)
-        ReferenceChoice(stringResource(R.string.refs_parent),
-            parent.ifEmpty { noParent },
-            listOf("" to noParent) + model.categories.filter { it != original }.map { it to it },
-            { parent = it; edited() })
+        CategorySelectorField(model, parent,
+            model.categories.filter { it != original && it !in model.categoryDescendants(original) },
+            "management-parent-$original", { parent = it; edited() }, stringResource(R.string.refs_parent), allowNone = true)
     }
     if (!dedicatedTransfer) {
         ReferenceChoice(stringResource(R.string.refs_kind), stringResource(when (ReferenceKind.valueOf(kindName)) {
@@ -113,6 +135,7 @@ private fun ReferenceEditor(model: DemoViewModel, category: Boolean, original: S
             parent = if (category) parent.ifBlank { null } else null,
             kind = ReferenceKind.valueOf(kindName), hidden = hidden, accounts = accounts)
         if (model.saveReference(category, original, name, options)) {
+            model.referenceUiStates.keys.removeAll { it.startsWith("editor-$category-$original-") }
             onSelected(name.trim()); error = false; saved = true
         } else { error = true; saved = false }
     }, enabled = name.isNotBlank()) { Text(stringResource(R.string.save)) }
@@ -120,9 +143,10 @@ private fun ReferenceEditor(model: DemoViewModel, category: Boolean, original: S
         HorizontalDivider()
         Text(stringResource(R.string.refs_remove_hint), style = MaterialTheme.typography.bodySmall)
         val none = stringResource(R.string.refs_no_replacement)
-        ReferenceChoice(stringResource(R.string.refs_replacement), replacement.ifEmpty { none },
-            listOf("" to none) + (if (category) model.categories else model.payments)
-                .filter { it != original && (category || it != model.transferPayment) }.map { it to it },
+        if (category) CategorySelectorField(model, replacement, model.categories.filter { it != original },
+            "management-replacement-$original", { replacement = it; edited() }, stringResource(R.string.refs_replacement))
+        else ReferenceChoice(stringResource(R.string.refs_replacement), replacement.ifEmpty { none },
+            listOf("" to none) + model.payments.filter { it != original && it != model.transferPayment }.map { it to it },
             { replacement = it; edited() })
         TextButton(onClick = { confirmDelete = true }) { Text(stringResource(R.string.refs_remove)) }
     }

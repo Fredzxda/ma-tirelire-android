@@ -21,4 +21,13 @@
     <string name="refs_remove_hint">A reference in use needs a replacement. Transactions, series and drafts keep their amounts and statuses.</string>
     <string name="refs_remove_title">Remove “%1$s”?</string>
     <string name="refs_remove_confirm">The selected replacement will be applied to existing references. No transactions will be deleted.</string>
+    <string name="refs_search">Search categories</string>
+    <string name="refs_hidden_badge">Hidden</string>
+    <string name="refs_no_results">No categories found</string>
+    <string name="refs_new_category">＋ New category</string>
+    <string name="refs_new_payment">＋ New payment method</string>
+    <string name="refs_create">Create</string>
+    <string name="refs_create_error">Unable to create: check the name, uniqueness and parent category.</string>
+    <string name="refs_expanded">Branch expanded</string>
+    <string name="refs_collapsed">Branch collapsed</string>
 </resources>

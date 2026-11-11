@@ -318,6 +318,7 @@ class DemoViewModel : ViewModel() {
 
     internal fun beginEntry(today: java.time.LocalDate = java.time.LocalDate.now()) {
         if (draft == null) {
+            referenceUiStates.keys.removeAll { it.startsWith("entry-category") }
             draft = EntryDraft(account = account.intValue, date = today.toString(),
                 category = referenceChoices(true, account.intValue, false).firstOrNull().orEmpty(), payment = referenceChoices(false, account.intValue, false).firstOrNull().orEmpty())
             onChange?.invoke()
@@ -951,19 +952,20 @@ private fun EntryCategory(model: DemoViewModel, draft: EntryDraft) {
         Text(stringResource(R.string.transfer_category_excluded), style = MaterialTheme.typography.bodySmall)
         return
     }
-    ReferencePicker(
-        label = stringResource(R.string.category), selected = draft.category,
-        options = model.referenceChoices(true, draft.account, draft.income, if (draft.editingId != null) draft.category else ""), onSelect = { model.updateDraft(draft.copy(category = it)) },
-        adding = draft.addingCategory, newName = draft.newCategory,
-        onBeginAdd = { model.updateDraft(draft.copy(addingCategory = true, newCategory = "")) },
-        onNameChange = { model.updateDraft(draft.copy(newCategory = it.take(60))) },
-        onCancelAdd = { model.updateDraft(draft.copy(addingCategory = false, newCategory = "")) },
-        onAdd = {
-            model.addCategory(draft.newCategory)?.let {
-                model.updateDraft(draft.copy(category = it, addingCategory = false, newCategory = ""))
-            }
-        },
-    )
+    var creating by referenceMemory(model, "entry-category-creating") { false }
+    CategorySelectorField(model, draft.category,
+        model.referenceChoices(true, draft.account, draft.income, if (draft.editingId != null) draft.category else ""),
+        "entry-category", { model.updateDraft(draft.copy(category = it, addingCategory = false)) },
+        stringResource(R.string.category), onCreate = { creating = true })
+    if (creating) ReferenceCreateDialog(model, true, draft.category.takeIf { it.isNotBlank() }, "entry-category-create",
+        onCreated = {
+            model.updateDraft(draft.copy(category = it, addingCategory = false, newCategory = ""))
+            creating = false
+            model.referenceUiStates.keys.removeAll { key -> key.startsWith("entry-category-create-") }
+        }, onDismiss = {
+            creating = false
+            model.referenceUiStates.keys.removeAll { key -> key.startsWith("entry-category-create-") }
+        })
 }
 
 @Composable

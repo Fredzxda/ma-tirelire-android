@@ -1,6 +1,6 @@
 # Catégories — proposition visuelle du 11 novembre 2026
 
-Statut : proposition à valider, application toujours en 0.7.6-dev.
+Statut : proposition validée par Frédéric le 11 novembre 2026 ; intégrée en 0.7.7-dev.
 
 [Ouvrir la maquette interactive](categories-proposition.html). Données fictives,
 aucune dépendance réseau et aucun stockage persistant. Les créations et modifications
@@ -38,6 +38,12 @@ le chemin et état de dépliement annoncé. Pas de limite fonctionnelle inventé
 au nombre de niveaux ; vérifier la lisibilité des cas profonds.
 
 La maquette illustre l'arbre, la recherche, les sélections, la création et le
-renommage/reparentage. Les propriétés avancées sont illustratives. Les restrictions
-complexes, validations comptables et persistance restent à intégrer dans Android
-après validation du visuel ; aucune compilation ni installation dans ce lot.
+renommage/reparentage. Les propriétés avancées sont illustratives dans le HTML ;
+la version Android 0.7.7-dev conserve les validations et la persistance chiffrée
+de la 0.7.6. Le sélecteur de saisie est une fenêtre adaptative permettant la recherche
+et le défilement. La maquette reste un support de conception indépendant.
+
+Validation locale : 134 tests unitaires, lint et 9 tests sur ASUS réussis. Les
+contrôles d'interface utilisent uniquement un modèle fictif, sans ouvrir le coffre
+personnel. Installation et relancement de 0.7.7-dev confirmés par le harnais.
+Portrait/paysage, grands caractères et rotation restent à confirmer par l'utilisateur.

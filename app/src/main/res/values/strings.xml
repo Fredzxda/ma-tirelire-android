@@ -76,8 +76,8 @@
     <string name="release_notes_title">Nouveautés · %1$s</string>
     <string name="release_notes_test_title">À vérifier avec des données fictives</string>
     <string name="release_notes_understood">Compris</string>
-    <string name="release_notes_changes">Gestion des catégories et moyens : renommage, remplacement, hiérarchie, types et visibilité par compte. Historiques étendus à 50 000 écritures ; sauvegardes compatibles.</string>
-    <string name="release_notes_tests">Dans Réglages, ouvrez Catégories et moyens de paiement. Renommez une catégorie utilisée, créez une hiérarchie puis vérifiez vos opérations. Masquez un moyen ou réservez-le à un compte et vérifiez la saisie. Retirez une catégorie en choisissant son remplacement. Faites une sauvegarde puis vérifiez sa restauration.</string>
+    <string name="release_notes_changes">Catégories hiérarchisées dans la saisie et les réglages : branches repliables, recherche et chemin complet. Création de catégories et moyens depuis les réglages.</string>
+    <string name="release_notes_tests">Dans Réglages, créez une catégorie fille puis sélectionnez-la dans une opération. Dépliez et repliez ses parents, recherchez son nom et vérifiez son chemin. Essayez une catégorie principale et un nouveau moyen. Vérifiez portrait, paysage et rotation.</string>
     <string name="account_add">Ajouter un compte</string>
     <string name="account_edit">Configurer le compte</string>
     <string name="account_configure">Configurer %1$s</string>

@@ -21,4 +21,13 @@
     <string name="refs_remove_hint">Une référence utilisée doit être remplacée. Les opérations, séries et brouillons conserveront leurs montants et leurs états.</string>
     <string name="refs_remove_title">Retirer « %1$s » ?</string>
     <string name="refs_remove_confirm">Le remplacement choisi sera appliqué aux références existantes. Cette action ne supprime aucune opération.</string>
+    <string name="refs_search">Rechercher une catégorie</string>
+    <string name="refs_hidden_badge">Masquée</string>
+    <string name="refs_no_results">Aucune catégorie trouvée</string>
+    <string name="refs_new_category">＋ Nouvelle catégorie</string>
+    <string name="refs_new_payment">＋ Nouveau moyen</string>
+    <string name="refs_create">Créer</string>
+    <string name="refs_create_error">Création impossible : vérifiez le nom, son unicité et la catégorie parente.</string>
+    <string name="refs_expanded">Branche dépliée</string>
+    <string name="refs_collapsed">Branche repliée</string>
 </resources>
