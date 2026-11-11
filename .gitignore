@@ -10,3 +10,10 @@ captures/
 
 # Local physical test device identity
 tools/device.local.json
+
+# Local Android Studio daemon criteria and private backup/database files
+gradle/gradle-daemon-jvm.properties
+*.mtbk
+*.db
+*.db-*
+*.sqlite

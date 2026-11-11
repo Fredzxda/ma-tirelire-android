@@ -15,6 +15,6 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
       - run: chmod +x gradlew
-      - run: ./gradlew assembleDebug testDebugUnitTest lintDebug
+      - run: ./gradlew assembleDebug assembleDebugAndroidTest testDebugUnitTest lintDebug
       - name: Check development version
         run: ./gradlew -q :app:printAppVersion | grep -E '^[0-9]+\.[0-9]+\.[0-9]+-dev$'
