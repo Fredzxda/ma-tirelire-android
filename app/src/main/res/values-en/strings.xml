@@ -76,8 +76,8 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">Account balances now remain visible side by side while scrolling. Search opens in a dedicated window; tap a result to edit it. The prototype banner is removed and balance explanations are available on demand. Recurrence end date and remaining count use matching fields.</string>
-    <string name="release_notes_tests">1. Scroll transactions: both balances stay visible.\n2. Open Information.\n3. Search and tap a result to edit it.\n4. Edit a series: check end date and remaining count in portrait and landscape.\n5. Rotate the search window and verify locking still clears the query.</string>
+    <string name="release_notes_changes">Landscape: app name and version move to the left navigation; a compact balance header leaves more room for transactions. In both orientations, clearing is positioned below the amount on the right.</string>
+    <string name="release_notes_tests">1. Rotate to landscape: check left navigation, balances and scrolling space.\n2. Clear and un-clear a transaction below its amount: no edit form should open.\n3. Tap the description to edit it.\n4. Return to portrait: verify balances and clearing.\n5. Check a long description, a large amount and enlarged text.</string>
     <string name="account_add">Add account</string>
     <string name="account_edit">Account settings</string>
     <string name="account_configure">Configure %1$s</string>

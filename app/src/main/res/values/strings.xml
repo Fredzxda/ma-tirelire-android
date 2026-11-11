@@ -76,8 +76,8 @@
     <string name="release_notes_title">Nouveautés · %1$s</string>
     <string name="release_notes_test_title">À vérifier avec des données fictives</string>
     <string name="release_notes_understood">Compris</string>
-    <string name="release_notes_changes">Les soldes total et pointé restent visibles côte à côte pendant le défilement. La recherche dispose de sa fenêtre : toucher un résultat ouvre sa fiche. Le bandeau prototype est retiré ; les explications sur les soldes sont accessibles via Informations. Les champs de fin de série sont harmonisés.</string>
-    <string name="release_notes_tests">1. Faire défiler les opérations : les deux soldes restent visibles.\n2. Ouvrir Informations.\n3. Rechercher puis toucher un résultat pour le modifier.\n4. Modifier une série : vérifier les champs date de fin et occurrences restantes en portrait et paysage.\n5. Faire tourner la fenêtre de recherche et vérifier que le verrouillage efface la recherche.</string>
+    <string name="release_notes_changes">En paysage, le nom et la version passent dans la navigation de gauche ; les soldes occupent un bandeau compact pour laisser davantage de place aux opérations. Dans les deux orientations, le pointage est placé sous le montant, à droite.</string>
+    <string name="release_notes_tests">1. Passer en paysage : vérifier le menu à gauche, les soldes et la place pour défiler.\n2. Pointer puis dépointer sous le montant : la fiche ne doit pas s’ouvrir.\n3. Toucher le libellé pour modifier la fiche.\n4. Revenir en portrait : vérifier les soldes et le pointage.\n5. Vérifier un libellé long, un grand montant et une taille de texte agrandie.</string>
     <string name="account_add">Ajouter un compte</string>
     <string name="account_edit">Configurer le compte</string>
     <string name="account_configure">Configurer %1$s</string>

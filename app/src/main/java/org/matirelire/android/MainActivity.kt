@@ -1,5 +1,7 @@
 package org.matirelire.android
 
+import androidx.compose.foundation.selection.toggleable
+
 import android.app.DatePickerDialog
 import android.os.Bundle
 import android.view.WindowManager
@@ -546,11 +548,14 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
     val symbols = listOf("◫", "≡", "⚙")
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val wide = maxWidth >= 720.dp
+        val wide = maxWidth >= 720.dp || LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
         Row(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             if (wide) {
-                NavigationRail {
-                    Spacer(Modifier.height(24.dp))
+                NavigationRail(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    Column(Modifier.width(112.dp).padding(horizontal = 8.dp, vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(stringResource(R.string.brand), style = MaterialTheme.typography.labelLarge)
+                        Text(BuildConfig.VERSION_NAME, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
+                    }
                     labels.forEachIndexed { index, label ->
                         NavigationRailItem(
                             selected = destination == index,
@@ -583,7 +588,7 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
                 },
             ) { padding ->
                 Column(Modifier.padding(padding).fillMaxSize()) {
-                    BrandHeader()
+                    if (!wide) BrandHeader()
                     when (destination) {
                         0 -> AccountsScreen(accountNames, balances, clearedBalances,
                             onConfigure = { model.beginAccount(it, activity.resources.configuration.locales[0]) },
@@ -671,9 +676,24 @@ private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDe
         text = { Text(stringResource(R.string.anticipation_balance_hint)) },
         confirmButton = { TextButton(onClick = { showInfo = false }) { Text(stringResource(android.R.string.ok)) } },
         properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn))
+    val landscape = LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     Column(Modifier.fillMaxSize()) {
         Surface(color = MaterialTheme.colorScheme.secondaryContainer) {
-            Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)) {
+            if (landscape) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(names[account], style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.balance), style = MaterialTheme.typography.labelMedium)
+                        Text(money(balance), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.cleared_balance), style = MaterialTheme.typography.labelMedium)
+                        Text(money(clearedBalance), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    }
+                    TextButton(onClick = { showInfo = true }) { Text(stringResource(R.string.balance_info)) }
+                }
+            } else Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(names[account], style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                     TextButton(onClick = { showInfo = true }) { Text(stringResource(R.string.balance_info)) }
@@ -712,17 +732,21 @@ private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDe
                             Text(tx.description, style = MaterialTheme.typography.titleMedium)
                             Text(OperationDates.display(tx.date, LocalConfiguration.current.locales[0]), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
                         }
-                        Text(money(tx.amount), fontWeight = FontWeight.Bold, color = if (tx.amount.signum() < 0) Color(0xFF944C3C) else MaterialTheme.colorScheme.primary)
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(money(tx.amount), fontWeight = FontWeight.Bold, color = if (tx.amount.signum() < 0) Color(0xFF944C3C) else MaterialTheme.colorScheme.primary)
+                            Row(Modifier.toggleable(value = tx.cleared, role = androidx.compose.ui.semantics.Role.Checkbox,
+                                onValueChange = { onToggle(tx.id) }).heightIn(min = 48.dp).padding(start = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically) {
+                                Text(stringResource(if (tx.cleared) R.string.marked else R.string.unmarked), style = MaterialTheme.typography.labelMedium)
+                                Checkbox(checked = tx.cleared, onCheckedChange = null)
+                            }
+                        }
                     }
                     RecurringBadge(tx, model.calendarToday)
                     if (tx.peerId != null) {
                         Text(stringResource(R.string.transfer_linked), style = MaterialTheme.typography.labelMedium)
                     }
                     Text("${tx.category} · ${tx.payment}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 8.dp))
-                    Row(Modifier.fillMaxWidth().clickable { onToggle(tx.id) }, verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = tx.cleared, onCheckedChange = { onToggle(tx.id) })
-                        Text(stringResource(if (tx.cleared) R.string.marked else R.string.unmarked), style = MaterialTheme.typography.labelMedium)
-                    }
                 }
             }
         }
