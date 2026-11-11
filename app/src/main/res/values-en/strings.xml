@@ -76,8 +76,8 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">Landscape: app name and version move to the left navigation; a compact balance header leaves more room for transactions. In both orientations, clearing is positioned below the amount on the right.</string>
-    <string name="release_notes_tests">1. Rotate to landscape: check left navigation, balances and scrolling space.\n2. Clear and un-clear a transaction below its amount: no edit form should open.\n3. Tap the description to edit it.\n4. Return to portrait: verify balances and clearing.\n5. Check a long description, a large amount and enlarged text.</string>
+    <string name="release_notes_changes">First customization release: choose transaction date order in Settings, saved in the encrypted vault and backups. Existing order remains the default. Landscape title returns to dark blue and the navigation background extends to the bottom.</string>
+    <string name="release_notes_tests">1. Check dark title and full-height navigation in landscape.\n2. In Settings choose newest first, then oldest first; verify transactions and search.\n3. Lock and reopen: order is retained and balances unchanged.\n4. Restore a backup made with this version: order should be restored.\n5. Return to entry order to recover the original presentation.</string>
     <string name="account_add">Add account</string>
     <string name="account_edit">Account settings</string>
     <string name="account_configure">Configure %1$s</string>
@@ -178,4 +178,9 @@
     <string name="search_empty">No transactions match this search.</string>
     <string name="search_open">Search</string>
     <string name="balance_info">Information</string>
+    <string name="order_title">Transaction order</string>
+    <string name="order_original">Entry order (current behavior)</string>
+    <string name="order_newest">Newest date first</string>
+    <string name="order_oldest">Oldest date first</string>
+    <string name="order_hint">Applies to all accounts and search results. Stored in the encrypted vault and its backups. Unrecognized historical dates appear last.</string>
 </resources>

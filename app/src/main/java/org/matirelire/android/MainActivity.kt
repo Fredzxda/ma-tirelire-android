@@ -221,6 +221,12 @@ class DemoViewModel : ViewModel() {
     internal fun reportingTransactions() = transactions.filter {
         it.peerId == null && !RecurringState.isFutureUnconfirmed(it, calendarToday)
     }
+    internal var transactionOrder by mutableStateOf(TransactionOrder.ORIGINAL)
+        private set
+    internal fun setTransactionOrder(value: TransactionOrder) {
+        if (transactionOrder == value) return
+        transactionOrder = value; onChange?.invoke()
+    }
     internal var anticipation by mutableStateOf(Anticipation.DUE)
         private set
     internal var calendarToday by mutableStateOf(java.time.LocalDate.now())
@@ -348,13 +354,14 @@ class DemoViewModel : ViewModel() {
     }
     internal fun cancelEntry() { draft = null; onChange?.invoke() }
 
-    internal fun exportData() = LedgerData(transactions.toList(), categories.toList(), payments.toList(), openings.toList(), draft, accountNames.toList(), transferPayment, rules.toList(), anticipation)
+    internal fun exportData() = LedgerData(transactions.toList(), categories.toList(), payments.toList(), openings.toList(), draft, accountNames.toList(), transferPayment, rules.toList(), anticipation, transactionOrder)
 
     internal fun restoreData(data: LedgerData) {
         transactions.clear(); transactions.addAll(data.transactions)
         categories.clear(); categories.addAll(data.categories)
         payments.clear(); payments.addAll(data.payments)
         transferPayment = data.transferPayment
+        transactionOrder = data.transactionOrder
         anticipation = data.anticipation; calendarToday = java.time.LocalDate.now()
         rules.clear(); rules.addAll(data.rules); recurrenceEpoch++; recurrenceBlocked = false
         openings = data.openings.toList()
@@ -370,6 +377,7 @@ class DemoViewModel : ViewModel() {
 
     internal fun clearSensitive() {
         searchQuery = ""
+        transactionOrder = TransactionOrder.ORIGINAL
         onChange = null
         rules.clear(); recurrenceEpoch++; recurrenceBlocked = false
         anticipation = Anticipation.DUE; calendarToday = java.time.LocalDate.now()
@@ -551,10 +559,10 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
         val wide = maxWidth >= 720.dp || LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
         Row(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             if (wide) {
-                NavigationRail(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                    Column(Modifier.width(112.dp).padding(horizontal = 8.dp, vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(stringResource(R.string.brand), style = MaterialTheme.typography.labelLarge)
-                        Text(BuildConfig.VERSION_NAME, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
+                NavigationRail(containerColor = MaterialTheme.colorScheme.surface, modifier = Modifier.background(MaterialTheme.colorScheme.surface).fillMaxHeight().verticalScroll(rememberScrollState())) {
+                    Column(Modifier.width(112.dp).background(Color(0xFF142D36)).padding(horizontal = 8.dp, vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(stringResource(R.string.brand), style = MaterialTheme.typography.labelLarge, color = Color.White)
+                        Text(BuildConfig.VERSION_NAME, style = MaterialTheme.typography.labelSmall, color = Color(0xFFB9CEC8))
                     }
                     labels.forEachIndexed { index, label ->
                         NavigationRailItem(
@@ -594,7 +602,7 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
                             onConfigure = { model.beginAccount(it, activity.resources.configuration.locales[0]) },
                             onAdd = { model.beginAccount(null, activity.resources.configuration.locales[0]) },
                             onAccount = { selected -> account = selected; destination = 1 })
-                        1 -> TransactionsScreen(accountNames, account, balances[account], clearedBalances[account], transactions.filter { it.account == account },
+                        1 -> TransactionsScreen(accountNames, account, balances[account], clearedBalances[account], model.transactionOrder.arrange(transactions.filter { it.account == account }),
                             onAccount = { account = it }, onToggle = model::toggleCleared,
                             onReconcile = { model.beginReconciliation(account) },
                             onEdit = { model.editEntry(it, activity.resources.configuration.locales[0]) })
@@ -799,6 +807,24 @@ private fun SettingsScreen(vault: VaultController, activity: FragmentActivity) {
         OutlinedButton(onClick = vault::openReleaseNotes) { Text(stringResource(R.string.release_notes_open)) }
         OutlinedButton(onClick = { showRules = true }) { Text(stringResource(R.string.repeat_manage)) }
         if (model.recurrenceBlocked) Text(stringResource(R.string.repeat_blocked), color = MaterialTheme.colorScheme.error)
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp)) {
+                Text(stringResource(R.string.order_title), style = MaterialTheme.typography.titleMedium)
+                TransactionOrder.entries.forEach { order ->
+                    Row(Modifier.fillMaxWidth().toggleable(value = model.transactionOrder == order,
+                        enabled = !vault.busy, role = androidx.compose.ui.semantics.Role.RadioButton,
+                        onValueChange = { model.setTransactionOrder(order) }), verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = model.transactionOrder == order, onClick = null, enabled = !vault.busy)
+                        Text(stringResource(when (order) {
+                            TransactionOrder.ORIGINAL -> R.string.order_original
+                            TransactionOrder.NEWEST -> R.string.order_newest
+                            TransactionOrder.OLDEST -> R.string.order_oldest
+                        }))
+                    }
+                }
+                Text(stringResource(R.string.order_hint), style = MaterialTheme.typography.bodySmall)
+            }
+        }
         AnticipationSettings(model, enabled = !vault.busy)
         VaultSettings(vault, activity)
         InfoCard(R.string.security_title, R.string.security_detail)

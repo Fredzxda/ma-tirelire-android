@@ -76,8 +76,8 @@
     <string name="release_notes_title">Nouveautés · %1$s</string>
     <string name="release_notes_test_title">À vérifier avec des données fictives</string>
     <string name="release_notes_understood">Compris</string>
-    <string name="release_notes_changes">En paysage, le nom et la version passent dans la navigation de gauche ; les soldes occupent un bandeau compact pour laisser davantage de place aux opérations. Dans les deux orientations, le pointage est placé sous le montant, à droite.</string>
-    <string name="release_notes_tests">1. Passer en paysage : vérifier le menu à gauche, les soldes et la place pour défiler.\n2. Pointer puis dépointer sous le montant : la fiche ne doit pas s’ouvrir.\n3. Toucher le libellé pour modifier la fiche.\n4. Revenir en portrait : vérifier les soldes et le pointage.\n5. Vérifier un libellé long, un grand montant et une taille de texte agrandie.</string>
+    <string name="release_notes_changes">Premier lot de personnalisation : choisir le tri des opérations par date dans les réglages, conservé dans le coffre chiffré et ses sauvegardes. Ordre actuel maintenu par défaut. En paysage, le titre retrouve son fond bleu foncé et le menu se prolonge en bas.</string>
+    <string name="release_notes_tests">1. Vérifier le titre bleu foncé et le fond du menu jusqu’en bas en paysage.\n2. Dans les réglages, choisir le tri récent puis ancien : vérifier opérations et recherche.\n3. Verrouiller puis rouvrir : tri conservé et soldes inchangés.\n4. Restaurer une sauvegarde créée avec cette version : le tri doit être restauré.\n5. Revenir à Ordre de saisie pour retrouver la présentation initiale.</string>
     <string name="account_add">Ajouter un compte</string>
     <string name="account_edit">Configurer le compte</string>
     <string name="account_configure">Configurer %1$s</string>
@@ -178,4 +178,9 @@
     <string name="search_empty">Aucune opération ne correspond à cette recherche.</string>
     <string name="search_open">Rechercher</string>
     <string name="balance_info">Informations</string>
+    <string name="order_title">Ordre des opérations</string>
+    <string name="order_original">Ordre de saisie (fonctionnement actuel)</string>
+    <string name="order_newest">Date la plus récente en premier</string>
+    <string name="order_oldest">Date la plus ancienne en premier</string>
+    <string name="order_hint">Appliqué à tous les comptes et aux résultats de recherche. Conservé dans le coffre chiffré et ses sauvegardes. Les anciennes dates non reconnues restent à la fin.</string>
 </resources>
