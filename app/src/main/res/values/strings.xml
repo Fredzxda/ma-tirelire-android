@@ -76,8 +76,8 @@
     <string name="release_notes_title">Nouveautés · %1$s</string>
     <string name="release_notes_test_title">À vérifier avec des données fictives</string>
     <string name="release_notes_understood">Compris</string>
-    <string name="release_notes_changes">La vue Opérations suit la maquette validée : soldes et menu fixes, une ligne temporaire pour Compte, Filtre, Recherche ou Fonctions, recherche intégrée combinée à la période. Les cartes placent le statut en haut à gauche et le pointage sous le montant. Les libellés de périodicité restent dans l’encoche. Le bouton + rejoint le bandeau fixe.</string>
-    <string name="release_notes_tests">1. Ouvrir chaque menu : une seule ligne temporaire ; toucher ailleurs pour la fermer.\n2. Menu ouvert, toucher une carte ou sa case : une seule action, sans premier clic perdu.\n3. Combiner mois et recherche ; Tout l’historique élargit la recherche. Fermer conserve le texte, Effacer le supprime.\n4. Vérifier portrait, paysage, rotation, clavier et texte agrandi.\n5. Modifier les limites de périodicité : champs vides, en saisie et remplis gardent leurs libellés et une hauteur stable.\n6. + crée une opération ; pointage et confirmation restent indépendants.</string>
+    <string name="release_notes_changes">Le menu Filtre utilise une indication courte sur une ligne : Historique ou À vérifier. Le libellé complet reste dans les choix. Une recherche en cours est indiquée par Active plutôt que par un point, sans ajouter de ligne au menu.</string>
+    <string name="release_notes_tests">1. Choisir Tout l’historique puis fermer Filtre : Historique doit rester lisible sur une ligne.\n2. Saisir une recherche : Active apparaît sous Recherche et reste après fermeture de la ligne.\n3. Effacer la recherche : Active disparaît et la liste revient selon la période choisie.\n4. Vérifier portrait et paysage : la hauteur du menu reste inchangée.</string>
     <string name="account_add">Ajouter un compte</string>
     <string name="account_edit">Configurer le compte</string>
     <string name="account_configure">Configurer %1$s</string>
@@ -210,4 +210,7 @@
     <string name="operations_search">Recherche</string>
     <string name="operations_sort_action">%1$s. Toucher pour changer le tri.</string>
     <string name="repeat_choose_date_short">Choisir</string>
+    <string name="operations_history_short">Historique</string>
+    <string name="operations_undated_short">À vérifier</string>
+    <string name="operations_search_active">Active</string>
 </resources>

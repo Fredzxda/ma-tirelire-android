@@ -31,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
@@ -61,6 +62,11 @@ internal fun TransactionsScreen(names: List<String>, account: Int, balance: BigD
             DateTimeFormatter.ofPattern("LLL uuuu", LocalConfiguration.current.locales[0]))
         PeriodScope.ALL -> stringResource(R.string.period_all)
         PeriodScope.UNDATED -> stringResource(R.string.date_needs_review)
+    }
+    val periodCaption = when (period.scope) {
+        PeriodScope.ALL -> stringResource(R.string.operations_history_short)
+        PeriodScope.UNDATED -> stringResource(R.string.operations_undated_short)
+        PeriodScope.MONTH -> periodTitle
     }
     val visible = TransactionSearch.filter(period.filter(transactions, model.calendarToday), model.searchQuery)
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -107,7 +113,7 @@ internal fun TransactionsScreen(names: List<String>, account: Int, balance: BigD
                 }
             }
         }
-        Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)
+        Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).testTag("operations-menu")
             .onGloballyPositioned { menuBounds = it.boundsInRoot() }, verticalAlignment = Alignment.CenterVertically) {
             val currentOrder = stringResource(R.string.operations_sort_action, stringResource(orderResource(model.transactionOrder)))
             IconButton(onClick = {
@@ -129,7 +135,8 @@ internal fun TransactionsScreen(names: List<String>, account: Int, balance: BigD
                         focus.clearFocus(); keyboard?.hide(); model.operationsMenu = entry
                     }
                 }, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("menu-${entry.name.lowercase()}")
-                    .background(if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent),
+                    .background(if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
+                    .semantics { if (entry == OperationsMenu.FILTER) stateDescription = periodTitle },
                     contentPadding = PaddingValues(horizontal = 2.dp, vertical = 2.dp)) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(stringResource(when (entry) {
@@ -138,10 +145,14 @@ internal fun TransactionsScreen(names: List<String>, account: Int, balance: BigD
                             OperationsMenu.SEARCH -> R.string.operations_search
                             else -> R.string.operations_functions
                         }), style = MaterialTheme.typography.labelMedium)
-                        if (entry == OperationsMenu.FILTER) Text(periodTitle, style = MaterialTheme.typography.labelSmall)
+                        if (entry == OperationsMenu.FILTER) Text(periodCaption,
+                            style = MaterialTheme.typography.labelSmall, maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier.testTag("menu-filter-caption"))
                         if (entry == OperationsMenu.SEARCH && model.searchQuery.isNotBlank())
-                            Text("●", style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.semantics { contentDescription = model.searchQuery })
+                            Text(stringResource(R.string.operations_search_active), style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1, modifier = Modifier.testTag("menu-search-active")
+                                    .semantics { contentDescription = model.searchQuery })
                     }
                 }
             }

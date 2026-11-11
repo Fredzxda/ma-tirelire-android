@@ -8,6 +8,11 @@ $apk = Join-Path $project 'app/build/outputs/apk/androidTest/debug/app-debug-and
 if (-not (Test-Path -LiteralPath $apk)) { throw 'Compiler assembleDebugAndroidTest avant ce controle.' }
 & $adb -s $device install -r $apk
 if ($LASTEXITCODE -ne 0) { throw 'Installation du test impossible.' }
+$policy = (& $adb -s $device shell dumpsys window policy) -join "`n"
+if ($LASTEXITCODE -ne 0) { throw 'Impossible de verifier le verrouillage Android avant les tests interface.' }
+if ($policy -match '(?m)^\s+showing=true\s*$') {
+    throw 'Deverrouiller Android sur ASUS puis relancer Play : les tests interface necessitent un ecran accessible. Aucun code ne doit etre transmis.'
+}
 $result = @(& $adb -s $device shell am instrument -w -r -e class 'org.matirelire.android.VaultStorageDeviceTest,org.matirelire.android.OperationsUiDeviceTest' org.matirelire.android.demo.test/androidx.test.runner.AndroidJUnitRunner)
 $result | Write-Output
 if ($LASTEXITCODE -ne 0 -or -not ($result -match 'OK \([1-9][0-9]* tests?\)') -or ($result -match 'FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed')) {

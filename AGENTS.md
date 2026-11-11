@@ -50,3 +50,7 @@
 
 - Play execute aussi OperationsUiDeviceTest dans une activite vierge avec
   donnees fictives ; ne jamais utiliser le coffre personnel pour ces tests.
+
+- Les tests interface necessitent Android deverrouille ; le harnais le verifie.
+  Seule l activite fictive garde son ecran allume pendant les tests, sans modifier
+  les reglages Android de veille/verrouillage.

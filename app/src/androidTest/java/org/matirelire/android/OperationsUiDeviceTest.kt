@@ -8,9 +8,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import org.junit.Assert.*
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import java.math.BigDecimal
@@ -18,7 +22,10 @@ import java.time.LocalDate
 
 /** Blank test activity and synthetic state only: never opens the user's vault. */
 class OperationsUiDeviceTest {
-    @get:Rule val ui = createComposeRule()
+    @get:Rule val ui = createAndroidComposeRule<androidx.activity.ComponentActivity>()
+    @Before fun keepOnlyTheSyntheticTestActivityAwake() {
+        ui.runOnUiThread { ui.activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
+    }
     private val today = LocalDate.now()
     private fun model() = DemoViewModel().apply {
         initialize(listOf(
@@ -38,14 +45,24 @@ class OperationsUiDeviceTest {
     @Test fun inlineSearchCombinesWithPeriodAndClosingPreservesCriteria() {
         val model = model()
         screen(model)
+        val menuHeight = ui.onNodeWithTag("operations-menu").fetchSemanticsNode().layoutInfo.height
         ui.onNodeWithTag("operation-2").assertDoesNotExist()
         ui.onNodeWithTag("menu-search").performClick()
         ui.onNodeWithTag("operations-query").performTextInput("Fixture")
+        ui.onNodeWithTag("menu-search-active",useUnmergedTree = true).assertExists()
+        assertEquals(menuHeight,ui.onNodeWithTag("operations-menu").fetchSemanticsNode().layoutInfo.height)
         ui.onNodeWithTag("operation-1").assertExists()
         ui.onNodeWithTag("operation-3").assertDoesNotExist()
         ui.onNodeWithTag("menu-filter").performClick()
         ui.onNodeWithTag("operations-query").assertDoesNotExist()
         ui.onNodeWithTag("period-all").performScrollTo().performClick()
+        val caption = ui.onNodeWithTag("menu-filter-caption",useUnmergedTree = true)
+        caption.assertTextEquals(InstrumentationRegistry.getInstrumentation().targetContext.getString(R.string.operations_history_short))
+        val layouts = mutableListOf<TextLayoutResult>()
+        caption.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        assertTrue(layouts.isNotEmpty())
+        assertTrue(layouts.joinToString { "size=${it.size}, widthOverflow=${it.didOverflowWidth}, heightOverflow=${it.didOverflowHeight}, lines=${it.lineCount}, constraints=${it.layoutInput.constraints}, font=${it.layoutInput.style.fontSize}" }, layouts.all { it.lineCount == 1 && !it.isLineEllipsized(0) && it.getLineRight(0) - it.getLineLeft(0) <= it.size.width + 1f })
+        assertEquals(menuHeight,ui.onNodeWithTag("operations-menu").fetchSemanticsNode().layoutInfo.height)
         ui.onNodeWithTag("operation-2").assertExists()
         ui.onNodeWithTag("operation-3").assertDoesNotExist()
         ui.onNodeWithTag("menu-filter").performClick()
@@ -53,6 +70,8 @@ class OperationsUiDeviceTest {
         ui.runOnIdle { assertEquals("Fixture", model.searchQuery) }
         ui.onNodeWithTag("menu-search").performClick()
         ui.onNodeWithTag("operations-clear-query").performClick()
+        ui.onNodeWithTag("menu-search-active",useUnmergedTree = true).assertDoesNotExist()
+        assertEquals(menuHeight,ui.onNodeWithTag("operations-menu").fetchSemanticsNode().layoutInfo.height)
         ui.onNodeWithTag("operations-list").performScrollToNode(hasTestTag("operation-3"))
         ui.onNodeWithTag("operation-3").assertExists()
         ui.runOnIdle { assertEquals(PeriodScope.ALL,model.accountPeriod.scope) }

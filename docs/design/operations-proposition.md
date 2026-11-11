@@ -94,3 +94,7 @@ n avait alors ete modifie.
 
 Validation utilisateur : « C’est parfait. Tu peux implémenter. »
 Implémentation livrée en 0.7.3-dev, contrôles consignés dans ../VALIDATION-0.7.3-dev.md.
+
+Correction ergonomique 0.7.4-dev : indication courte Historique / À vérifier
+dans le menu Filtre ; indication Active sous Recherche plutôt que le point.
+Une seule ligne de sous-libellé, hauteur de barre conservée.

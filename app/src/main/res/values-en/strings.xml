@@ -76,8 +76,8 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">Operations now follow the approved layout: fixed balances and command bar, one temporary row for Account, Filter, Search or Actions, inline search combined with the period. Cards place status at the top left and clearing below the amount. Recurrence labels always stay in the outline notch. The + button moves to the fixed header.</string>
-    <string name="release_notes_tests">1. Open each menu: one temporary row; tap outside to close it.\n2. With a menu open, tap a card or checkbox: exactly one action, no blocked first tap.\n3. Combine month and search; Full history widens the search. Closing preserves the query, Clear removes it.\n4. Check portrait, landscape, rotation, keyboard and larger text.\n5. Edit recurrence limits: empty, focused and filled fields keep labels and height stable.\n6. + creates a transaction; bank clearing and series confirmation remain independent.</string>
+    <string name="release_notes_changes">The Filter menu uses short, single-line captions: History or Review dates. The full label remains in the filter choices. Active search is now marked Active instead of a dot, without adding a menu row.</string>
+    <string name="release_notes_tests">1. Select Full history and close Filter: History must be readable on one line.\n2. Enter a search: Active appears under Search and remains after closing the row.\n3. Clear the search: Active disappears and transactions return according to the selected period.\n4. Check portrait and landscape: the menu height stays unchanged.</string>
     <string name="account_add">Add account</string>
     <string name="account_edit">Account settings</string>
     <string name="account_configure">Configure %1$s</string>
@@ -210,4 +210,7 @@
     <string name="operations_search">Search</string>
     <string name="operations_sort_action">%1$s. Tap to change sorting.</string>
     <string name="repeat_choose_date_short">Choose</string>
+    <string name="operations_history_short">History</string>
+    <string name="operations_undated_short">Review dates</string>
+    <string name="operations_search_active">Active</string>
 </resources>
