@@ -68,3 +68,7 @@ aucune reecriture du coffre. Raccourcis 0.7.1 et periode 0.7.2 inchanges.
 
 0.7.1-dev realisee : raccourcis version/tri et migration des dates sauvegardee.
 L affichage mensuel 0.7.2 reste a venir.
+
+0.7.2-dev realisee : navigation mensuelle, historique et dates a verifier.
+Sauvegarde puis normalisation desormais distinctes, checkpoint existant exige
+si une conversion reste necessaire. Aucun archivage ni purge automatique.

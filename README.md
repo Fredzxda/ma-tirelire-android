@@ -1,9 +1,14 @@
 # Ma Tirelire — Android
 
-Prototype de sécurité **0.7.1-dev** du portage de Ma Tirelire Palm.
+Prototype de sécurité **0.7.2-dev** du portage de Ma Tirelire Palm.
 Android 12 minimum, téléphone et tablette, français et anglais.
 
 ## Utilisation de cette version
+
+0.7.2 : affichage mensuel avec historique complet et dates a verifier.
+Recherche sur tout le compte, soldes globaux inchanges. Sauvegarder et Normaliser
+sont deux actions distinctes : si une conversion est necessaire, Normaliser exige
+une archive verifiee du contenu actuel, sans en creer une autre.
 
 0.7.1 : nouveautes via le numero de version, fleche de tri dans le compte.
 Normalisation des anciennes dates depuis les reglages, avec sauvegarde chiffree

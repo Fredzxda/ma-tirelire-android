@@ -76,8 +76,8 @@
     <string name="release_notes_title">Nouveautés · %1$s</string>
     <string name="release_notes_test_title">À vérifier avec des données fictives</string>
     <string name="release_notes_understood">Compris</string>
-    <string name="release_notes_changes">Toucher le numéro de version pour ouvrir les nouveautés. Changer le tri directement dans le compte avec le bouton fléché. Les réglages permettent de normaliser les anciennes dates après une sauvegarde chiffrée vérifiée ; les dates ambiguës sont signalées pour correction manuelle.</string>
-    <string name="release_notes_tests">1. Toucher la version en portrait, paysage et dans les réglages.\n2. Changer le tri avec la flèche et vérifier sa conservation après verrouillage.\n3. Sauvegardes configurées, normaliser les dates dans les réglages ; vérifier affichage localisé, soldes et pointages.\n4. Relancer la normalisation : aucun doublon ni modification supplémentaire.\n5. Vérifier les éventuelles mentions Date à vérifier et choisir manuellement la bonne date.</string>
+    <string name="release_notes_changes">Les opérations s’ouvrent sur le mois courant : navigation entre les mois et accès à tout l’historique. La recherche couvre tout le compte. Les dates à vérifier restent accessibles. Normaliser est distinct de la sauvegarde : sauvegarder d’abord, puis normaliser sans créer une autre archive.</string>
+    <string name="release_notes_tests">1. Naviguer entre les mois puis revenir à Ce mois.\n2. Afficher Tout l’historique : soldes inchangés.\n3. Rechercher une opération hors du mois affiché puis la modifier.\n4. Consulter Dates à vérifier si présent.\n5. Faire une rotation : période conservée. Verrouiller/rouvrir : mois courant.\n6. Vérifier le bouton Normaliser dans les réglages.</string>
     <string name="account_add">Ajouter un compte</string>
     <string name="account_edit">Configurer le compte</string>
     <string name="account_configure">Configurer %1$s</string>
@@ -170,7 +170,7 @@
     <string name="anticipation_hint">Les occurrences anticipées sont enregistrées dans les comptes comme Prévisions et incluses dans le solde total, sans pointage automatique. À leur date elles deviennent À confirmer. La confirmation dans leur fiche est distincte du pointage. Réduire l’avance ou modifier une série ne supprime ni ne modifie les prévisions déjà enregistrées.</string>
     <string name="anticipation_balance_hint">Le solde total comprend les prévisions périodiques enregistrées. Leur confirmation et leur pointage sont distincts.</string>
     <string name="repeat_prepare_occurrence">Passer à « À confirmer »</string>
-    <string name="search_label">Rechercher dans ce compte</string>
+    <string name="search_label">Rechercher dans tout l’historique du compte</string>
     <string name="search_hint">Description, catégorie, moyen de paiement. Tous les mots sont recherchés, sans distinction d’accents ou de majuscules.</string>
     <string name="search_clear">Effacer</string>
     <string name="search_summary">%1$d opération(s) trouvée(s) · somme : %2$s</string>
@@ -184,11 +184,19 @@
     <string name="order_oldest">Date la plus ancienne en premier</string>
     <string name="order_hint">Appliqué à tous les comptes et aux résultats de recherche. Conservé dans le coffre chiffré et ses sauvegardes. Les anciennes dates non reconnues restent à la fin.</string>
     <string name="date_migration_title">Normaliser les anciennes dates</string>
-    <string name="date_migration_hint">Convertit les anciennes dates reconnues au format interne ISO, après une sauvegarde chiffrée vérifiée. Configurer auparavant le dossier local et le mot de passe de sauvegarde. Les dates ambiguës restent inchangées et sont à corriger manuellement.</string>
-    <string name="date_migration_action">Sauvegarder et normaliser les dates</string>
+    <string name="date_migration_hint">Créer d’abord une sauvegarde avec le bouton de sauvegarde distinct. Normaliser vérifie que cette archive chiffrée correspond aux données actuelles, puis convertit les dates reconnues sans créer une autre sauvegarde. Les dates ambiguës restent inchangées.</string>
+    <string name="date_migration_action">Normaliser</string>
     <string name="date_migration_unresolved">%1$d date(s) à vérifier manuellement. Ouvrir les opérations signalées et choisir leur date.</string>
     <string name="date_needs_review">Date à vérifier</string>
     <string name="date_migration_success">Normalisation des dates terminée. Les dates déjà normalisées restent inchangées. Montants et pointages sont conservés.</string>
     <string name="date_migration_partial">Les dates reconnues sont normalisées. Certaines dates restent inchangées et sont à vérifier manuellement ; leur nombre figure dans les réglages.</string>
-    <string name="date_migration_error">La normalisation des dates ne peut pas être terminée. Aucune conversion partielle enregistrée. Vérifier l’accès aux sauvegardes et réessayer sans modifier les opérations pendant la sauvegarde.</string>
+    <string name="date_migration_error">La normalisation ne peut pas être terminée. Aucune conversion partielle enregistrée. Réessayer sans modifier les données pendant la vérification.</string>
+    <string name="period_previous">Mois précédent</string>
+    <string name="period_next">Mois suivant</string>
+    <string name="period_current">Ce mois</string>
+    <string name="period_all">Tout l’historique</string>
+    <string name="period_undated">Dates à vérifier (%1$d)</string>
+    <string name="period_empty">Aucune opération sur cette période.</string>
+    <string name="period_hint">%1$d opération(s) affichée(s). Soldes du compte entier ; recherche sur tout l’historique.</string>
+    <string name="date_migration_backup_required">Créer une sauvegarde des données actuelles avec Sauvegarder maintenant, puis relancer Normaliser sans modifier les données. Le fichier de sauvegarde doit rester accessible.</string>
 </resources>

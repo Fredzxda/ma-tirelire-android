@@ -121,6 +121,7 @@ internal data class AccountDraft(val index: Int?, val name: String = "", val ope
 
 /** Session state; snapshots are persisted only through the encrypted vault callback. */
 class DemoViewModel : ViewModel() {
+    internal var accountPeriod by mutableStateOf(AccountPeriod())
     internal var searchQuery by mutableStateOf("")
     internal val transactions = mutableStateListOf<DemoTransaction>()
     internal val destination = mutableIntStateOf(0)
@@ -383,6 +384,7 @@ class DemoViewModel : ViewModel() {
 
     internal fun clearSensitive() {
         searchQuery = ""
+        accountPeriod = AccountPeriod()
         transactionOrder = TransactionOrder.ORIGINAL
         dateMigrationVersion = 0
         onChange = null
@@ -683,6 +685,10 @@ private fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, clea
 @Composable
 private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDecimal, clearedBalance: BigDecimal, transactions: List<DemoTransaction>, onAccount: (Int) -> Unit, onToggle: (Long) -> Unit, onReconcile: () -> Unit, onEdit: (Long) -> Unit) {
     val model: DemoViewModel = viewModel()
+    val period = model.accountPeriod
+    val periodMonth = period.effectiveMonth(model.calendarToday)
+    val visibleTransactions = period.filter(transactions, model.calendarToday)
+    val undatedCount = transactions.count { OperationDates.forOrdering(it.date) == null }
     var showUpcoming by rememberSaveable { mutableStateOf(false) }
     var showSearch by rememberSaveable { mutableStateOf(false) }
     var showInfo by remember { mutableStateOf(false) }
@@ -734,6 +740,34 @@ private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDe
                 }
             }
             item {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        val previous = period.move(-1, model.calendarToday)
+                        val next = period.move(1, model.calendarToday)
+                        val previousLabel = stringResource(R.string.period_previous)
+                        val nextLabel = stringResource(R.string.period_next)
+                        IconButton(onClick = { previous?.let { model.accountPeriod = it } }, enabled = previous != null,
+                            modifier = Modifier.semantics { contentDescription = previousLabel }) { Text("‹", style = MaterialTheme.typography.headlineSmall) }
+                        Text(when (period.scope) {
+                            PeriodScope.MONTH -> periodMonth.format(java.time.format.DateTimeFormatter.ofPattern("LLLL uuuu", LocalConfiguration.current.locales[0]))
+                            PeriodScope.ALL -> stringResource(R.string.period_all)
+                            PeriodScope.UNDATED -> stringResource(R.string.date_needs_review)
+                        }, style = MaterialTheme.typography.titleMedium)
+                        IconButton(onClick = { next?.let { model.accountPeriod = it } }, enabled = next != null,
+                            modifier = Modifier.semantics { contentDescription = nextLabel }) { Text("›", style = MaterialTheme.typography.headlineSmall) }
+                        FilterChip(selected = period.scope == PeriodScope.MONTH && period.followsCurrent,
+                            onClick = { model.accountPeriod = AccountPeriod() }, label = { Text(stringResource(R.string.period_current)) })
+                        FilterChip(selected = period.scope == PeriodScope.ALL, onClick = { model.accountPeriod = period.copy(scope = PeriodScope.ALL) },
+                            label = { Text(stringResource(R.string.period_all)) })
+                        if (undatedCount > 0) FilterChip(selected = period.scope == PeriodScope.UNDATED,
+                            onClick = { model.accountPeriod = period.copy(scope = PeriodScope.UNDATED) },
+                            label = { Text(stringResource(R.string.period_undated, undatedCount)) })
+                    }
+                    Text(stringResource(R.string.period_hint, visibleTransactions.size), style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            item {
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     val sortLabel = stringResource(when (model.transactionOrder) {
                         TransactionOrder.ORIGINAL -> R.string.order_original
@@ -756,8 +790,8 @@ private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDe
                     OutlinedButton(onClick = { showUpcoming = true }) { Text(stringResource(R.string.upcoming_open)) }
                 }
             }
-            if (transactions.isEmpty()) item { Text(stringResource(R.string.empty_transactions)) }
-        items(transactions, key = { it.id }) { tx ->
+            if (visibleTransactions.isEmpty()) item { Text(stringResource(if (transactions.isEmpty()) R.string.empty_transactions else R.string.period_empty)) }
+        items(visibleTransactions, key = { it.id }) { tx ->
             Card(onClick = { onEdit(tx.id) }, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {

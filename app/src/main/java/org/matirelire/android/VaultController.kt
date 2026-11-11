@@ -381,11 +381,20 @@ class VaultController(application: Application) : AndroidViewModel(application) 
             operation = "date-migration"
             try {
                 val before = ledger.exportData()
+                if (DateMigration.plan(before).data != before) {
+                    val config = config()
+                    val verified = runCatching {
+                        val archive = withContext(Dispatchers.IO) { readArchive(Uri.parse(config.getString("lastArchiveUri"))) }
+                        try { BackupCheckpoint.matches(before, config.getString("lastSnapshotHash"), archive, config.getString("lastArchiveHash")) }
+                        finally { archive.fill(0) }
+                    }.getOrElse { failure ->
+                        if (failure is CancellationException) throw failure
+                        false
+                    }
+                    if (!verified) { message(R.string.date_migration_backup_required); return@work }
+                }
                 val plan = DateMigration.execute(before,
-                    backup = {
-                        check(backupConfigured)
-                        makeBackup(false)
-                    }, current = { ledger.exportData() }, replace = { data ->
+                    backup = { /* Existing checkpoint verified above; no new backup. */ }, current = { ledger.exportData() }, replace = { data ->
                         val encoded = SnapshotCodec.encode(data)
                         try { store.put("ledger", encoded) } finally { encoded.fill(0) }
                         ledger.restoreData(data)
@@ -417,12 +426,15 @@ class VaultController(application: Application) : AndroidViewModel(application) 
         require(config.optString("tree").isNotEmpty() && config.optString("key").isNotEmpty())
         val material = VaultCrypto.BackupKey(un64(config.getString("salt")), un64(config.getString("key")))
         val payload = SnapshotCodec.encode(ledger.exportData())
+        val snapshotHash = BackupCheckpoint.hash(payload)
         val archive = try { VaultCrypto.encryptBackup(payload, material) }
             finally { material.clear(); payload.fill(0) }
+        val archiveHash = BackupCheckpoint.hash(archive)
         val uri = try { withContext(Dispatchers.IO) { writeArchive(Uri.parse(config.getString("tree")), archive, automatic) } }
             finally { archive.fill(0) }
         val now = System.currentTimeMillis()
         config.put("lastSuccess", now)
+        config.put("lastSnapshotHash", snapshotHash).put("lastArchiveHash", archiveHash).put("lastArchiveUri", uri.toString())
         if (automatic) {
             config.put("lastAuto", now)
             val old = config.optJSONArray("autoFiles") ?: JSONArray()

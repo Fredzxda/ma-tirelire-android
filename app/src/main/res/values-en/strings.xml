@@ -76,8 +76,8 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">Open release notes by tapping the version number. Change sorting directly in an account using the arrow button. Settings can normalize older dates after a verified encrypted backup; ambiguous dates are flagged for manual review.</string>
-    <string name="release_notes_tests">1. Tap the version in portrait, landscape and Settings.\n2. Cycle sorting with the arrow and verify persistence after locking.\n3. Configure backups, then normalize dates in Settings; check localized display, balances and clearing.\n4. Run normalization again: no duplicate transactions or changes.\n5. Check any Date to check labels and choose the correct date manually.</string>
+    <string name="release_notes_changes">Account transactions now open on the current month, with previous/next month navigation and Full history. Search covers the entire account. Dates to check remain accessible. Normalize is separate from backup: create a backup first, then normalize without creating another archive.</string>
+    <string name="release_notes_tests">1. Navigate months and return to This month.\n2. Show Full history: balances must remain unchanged.\n3. Search for a transaction outside the displayed month and edit it.\n4. Check Dates to check when present.\n5. Rotate: period is retained. Lock/reopen: current month.\n6. Verify the Normalize action in Settings.</string>
     <string name="account_add">Add account</string>
     <string name="account_edit">Account settings</string>
     <string name="account_configure">Configure %1$s</string>
@@ -170,7 +170,7 @@
     <string name="anticipation_hint">Anticipated occurrences are recorded as Forecasts and included in the total balance, without automatic clearing. On their date they need confirmation. Confirming in their form is separate from clearing. Reducing anticipation or editing a series does not delete or alter already recorded forecasts.</string>
     <string name="anticipation_balance_hint">The total balance includes recorded recurring forecasts. Confirmation and clearing are separate.</string>
     <string name="repeat_prepare_occurrence">Move to Needs confirmation</string>
-    <string name="search_label">Search this account</string>
+    <string name="search_label">Search full account history</string>
     <string name="search_hint">Description, category, payment method. All words must match, ignoring accents and case.</string>
     <string name="search_clear">Clear</string>
     <string name="search_summary">%1$d matching transaction(s) · sum: %2$s</string>
@@ -184,11 +184,19 @@
     <string name="order_oldest">Oldest date first</string>
     <string name="order_hint">Applies to all accounts and search results. Stored in the encrypted vault and its backups. Unrecognized historical dates appear last.</string>
     <string name="date_migration_title">Normalize older dates</string>
-    <string name="date_migration_hint">Converts recognized older dates to the internal ISO format, after a verified encrypted backup. Configure a local backup folder and password first. Ambiguous dates remain unchanged and need manual correction.</string>
-    <string name="date_migration_action">Back up and normalize dates</string>
+    <string name="date_migration_hint">First create a backup using the separate backup action. Normalize verifies that the existing encrypted archive matches current data, then converts recognized older dates. It does not create another backup. Ambiguous dates remain unchanged.</string>
+    <string name="date_migration_action">Normalize</string>
     <string name="date_migration_unresolved">%1$d date(s) need manual review. Open the affected transaction and choose its date.</string>
     <string name="date_needs_review">Date to check</string>
     <string name="date_migration_success">Date normalization completed. Already normalized dates require no change. Amounts and clearing are preserved.</string>
     <string name="date_migration_partial">Recognized dates are normalized. Some dates remain unchanged and need manual review; their count is shown in Settings.</string>
-    <string name="date_migration_error">Date normalization could not complete. No partial conversion was saved. Check backup access and retry without editing transactions during the backup.</string>
+    <string name="date_migration_error">Normalization could not complete. No partial conversion was saved. Retry without editing data during verification.</string>
+    <string name="period_previous">Previous month</string>
+    <string name="period_next">Next month</string>
+    <string name="period_current">This month</string>
+    <string name="period_all">Full history</string>
+    <string name="period_undated">Dates to check (%1$d)</string>
+    <string name="period_empty">No transactions in this period.</string>
+    <string name="period_hint">%1$d displayed transaction(s). Balances cover the entire account; search covers full history.</string>
+    <string name="date_migration_backup_required">Create a new backup of current data with Back up now, then retry Normalize without editing data. The archive must remain accessible.</string>
 </resources>
