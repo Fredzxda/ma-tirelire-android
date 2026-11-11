@@ -42,3 +42,8 @@
 - Statut de recurrence seul : aucun dialogue de portee. Prevision -> A confirmer
   -> Confirmee en deux actions distinctes, etat intermediaire persiste avant
   echeance. Aucun pointage automatique ; une paire change ses deux etats ensemble.
+
+- Avant de modifier la presentation de la vue Operations, lire le skill projet
+  .agents/skills/ma-tirelire-operations-ui/SKILL.md et la reference de conception
+  docs/design/operations-proposition.md. La proposition du 11 novembre 2026
+  attend la validation de Frederic avant implementation dans l application.
