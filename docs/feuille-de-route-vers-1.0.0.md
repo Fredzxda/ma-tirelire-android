@@ -1,6 +1,6 @@
 # Feuille de route vers 1.0.0
 
-État au 11 novembre 2026, après validation utilisateur de 0.7.4-dev.
+État au 11 novembre 2026, après validation utilisateur de 0.7.4-dev ; 0.7.6-dev préparée.
 **Découpage proposé : ordre et numéros ajustables, sans dates promises.**
 Ce document actualise les lots initiaux du cadrage du 8 novembre ; leur numéro
 ne prouve pas leur achèvement. Les fonctions manquantes des anciens lots sont
@@ -28,7 +28,7 @@ non-régression et les validations finales de sécurité/récupération.
 
 | Version | Reste à implémenter | Résultat attendu |
 |---|---|---|
-| 0.7.6-dev | Catégories/moyens avancés et stockage associé | Renommer, organiser, retirer ou remplacer sans casser les références ; catégories hiérarchiques, types et visibilité par compte. Regroupe le socle des historiques longs initialement prévu en 0.7.5 : stockage, chargement, migrations et sauvegardes adaptés. Pas de version technique distincte à tester. |
+| 0.7.6-dev (implémentée, validation utilisateur à venir) | Catégories/moyens avancés et stockage associé | Renommer, organiser, retirer ou remplacer sans casser les références ; catégories hiérarchiques, types et visibilité par compte. Regroupe le socle des historiques longs initialement prévu en 0.7.5 : stockage, chargement, migrations et sauvegardes adaptés. Pas de version technique distincte à tester. |
 | 0.7.7-dev | Ventilation des opérations | Répartir une écriture entre plusieurs catégories/descriptions ; somme exacte, édition des sous-opérations et articulation avec les virements. |
 | 0.7.8-dev | Devises et virements complémentaires | Devise par compte, taux locaux, montant d'origine et montant du compte, arrondis, transferts entre devises, dissociation d'un lien de virement et consolidation cohérente. |
 | 0.7.9-dev | Champs bancaires et chéquiers | Heure, date de valeur, règles associées aux moyens de paiement, numéros de chèque et de relevé, numérotation/changement/épuisement des chéquiers. |
@@ -114,4 +114,14 @@ ni nouvelle compilation ni installation. Le dernier message de Frédéric valide
 le fonctionnement de 0.7.4 et demande l'affichage de ce qui reste jusqu'à 1.0.0.
 
 Actualisation : regroupement de 0.7.5 dans 0.7.6 et import bancaire ajouté avant
-1.0.0 à la demande de Frédéric. Application toujours en 0.7.4-dev.
+1.0.0 à la demande de Frédéric. Application en 0.7.6-dev.
+
+## Livraison 0.7.6-dev
+
+Gestion des catégories et moyens dans Réglages : renommage global, remplacement avant retrait des références utilisées, parents sans cycles, type dépenses/revenus, masquage et visibilité par compte. Les écritures, brouillons et modèles de séries suivent les renommages ; montants et états restent inchangés. Le moyen dédié aux virements est renommable mais ne peut être retiré ni restreint.
+
+Les nouvelles saisies suivent les restrictions ; les écritures historiques restent éditables avec leurs anciennes références. Les sauvegardes incluent les options (schéma 12) et les anciens schémas 1 à 11 restent lisibles. Une version antérieure ne sait pas ouvrir un coffre ou une archive contenant ces options : conserver une sauvegarde avant mise à jour pour un éventuel retour arrière.
+
+Capacité portée à 50 000 écritures, snapshot limité à 32 Mio et archive à 40 Mio. Les listes sont déjà affichées à la demande via LazyColumn, mais la base contient encore un snapshot complet chargé en mémoire et enregistré à chaque modification. Ce plafond de capacité ne garantit pas une latence constante ; le stockage par lignes et le chargement paginé restent une optimisation à mesurer avant 1.0. Les tests volumineux sont synthétiques.
+
+Validation locale du 11 novembre : compilation et lint sans erreur, 129 tests unitaires et 8 tests ASUS sur donnees fictives reussis. Installation 0.7.6-dev et relancement confirmes par le harnais. Validation fonctionnelle utilisateur a venir.

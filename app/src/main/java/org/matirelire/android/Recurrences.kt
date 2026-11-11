@@ -41,6 +41,7 @@ internal object Recurrences {
         val horizon = data.anticipation.horizon(today)
         val rows = data.transactions.toMutableList()
         val rules = data.rules.toMutableList()
+        val recorded = rows.mapNotNull { row -> row.seriesId?.let { it to row.occurrence } }.toHashSet()
         var nextId = (rows.maxOfOrNull { it.id } ?: 0) + 1
         var made = 0
         var changed = false
@@ -52,11 +53,11 @@ internal object Recurrences {
                 if (due == null) { rule = rule.copy(active = false); changed = true; break }
                 if (due > horizon || made >= budget) break
                 val needed = if (rule.target == null) 1 else 2
-                if (rows.size + needed > 10_000 || nextId <= 0 || nextId >= Long.MAX_VALUE - 1 || rule.next >= 1_000_000) {
+                if (rows.size + needed > LedgerLimits.MAX_TRANSACTIONS || nextId <= 0 || nextId >= Long.MAX_VALUE - 1 || rule.next >= 1_000_000) {
                     blocked = true; break
                 }
                 // Deleted occurrences remain consumed by the cursor and cannot reappear.
-                if (rows.none { it.seriesId == rule.id && it.occurrence == rule.next }) {
+                if (recorded.add(rule.id to rule.next)) {
                     val first = DemoTransaction(nextId++, rule.account, rule.description, rule.amount,
                         rule.category, rule.payment, due.toString(), false,
                         if (rule.target == null) null else nextId, rule.id, rule.next, false)

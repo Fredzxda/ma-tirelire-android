@@ -42,6 +42,20 @@ class OperationsUiDeviceTest {
             }
         }
     }
+    @Test fun referenceManagerRenamesWithoutChangingFinancialValues() {
+        val model = model()
+        model.ensureAccountNames(listOf("Current", "Savings"))
+        ui.setContent { MaterialTheme { ReferenceManagementDialog(model) {} } }
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        ui.onNodeWithText(context.getString(R.string.reference_name)).performTextClearance()
+        ui.onNodeWithText(context.getString(R.string.reference_name)).performTextInput("Groceries")
+        ui.onNodeWithText(context.getString(R.string.save)).performScrollTo().performClick()
+        ui.runOnIdle {
+            assertTrue(model.transactions.all { it.category == "Groceries" })
+            assertEquals(BigDecimal("-10.00"), model.transactions.first().amount)
+            assertTrue(model.referenceOptions.containsKey("c:Groceries"))
+        }
+    }
     @Test fun inlineSearchCombinesWithPeriodAndClosingPreservesCriteria() {
         val model = model()
         screen(model)

@@ -204,9 +204,12 @@ class DemoViewModel : ViewModel() {
         onChange?.invoke()
         return true
     }
+    internal val referenceUiStates = mutableMapOf<String, Any>()
+    internal val referenceOptions = androidx.compose.runtime.mutableStateMapOf<String, ReferenceOptions>()
     internal val categories = mutableStateListOf<String>()
     internal var transferPayment by mutableStateOf<String?>(null)
         private set
+    internal fun renameTransferPayment(old: String, next: String) { if (transferPayment == old) transferPayment = next }
     internal fun isTransferPayment(value: String) = value == transferPayment
     internal fun ensureTransferPayment(defaultName: String) {
         if (transferPayment != null) return
@@ -316,7 +319,7 @@ class DemoViewModel : ViewModel() {
     internal fun beginEntry(today: java.time.LocalDate = java.time.LocalDate.now()) {
         if (draft == null) {
             draft = EntryDraft(account = account.intValue, date = today.toString(),
-                category = categories.firstOrNull().orEmpty(), payment = payments.firstOrNull().orEmpty())
+                category = referenceChoices(true, account.intValue, false).firstOrNull().orEmpty(), payment = referenceChoices(false, account.intValue, false).firstOrNull().orEmpty())
             onChange?.invoke()
         }
     }
@@ -351,7 +354,18 @@ class DemoViewModel : ViewModel() {
         updateDraft(current.copy(account = index, transferTarget = target))
     }
 
-    internal fun updateDraft(next: EntryDraft) { if (draft != null) { draft = next.copy(attempted = false); onChange?.invoke() } }
+    internal fun updateDraft(next: EntryDraft) {
+        val previous = draft ?: return
+        var value = next.copy(attempted = false)
+        if (next.editingId == null && (previous.account != next.account || previous.income != next.income)) {
+            val categoryChoices = referenceChoices(true, next.account, next.income)
+            val paymentChoices = referenceChoices(false, next.account, next.income)
+            value = value.copy(category = next.category.takeIf { it in categoryChoices } ?: categoryChoices.firstOrNull().orEmpty(),
+                payment = next.payment.takeIf { it in paymentChoices } ?: paymentChoices.firstOrNull().orEmpty())
+            if (!isTransferPayment(value.payment)) value = value.copy(transferTarget = null)
+        }
+        draft = value; onChange?.invoke()
+    }
     internal fun selectRepeatEnd(value: String?): Boolean {
         val current = draft ?: return false
         if (value != null) {
@@ -364,10 +378,12 @@ class DemoViewModel : ViewModel() {
     }
     internal fun cancelEntry() { draft = null; onChange?.invoke() }
 
-    internal fun exportData() = LedgerData(transactions.toList(), categories.toList(), payments.toList(), openings.toList(), draft, accountNames.toList(), transferPayment, rules.toList(), anticipation, transactionOrder, dateMigrationVersion)
+    internal fun exportData() = LedgerData(transactions.toList(), categories.toList(), payments.toList(), openings.toList(), draft, accountNames.toList(), transferPayment, rules.toList(), anticipation, transactionOrder, dateMigrationVersion, referenceOptions.toMap())
 
     internal fun restoreData(data: LedgerData) {
+        referenceUiStates.clear()
         transactions.clear(); transactions.addAll(data.transactions)
+        referenceOptions.clear(); referenceOptions.putAll(data.referenceOptions)
         categories.clear(); categories.addAll(data.categories)
         payments.clear(); payments.addAll(data.payments)
         transferPayment = data.transferPayment
@@ -396,6 +412,8 @@ class DemoViewModel : ViewModel() {
         rules.clear(); recurrenceEpoch++; recurrenceBlocked = false
         anticipation = Anticipation.DUE; calendarToday = java.time.LocalDate.now()
         accountNames.clear(); accountDraft = null; reconciliation = null
+        referenceUiStates.clear()
+        referenceOptions.clear()
         transactions.clear(); categories.clear(); payments.clear(); draft = null; transferPayment = null
         openings = listOf(BigDecimal("500.00"), BigDecimal("3000.00"))
         destination.intValue = 0; account.intValue = 0; initialized = false; limitReached = false
@@ -448,10 +466,12 @@ class DemoViewModel : ViewModel() {
         val old = transactions.firstOrNull { it.id == current.editingId }
         val additional = if (current.editingId == null) (if (current.transferTarget == null) 1 else 2)
             else if (current.transferTarget != null && old?.peerId == null) 1 else 0
-        if (transactions.size + additional > 10_000) { limitReached = true; return false }
+        if (transactions.size + additional > LedgerLimits.MAX_TRANSACTIONS) { limitReached = true; return false }
         val amount = Money.parseAmount(current.amount, locale)
         if (amount == null || current.description.isBlank() || current.account !in openings.indices ||
-            current.category !in categories || current.payment !in payments || current.addingCategory || current.addingPayment ||
+            current.category !in categories || current.payment !in payments ||
+            (old == null && (current.category !in referenceChoices(true, current.account, current.income) ||
+                current.payment !in referenceChoices(false, current.account, current.income))) || current.addingCategory || current.addingPayment ||
             (current.date.isNotEmpty() && OperationDates.parse(current.date) == null)) {
             draft = current.copy(attempted = true)
             return false
@@ -691,10 +711,13 @@ private fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, clea
 @Composable
 private fun SettingsScreen(vault: VaultController, activity: FragmentActivity) {
     val model: DemoViewModel = viewModel()
+    var showReferences by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    if (showReferences) ReferenceManagementDialog(model) { model.referenceUiStates.clear(); showReferences = false }
     var showRules by remember { mutableStateOf(false) }
     if (showRules) RecurringRulesDialog(model) { showRules = false }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(stringResource(R.string.settings), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        OutlinedButton(onClick = { showReferences = true }, enabled = !vault.busy) { Text(stringResource(R.string.refs_title)) }
         OutlinedButton(onClick = { showRules = true }) { Text(stringResource(R.string.repeat_manage)) }
         if (model.recurrenceBlocked) Text(stringResource(R.string.repeat_blocked), color = MaterialTheme.colorScheme.error)
         Card(Modifier.fillMaxWidth()) {
@@ -930,7 +953,7 @@ private fun EntryCategory(model: DemoViewModel, draft: EntryDraft) {
     }
     ReferencePicker(
         label = stringResource(R.string.category), selected = draft.category,
-        options = model.categories, onSelect = { model.updateDraft(draft.copy(category = it)) },
+        options = model.referenceChoices(true, draft.account, draft.income, if (draft.editingId != null) draft.category else ""), onSelect = { model.updateDraft(draft.copy(category = it)) },
         adding = draft.addingCategory, newName = draft.newCategory,
         onBeginAdd = { model.updateDraft(draft.copy(addingCategory = true, newCategory = "")) },
         onNameChange = { model.updateDraft(draft.copy(newCategory = it.take(60))) },
@@ -950,7 +973,7 @@ private fun EntryPayment(model: DemoViewModel, draft: EntryDraft) {
         Box(Modifier.weight(1f)) {
             ReferencePicker(
                 label = stringResource(R.string.payment), selected = draft.payment,
-                options = if (linked) model.payments.filter(model::isTransferPayment) else model.payments,
+                options = if (linked) model.payments.filter(model::isTransferPayment) else model.referenceChoices(false, draft.account, draft.income, if (draft.editingId != null) draft.payment else ""),
                 onSelect = model::selectDraftPayment,
                 adding = draft.addingPayment, newName = draft.newPayment,
                 onBeginAdd = { model.updateDraft(draft.copy(addingPayment = true, newPayment = "")) },

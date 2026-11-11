@@ -14,10 +14,11 @@ internal data class LedgerData(
     val anticipation: Anticipation = Anticipation.DUE,
     val transactionOrder: TransactionOrder = TransactionOrder.ORIGINAL,
     val dateMigrationVersion: Int = 0,
+    val referenceOptions: Map<String, ReferenceOptions> = emptyMap(),
 )
 
 internal object SnapshotCodec {
-    const val MAX_BYTES = 4 * 1024 * 1024
+    const val MAX_BYTES = LedgerLimits.MAX_SNAPSHOT_BYTES
 
     fun encode(data: LedgerData): ByteArray {
         val rows = JSONArray()
@@ -31,8 +32,9 @@ internal object SnapshotCodec {
             .put("editingId", draft.editingId ?: JSONObject.NULL).put("date", draft.date).put("transferTarget", draft.transferTarget ?: JSONObject.NULL)
             .put("repeatFrequency", draft.repeatFrequency.name).put("repeatUntil", draft.repeatUntil)
             .put("repeatCount", draft.repeatCount).put("applyToSeries", draft.applyToSeries) }
-        val result = JSONObject().put("schema", if (data.dateMigrationVersion > 0) 11 else if (data.transactionOrder != TransactionOrder.ORIGINAL) 10 else if (data.anticipation != Anticipation.DUE) 9 else if (data.rules.isNotEmpty() || data.draft?.repeatFrequency?.let { it != RepeatFrequency.NONE } == true) 9 else if (data.transferPayment != null) 4 else if (data.transactions.any { it.peerId != null } || data.draft?.transferTarget != null) 3 else if (data.accountNames.isEmpty()) 1 else 2)
+        val result = JSONObject().put("schema", if (data.referenceOptions.isNotEmpty()) 12 else if (data.dateMigrationVersion > 0) 11 else if (data.transactionOrder != TransactionOrder.ORIGINAL) 10 else if (data.anticipation != Anticipation.DUE) 9 else if (data.rules.isNotEmpty() || data.draft?.repeatFrequency?.let { it != RepeatFrequency.NONE } == true) 9 else if (data.transferPayment != null) 4 else if (data.transactions.any { it.peerId != null } || data.draft?.transferTarget != null) 3 else if (data.accountNames.isEmpty()) 1 else 2)
             .put("dateMigrationVersion", data.dateMigrationVersion).put("transactionOrder", data.transactionOrder.name).put("anticipation", data.anticipation.name).put("rules", JSONArray(data.rules.map(RecurrenceCodec::encode))).put("transferPayment", data.transferPayment ?: JSONObject.NULL).put("accountNames", JSONArray(data.accountNames)).put("transactions", rows)
+            .put("referenceOptions", ReferenceCatalog.encode(data.referenceOptions))
             .put("categories", JSONArray(data.categories)).put("payments", JSONArray(data.payments))
             .put("openings", JSONArray(data.openings.map { it.toPlainString() })).put("draft", d ?: JSONObject.NULL)
             .toString().toByteArray(Charsets.UTF_8)
@@ -60,7 +62,7 @@ internal object SnapshotCodec {
         require(!quoted && depth == 0)
         val root = JSONObject(text)
         val schema = root.getInt("schema")
-        require(schema in 1..11)
+        require(schema in 1..12)
         fun names(key: String): List<String> {
             val list = root.getJSONArray(key)
             require(list.length() in 1..500)
@@ -83,7 +85,7 @@ internal object SnapshotCodec {
             emptyList()
         } else names("accountNames").also { require(it.size == openings.size) }
         val entries = root.getJSONArray("transactions")
-        require(entries.length() <= 10_000)
+        require(entries.length() <= LedgerLimits.MAX_TRANSACTIONS)
         val parsedRows = (0 until entries.length()).map { i ->
             val t = entries.getJSONObject(i)
             DemoTransaction(t.getLong("id"), t.getInt("account"), t.getString("description"),
@@ -131,7 +133,7 @@ internal object SnapshotCodec {
                 repeatUntil = it.optString("repeatUntil"), repeatCount = it.optString("repeatCount"),
                 applyToSeries = it.optBoolean("applyToSeries")).also { draft ->
                 require(draft.account in openings.indices && draft.amount.length <= 30 && draft.description.length <= 100)
-                require(draft.category in categories && draft.payment in payments)
+                require((draft.category.isEmpty() || draft.category in categories) && (draft.payment.isEmpty() || draft.payment in payments))
                 require(draft.editingId == null || rows.any { row -> row.id == draft.editingId })
                 draft.transferTarget?.let { target ->
                     require(schema >= 3 && target in openings.indices && target != draft.account)
@@ -159,7 +161,8 @@ internal object SnapshotCodec {
         val result = LedgerData(rows, categories, payments, openings, d, accountNames, transferPayment, rules,
             if (schema >= 8) Anticipation.valueOf(root.getString("anticipation")) else Anticipation.DUE,
             if (schema >= 10) TransactionOrder.valueOf(root.getString("transactionOrder")) else TransactionOrder.ORIGINAL,
-            if (schema >= 11) root.getInt("dateMigrationVersion").also { require(it == 1) } else 0)
+            if (schema >= 11) root.getInt("dateMigrationVersion").also { require(it == 1 || (schema >= 12 && it == 0)) } else 0,
+            if (schema >= 12) ReferenceCatalog.decode(root.getJSONObject("referenceOptions"), categories, payments, openings.indices, transferPayment) else emptyMap())
         RecurrenceCodec.validate(result, schema)
         return result
     }

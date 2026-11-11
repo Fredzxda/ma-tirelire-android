@@ -114,8 +114,8 @@ class RecurrencesTest {
         val model = model(); series(model, transfer = true)
         val good = model.exportData()
         val filler = good.transactions.first()
-        val rows = good.transactions + (100L until 10_096L).map { filler.copy(id = it) }
-        assertEquals(9_999, rows.size)
+        val rows = good.transactions + (100L until (LedgerLimits.MAX_TRANSACTIONS + 96L)).map { filler.copy(id = it) }
+        assertEquals(LedgerLimits.MAX_TRANSACTIONS - 1, rows.size)
         val full = good.copy(transactions = rows)
         val result = Recurrences.generate(full, LocalDate.of(2026, 2, 28))
         assertTrue(result.blocked)

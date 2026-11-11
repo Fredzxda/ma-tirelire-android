@@ -105,12 +105,12 @@ class TransferTest {
         val ordinary = model.exportData().transactions.single().copy(payment = "Transfer")
         val legacy = model.exportData().copy(transactions = listOf(ordinary), payments = listOf("Transfer"))
         assertNull(SnapshotCodec.decode(SnapshotCodec.encode(legacy)).transactions.single().peerId)
-        val rows = (1L..9_999L).map { ordinary.copy(id = it) }
+        val rows = (1L until LedgerLimits.MAX_TRANSACTIONS.toLong()).map { ordinary.copy(id = it) }
         model.restoreData(legacy.copy(transactions = rows))
         model.beginEntry()
         model.updateDraft(model.draft!!.copy(transferTarget = 1, amount = "1", description = "Too many"))
         assertFalse(model.saveEntry(Locale.US, "unused"))
-        assertEquals(9_999, model.transactions.size)
+        assertEquals(LedgerLimits.MAX_TRANSACTIONS - 1, model.transactions.size)
     }
     @Test fun editingCannotReverseOrMoveAnExistingPair() {
         val model = model()

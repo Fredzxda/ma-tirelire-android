@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="refs_title">Categories and payment methods</string>
+    <string name="refs_categories">Categories</string>
+    <string name="refs_payments">Methods</string>
+    <string name="refs_close">Close</string>
+    <string name="refs_parent">Parent category</string>
+    <string name="refs_no_parent">None (main category)</string>
+    <string name="refs_kind">Usage</string>
+    <string name="refs_any">Expenses and income</string>
+    <string name="refs_hidden">Hide from new entries</string>
+    <string name="refs_accounts">Account visibility</string>
+    <string name="refs_accounts_hint">Without restrictions, all accounts are allowed. Hide removes this choice from new entries while preserving existing transactions.</string>
+    <string name="refs_all_accounts">All accounts</string>
+    <string name="refs_transfer_protected">The dedicated transfer method stays available on every account. You can rename it.</string>
+    <string name="refs_error">Unable to apply changes: check the name, hierarchy and replacement for references in use. No changes applied.</string>
+    <string name="refs_saved">Changes saved.</string>
+    <string name="refs_replacement">Replace with</string>
+    <string name="refs_no_replacement">No replacement</string>
+    <string name="refs_remove">Remove</string>
+    <string name="refs_remove_hint">A reference in use needs a replacement. Transactions, series and drafts keep their amounts and statuses.</string>
+    <string name="refs_remove_title">Remove “%1$s”?</string>
+    <string name="refs_remove_confirm">The selected replacement will be applied to existing references. No transactions will be deleted.</string>
+</resources>

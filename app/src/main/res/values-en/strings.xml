@@ -76,8 +76,8 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">The Filter menu uses short, single-line captions: History or Review dates. The full label remains in the filter choices. Active search is now marked Active instead of a dot, without adding a menu row.</string>
-    <string name="release_notes_tests">1. Select Full history and close Filter: History must be readable on one line.\n2. Enter a search: Active appears under Search and remains after closing the row.\n3. Clear the search: Active disappears and transactions return according to the selected period.\n4. Check portrait and landscape: the menu height stays unchanged.</string>
+    <string name="release_notes_changes">Category and payment management: rename, replace, hierarchy, types and per-account visibility. History extended to 50,000 entries; compatible backups.</string>
+    <string name="release_notes_tests">In Settings, open Categories and payment methods. Rename a used category, create a hierarchy, and check your entries. Hide a method or restrict it to one account and check entry choices. Remove a category with a replacement. Create a backup and check restoration.</string>
     <string name="account_add">Add account</string>
     <string name="account_edit">Account settings</string>
     <string name="account_configure">Configure %1$s</string>

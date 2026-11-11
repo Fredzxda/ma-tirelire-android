@@ -23,7 +23,7 @@ import org.bouncycastle.crypto.params.Argon2Parameters
  * References: RFC 9106 and Bouncy Castle Argon2BytesGenerator API.
  */
 object VaultCrypto {
-    const val MAX_ARCHIVE_BYTES = 8 * 1024 * 1024
+    const val MAX_ARCHIVE_BYTES = 40 * 1024 * 1024
     const val SALT_BYTES = 16
     const val KEY_BYTES = 32
     const val MAX_PASSWORD_CHARS = 1024

@@ -46,14 +46,14 @@ class SnapshotCodecTest {
     @Test fun modelCannotExceedTheLimitsOfTheRestoreFormat() {
         val model = DemoViewModel()
         val manyCategories = listOf("Food") + (1 until 500).map { "Category $it" }
-        val rows = (1..10_000).map { sample().transactions.first().copy(id = it.toLong()) }
+        val rows = (1..LedgerLimits.MAX_TRANSACTIONS).map { sample().transactions.first().copy(id = it.toLong()) }
         model.restoreData(sample().copy(categories = manyCategories, transactions = rows))
         assertNull(model.addCategory("One more"))
         assertEquals(500, model.categories.size)
         assertFalse(model.saveEntry(java.util.Locale.FRANCE, "2026-11-09"))
-        assertEquals(10_000, model.transactions.size)
+        assertEquals(LedgerLimits.MAX_TRANSACTIONS, model.transactions.size)
         assertTrue(model.limitReached)
-        assertEquals(10_000, SnapshotCodec.decode(SnapshotCodec.encode(model.exportData())).transactions.size)
+        assertEquals(LedgerLimits.MAX_TRANSACTIONS, SnapshotCodec.decode(SnapshotCodec.encode(model.exportData())).transactions.size)
     }
 
     @Test fun legacyDraftWithoutEditingIdStillLoadsAndMissingTargetsAreRejected() {

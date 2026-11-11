@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="fr">
+    <string name="refs_title">Catégories et moyens de paiement</string>
+    <string name="refs_categories">Catégories</string>
+    <string name="refs_payments">Moyens</string>
+    <string name="refs_close">Fermer</string>
+    <string name="refs_parent">Catégorie parente</string>
+    <string name="refs_no_parent">Aucune (catégorie principale)</string>
+    <string name="refs_kind">Utilisation</string>
+    <string name="refs_any">Dépenses et revenus</string>
+    <string name="refs_hidden">Masquer dans les nouvelles saisies</string>
+    <string name="refs_accounts">Visibilité par compte</string>
+    <string name="refs_accounts_hint">Sans restriction, tous les comptes sont autorisés. Masquer permet de retirer ce choix des nouvelles saisies sans perdre les écritures.</string>
+    <string name="refs_all_accounts">Tous les comptes</string>
+    <string name="refs_transfer_protected">Le moyen dédié aux virements reste disponible sur tous les comptes. Vous pouvez le renommer.</string>
+    <string name="refs_error">Modification impossible : vérifiez le nom, la hiérarchie et le remplacement des références utilisées. Aucun changement appliqué.</string>
+    <string name="refs_saved">Modifications enregistrées.</string>
+    <string name="refs_replacement">Remplacer par</string>
+    <string name="refs_no_replacement">Aucun remplacement</string>
+    <string name="refs_remove">Retirer</string>
+    <string name="refs_remove_hint">Une référence utilisée doit être remplacée. Les opérations, séries et brouillons conserveront leurs montants et leurs états.</string>
+    <string name="refs_remove_title">Retirer « %1$s » ?</string>
+    <string name="refs_remove_confirm">Le remplacement choisi sera appliqué aux références existantes. Cette action ne supprime aucune opération.</string>
+</resources>
