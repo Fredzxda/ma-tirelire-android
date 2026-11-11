@@ -12,5 +12,6 @@ Essais visuels : portrait/paysage, liste longue, navigation laterale et version,
 pointage sans ouvrir la fiche, grands montants/libelles/texte Android agrandi.
 
 Validation locale : compilation des APK application/tests, 97 tests unitaires
-et lint reussis. Installation et tests ASUS non realises : cible ADB absente.
+et lint reussis. ASUS reconnecte : installation 0.6.2-dev verifiee, trois tests
+SQLCipher/Keystore isoles reussis, application relancee avec succes.
 Validation visuelle utilisateur encore attendue.
