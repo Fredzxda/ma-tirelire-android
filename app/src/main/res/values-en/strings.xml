@@ -76,8 +76,8 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">A status-only action no longer opens the scope dialog. A Forecast first moves to Needs confirmation; a second action confirms the occurrence without automatic clearing. Scope is requested only for actual changes to shared transaction/series fields.</string>
-    <string name="release_notes_tests">1. Open a Forecast without editing fields: Move to Needs confirmation changes status without a popup.\n2. Reopen and Confirm occurrence: Confirmed without scope dialog or clearing.\n3. Lock/reopen between actions: Needs confirmation persists even before the date.\n4. Change amount, date or description: the scope dialog must appear.\n5. Repeat with a transfer: matching states on both sides, independent clearing.</string>
+    <string name="release_notes_changes">Search account transactions by description, category and payment method. Accents and case are ignored; all entered words must match. Result count and sum are displayed without changing account balances.</string>
+    <string name="release_notes_tests">1. Search a description with different accents and case.\n2. Combine a description word and a payment method.\n3. Check result count and sum; account balances remain unchanged.\n4. Open and edit a result, then clear search to restore the full list.\n5. Rotate: search remains. Lock and reopen: search is cleared.</string>
     <string name="account_add">Add account</string>
     <string name="account_edit">Account settings</string>
     <string name="account_configure">Configure %1$s</string>
@@ -170,4 +170,10 @@
     <string name="anticipation_hint">Anticipated occurrences are recorded as Forecasts and included in the total balance, without automatic clearing. On their date they need confirmation. Confirming in their form is separate from clearing. Reducing anticipation or editing a series does not delete or alter already recorded forecasts.</string>
     <string name="anticipation_balance_hint">The total balance includes recorded recurring forecasts. Confirmation and clearing are separate.</string>
     <string name="repeat_prepare_occurrence">Move to Needs confirmation</string>
+    <string name="search_label">Search this account</string>
+    <string name="search_hint">Description, category, payment method. All words must match, ignoring accents and case.</string>
+    <string name="search_clear">Clear</string>
+    <string name="search_summary">%1$d matching transaction(s) · sum: %2$s</string>
+    <string name="search_balance_hint">Balances above cover the whole account. This sum includes displayed forecasts and transfers.</string>
+    <string name="search_empty">No transactions match this search.</string>
 </resources>

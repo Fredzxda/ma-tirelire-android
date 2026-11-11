@@ -116,6 +116,7 @@ internal data class AccountDraft(val index: Int?, val name: String = "", val ope
 
 /** Session state; snapshots are persisted only through the encrypted vault callback. */
 class DemoViewModel : ViewModel() {
+    internal var searchQuery by mutableStateOf("")
     internal val transactions = mutableStateListOf<DemoTransaction>()
     internal val destination = mutableIntStateOf(0)
     internal val account = mutableIntStateOf(0)
@@ -366,6 +367,7 @@ class DemoViewModel : ViewModel() {
     }
 
     internal fun clearSensitive() {
+        searchQuery = ""
         onChange = null
         rules.clear(); recurrenceEpoch++; recurrenceBlocked = false
         anticipation = Anticipation.DUE; calendarToday = java.time.LocalDate.now()
@@ -671,6 +673,7 @@ private fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, clea
 @Composable
 private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDecimal, clearedBalance: BigDecimal, transactions: List<DemoTransaction>, onAccount: (Int) -> Unit, onToggle: (Long) -> Unit, onReconcile: () -> Unit, onEdit: (Long) -> Unit) {
     val model: DemoViewModel = viewModel()
+    val visible = TransactionSearch.filter(transactions, model.searchQuery)
     var showUpcoming by rememberSaveable { mutableStateOf(false) }
     if (showUpcoming) UpcomingDialog(model, account, names) { showUpcoming = false }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 110.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -692,8 +695,23 @@ private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDe
             }
         }
         item { Text(stringResource(R.string.pointing_hint), style = MaterialTheme.typography.bodySmall) }
-        if (transactions.isEmpty()) item { Text(stringResource(R.string.empty_transactions)) }
-        items(transactions, key = { it.id }) { tx ->
+        item {
+            OutlinedTextField(value = model.searchQuery,
+                onValueChange = { model.searchQuery = it.take(200) },
+                label = { Text(stringResource(R.string.search_label)) },
+                supportingText = { Text(stringResource(R.string.search_hint)) },
+                singleLine = true, modifier = Modifier.fillMaxWidth(),
+                trailingIcon = { if (model.searchQuery.isNotEmpty()) TextButton(onClick = { model.searchQuery = "" }) {
+                    Text(stringResource(R.string.search_clear))
+                } })
+            if (model.searchQuery.isNotBlank()) {
+                Text(stringResource(R.string.search_summary, visible.size, money(visible.fold(BigDecimal.ZERO) { sum, row -> sum + row.amount })),
+                    style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.search_balance_hint), style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        if (visible.isEmpty()) item { Text(stringResource(if (transactions.isEmpty()) R.string.empty_transactions else R.string.search_empty)) }
+        items(visible, key = { it.id }) { tx ->
             Card(onClick = { onEdit(tx.id) }, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {

@@ -1,9 +1,14 @@
 # Ma Tirelire — Android
 
-Prototype de sécurité **0.5.6-dev** du portage de Ma Tirelire Palm.
+Prototype de sécurité **0.6.0-dev** du portage de Ma Tirelire Palm.
 Android 12 minimum, téléphone et tablette, français et anglais.
 
 ## Utilisation de cette version
+
+Recherche textuelle dans les operations du compte : description, categorie et
+moyen de paiement, accents et casse ignores. Somme des resultats distincte des
+soldes globaux ; recherche effacee au verrouillage. Les filtres avances restent
+a venir.
 
 Statuts sans popup de portée quand les champs sont inchangés : Prévision →
 À confirmer → Confirmée en deux actions. Le statut intermédiaire choisi est
