@@ -54,3 +54,8 @@
 - Les tests interface necessitent Android deverrouille ; le harnais le verifie.
   Seule l activite fictive garde son ecran allume pendant les tests, sans modifier
   les reglages Android de veille/verrouillage.
+
+- Publication GitHub sur dev/android-port : utiliser cette branche comme filiation
+  courante et ne pas pousser --all. Les anciennes branches locales conservent
+  l historique d origine avec e-mail prive ; la copie publique utilise noreply.
+  Details et correspondance locale : docs/publication-github.md.

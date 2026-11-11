@@ -87,8 +87,9 @@ non-régression et les validations finales de sécurité/récupération.
   Appliquer le skill visuel Opérations pour toutes les extensions de cette vue.
 - **Distribution** : préparer la clé de signature stable et sa sauvegarde,
   une procédure de mise à jour/récupération, l'APK signé, documentation utilisateur,
-  licences/attributions et chaîne de build reproductible. Configurer le dépôt
-  GitHub public et la CI : aucun remote n'est présent dans cette copie au 11 novembre.
+  licences/attributions et chaîne de build reproductible. Dépôt GitHub public
+  et CI initiale préparés le 11 novembre ; compléter les contrôles de distribution
+  stable. Voir [publication-github.md](publication-github.md).
   Publication stable, tags et mise sur une boutique restent sur instruction explicite.
 
 Les tests et la sécurité accompagnent chaque lot : la série 0.9 est une validation

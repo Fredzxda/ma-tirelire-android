@@ -96,6 +96,8 @@ les étapes de reproduction. **Ne pas publier de relevé bancaire, archive de co
 code, mot de passe, clé de signature ou capture contenant des données réelles.**
 Les chaînes traduisibles se trouvent dans `app/src/main/res/values*/`.
 Les règles de travail et le harnais local sont documentés dans [AGENTS.md](AGENTS.md).
+La branche de développement publiée est `dev/android-port`. Le [suivi de publication](docs/publication-github.md)
+explique la préservation de l'historique et la confidentialité des e-mails.
 
 ## Origine et licence
 
