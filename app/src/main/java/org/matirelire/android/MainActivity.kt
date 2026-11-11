@@ -1,5 +1,8 @@
 package org.matirelire.android
 
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+
 import androidx.compose.foundation.selection.toggleable
 
 import android.app.DatePickerDialog
@@ -221,6 +224,8 @@ class DemoViewModel : ViewModel() {
     internal fun reportingTransactions() = transactions.filter {
         it.peerId == null && !RecurringState.isFutureUnconfirmed(it, calendarToday)
     }
+    internal var dateMigrationVersion = 0
+        private set
     internal var transactionOrder by mutableStateOf(TransactionOrder.ORIGINAL)
         private set
     internal fun setTransactionOrder(value: TransactionOrder) {
@@ -354,13 +359,14 @@ class DemoViewModel : ViewModel() {
     }
     internal fun cancelEntry() { draft = null; onChange?.invoke() }
 
-    internal fun exportData() = LedgerData(transactions.toList(), categories.toList(), payments.toList(), openings.toList(), draft, accountNames.toList(), transferPayment, rules.toList(), anticipation, transactionOrder)
+    internal fun exportData() = LedgerData(transactions.toList(), categories.toList(), payments.toList(), openings.toList(), draft, accountNames.toList(), transferPayment, rules.toList(), anticipation, transactionOrder, dateMigrationVersion)
 
     internal fun restoreData(data: LedgerData) {
         transactions.clear(); transactions.addAll(data.transactions)
         categories.clear(); categories.addAll(data.categories)
         payments.clear(); payments.addAll(data.payments)
         transferPayment = data.transferPayment
+        dateMigrationVersion = data.dateMigrationVersion
         transactionOrder = data.transactionOrder
         anticipation = data.anticipation; calendarToday = java.time.LocalDate.now()
         rules.clear(); rules.addAll(data.rules); recurrenceEpoch++; recurrenceBlocked = false
@@ -378,6 +384,7 @@ class DemoViewModel : ViewModel() {
     internal fun clearSensitive() {
         searchQuery = ""
         transactionOrder = TransactionOrder.ORIGINAL
+        dateMigrationVersion = 0
         onChange = null
         rules.clear(); recurrenceEpoch++; recurrenceBlocked = false
         anticipation = Anticipation.DUE; calendarToday = java.time.LocalDate.now()
@@ -562,7 +569,9 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
                 NavigationRail(containerColor = MaterialTheme.colorScheme.surface, modifier = Modifier.background(MaterialTheme.colorScheme.surface).fillMaxHeight().verticalScroll(rememberScrollState())) {
                     Column(Modifier.width(112.dp).background(Color(0xFF142D36)).padding(horizontal = 8.dp, vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(stringResource(R.string.brand), style = MaterialTheme.typography.labelLarge, color = Color.White)
-                        Text(BuildConfig.VERSION_NAME, style = MaterialTheme.typography.labelSmall, color = Color(0xFFB9CEC8))
+                        TextButton(onClick = vault::openReleaseNotes) {
+                            Text(BuildConfig.VERSION_NAME, style = MaterialTheme.typography.labelSmall, color = Color(0xFFB9CEC8))
+                        }
                     }
                     labels.forEachIndexed { index, label ->
                         NavigationRailItem(
@@ -596,7 +605,7 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
                 },
             ) { padding ->
                 Column(Modifier.padding(padding).fillMaxSize()) {
-                    if (!wide) BrandHeader()
+                    if (!wide) BrandHeader(vault::openReleaseNotes)
                     when (destination) {
                         0 -> AccountsScreen(accountNames, balances, clearedBalances,
                             onConfigure = { model.beginAccount(it, activity.resources.configuration.locales[0]) },
@@ -619,13 +628,13 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
 }
 
 @Composable
-private fun BrandHeader() {
+private fun BrandHeader(onVersion: () -> Unit) {
     Row(Modifier.fillMaxWidth().background(Color(0xFF142D36)).padding(horizontal = 24.dp, vertical = 20.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(stringResource(R.string.brand), color = Color.White, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             Text(stringResource(R.string.tagline), color = Color(0xFFB9CEC8), style = MaterialTheme.typography.bodyMedium)
         }
-        Surface(color = Color(0xFF29434A), shape = RoundedCornerShape(12.dp)) {
+        Surface(onClick = onVersion, color = Color(0xFF29434A), shape = RoundedCornerShape(12.dp)) {
             Text(BuildConfig.VERSION_NAME, modifier = Modifier.padding(10.dp), color = Color(0xFFDAEBDF), style = MaterialTheme.typography.labelMedium)
         }
     }
@@ -726,6 +735,22 @@ private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDe
             }
             item {
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val sortLabel = stringResource(when (model.transactionOrder) {
+                        TransactionOrder.ORIGINAL -> R.string.order_original
+                        TransactionOrder.NEWEST -> R.string.order_newest
+                        TransactionOrder.OLDEST -> R.string.order_oldest
+                    })
+                    IconButton(onClick = { model.setTransactionOrder(when (model.transactionOrder) {
+                        TransactionOrder.ORIGINAL -> TransactionOrder.NEWEST
+                        TransactionOrder.NEWEST -> TransactionOrder.OLDEST
+                        TransactionOrder.OLDEST -> TransactionOrder.ORIGINAL
+                    }) }, modifier = Modifier.semantics { contentDescription = sortLabel }) {
+                        Text(when (model.transactionOrder) {
+                            TransactionOrder.ORIGINAL -> "↕"
+                            TransactionOrder.NEWEST -> "↓"
+                            TransactionOrder.OLDEST -> "↑"
+                        }, style = MaterialTheme.typography.titleLarge)
+                    }
                     OutlinedButton(onClick = { showSearch = true }) { Text(stringResource(R.string.search_open)) }
                     OutlinedButton(onClick = onReconcile) { Text(stringResource(R.string.reconcile_open)) }
                     OutlinedButton(onClick = { showUpcoming = true }) { Text(stringResource(R.string.upcoming_open)) }
@@ -754,6 +779,8 @@ private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDe
                     if (tx.peerId != null) {
                         Text(stringResource(R.string.transfer_linked), style = MaterialTheme.typography.labelMedium)
                     }
+                    if (OperationDates.forOrdering(tx.date) == null) Text(stringResource(R.string.date_needs_review),
+                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                     Text("${tx.category} · ${tx.payment}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 8.dp))
                 }
             }
@@ -786,7 +813,9 @@ private fun TransactionSearchDialog(model: DemoViewModel, transactions: List<Dem
                                 Text(tx.description, style = MaterialTheme.typography.titleMedium)
                                 Text(money(tx.amount), fontWeight = FontWeight.Bold)
                                 Text(OperationDates.display(tx.date, LocalConfiguration.current.locales[0]), style = MaterialTheme.typography.bodySmall)
-                                Text("${tx.category} · ${tx.payment}", style = MaterialTheme.typography.bodySmall)
+                                if (OperationDates.forOrdering(tx.date) == null) Text(stringResource(R.string.date_needs_review),
+                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                    Text("${tx.category} · ${tx.payment}", style = MaterialTheme.typography.bodySmall)
                                 RecurringBadge(tx, model.calendarToday)
                             }
                         }
@@ -804,7 +833,6 @@ private fun SettingsScreen(vault: VaultController, activity: FragmentActivity) {
     if (showRules) RecurringRulesDialog(model) { showRules = false }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(stringResource(R.string.settings), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        OutlinedButton(onClick = vault::openReleaseNotes) { Text(stringResource(R.string.release_notes_open)) }
         OutlinedButton(onClick = { showRules = true }) { Text(stringResource(R.string.repeat_manage)) }
         if (model.recurrenceBlocked) Text(stringResource(R.string.repeat_blocked), color = MaterialTheme.colorScheme.error)
         Card(Modifier.fillMaxWidth()) {
@@ -826,12 +854,21 @@ private fun SettingsScreen(vault: VaultController, activity: FragmentActivity) {
             }
         }
         AnticipationSettings(model, enabled = !vault.busy)
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.date_migration_title), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.date_migration_hint), style = MaterialTheme.typography.bodySmall)
+                val unresolved = model.transactions.count { OperationDates.parse(it.date) == null && OperationDates.forOrdering(it.date) == null }
+                if (unresolved > 0) Text(stringResource(R.string.date_migration_unresolved, unresolved), color = MaterialTheme.colorScheme.error)
+                OutlinedButton(onClick = vault::migrateDates, enabled = !vault.busy) { Text(stringResource(R.string.date_migration_action)) }
+            }
+        }
         VaultSettings(vault, activity)
         InfoCard(R.string.security_title, R.string.security_detail)
         InfoCard(R.string.privacy_title, R.string.privacy_detail)
         InfoCard(R.string.roadmap_title, R.string.roadmap_detail)
         Text(stringResource(R.string.language_hint), style = MaterialTheme.typography.bodyMedium)
-        Text(stringResource(R.string.version, BuildConfig.VERSION_NAME), style = MaterialTheme.typography.labelMedium)
+        TextButton(onClick = vault::openReleaseNotes) { Text(stringResource(R.string.version, BuildConfig.VERSION_NAME), style = MaterialTheme.typography.labelMedium) }
     }
 }
 

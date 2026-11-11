@@ -375,6 +375,33 @@ class VaultController(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun migrateDates() {
+        if (!unlocked) return
+        work {
+            operation = "date-migration"
+            try {
+                val before = ledger.exportData()
+                val plan = DateMigration.execute(before,
+                    backup = {
+                        check(backupConfigured)
+                        makeBackup(false)
+                    }, current = { ledger.exportData() }, replace = { data ->
+                        val encoded = SnapshotCodec.encode(data)
+                        try { store.put("ledger", encoded) } finally { encoded.fill(0) }
+                        ledger.restoreData(data)
+                        resumeDestination = 2
+                        ledger.destination.intValue = 2
+                    })
+                refreshConfig()
+                result(if (plan.unresolved > 0) R.string.date_migration_partial else R.string.date_migration_success)
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (failure: Exception) {
+                diagnostic(failure)
+                message(if (!backupConfigured) R.string.vault_backup_required else R.string.date_migration_error)
+            }
+        }
+    }
+
     fun backupNow() = backupNow(false)
     private fun backupNow(automatic: Boolean) {
         if (!unlocked) return

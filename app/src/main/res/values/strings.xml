@@ -76,8 +76,8 @@
     <string name="release_notes_title">Nouveautés · %1$s</string>
     <string name="release_notes_test_title">À vérifier avec des données fictives</string>
     <string name="release_notes_understood">Compris</string>
-    <string name="release_notes_changes">Le tri reconnaît désormais aussi les anciennes dates françaises et anglaises avec le mois en lettres, enregistrées avant la 0.3.5. Les dates stockées restent inchangées. Les dates numériques ambiguës restent en fin de liste.</string>
-    <string name="release_notes_tests">1. Tri récent : le 10 novembre doit apparaître avant le 2 novembre, y compris pour les anciennes écritures.\n2. Tri ancien : le 2 novembre doit apparaître avant le 10 novembre.\n3. Vérifier que soldes, pointages et dates enregistrées restent inchangés.\n4. Verrouiller puis rouvrir : le choix de tri est conservé.</string>
+    <string name="release_notes_changes">Toucher le numéro de version pour ouvrir les nouveautés. Changer le tri directement dans le compte avec le bouton fléché. Les réglages permettent de normaliser les anciennes dates après une sauvegarde chiffrée vérifiée ; les dates ambiguës sont signalées pour correction manuelle.</string>
+    <string name="release_notes_tests">1. Toucher la version en portrait, paysage et dans les réglages.\n2. Changer le tri avec la flèche et vérifier sa conservation après verrouillage.\n3. Sauvegardes configurées, normaliser les dates dans les réglages ; vérifier affichage localisé, soldes et pointages.\n4. Relancer la normalisation : aucun doublon ni modification supplémentaire.\n5. Vérifier les éventuelles mentions Date à vérifier et choisir manuellement la bonne date.</string>
     <string name="account_add">Ajouter un compte</string>
     <string name="account_edit">Configurer le compte</string>
     <string name="account_configure">Configurer %1$s</string>
@@ -183,4 +183,12 @@
     <string name="order_newest">Date la plus récente en premier</string>
     <string name="order_oldest">Date la plus ancienne en premier</string>
     <string name="order_hint">Appliqué à tous les comptes et aux résultats de recherche. Conservé dans le coffre chiffré et ses sauvegardes. Les anciennes dates non reconnues restent à la fin.</string>
+    <string name="date_migration_title">Normaliser les anciennes dates</string>
+    <string name="date_migration_hint">Convertit les anciennes dates reconnues au format interne ISO, après une sauvegarde chiffrée vérifiée. Configurer auparavant le dossier local et le mot de passe de sauvegarde. Les dates ambiguës restent inchangées et sont à corriger manuellement.</string>
+    <string name="date_migration_action">Sauvegarder et normaliser les dates</string>
+    <string name="date_migration_unresolved">%1$d date(s) à vérifier manuellement. Ouvrir les opérations signalées et choisir leur date.</string>
+    <string name="date_needs_review">Date à vérifier</string>
+    <string name="date_migration_success">Normalisation des dates terminée. Les dates déjà normalisées restent inchangées. Montants et pointages sont conservés.</string>
+    <string name="date_migration_partial">Les dates reconnues sont normalisées. Certaines dates restent inchangées et sont à vérifier manuellement ; leur nombre figure dans les réglages.</string>
+    <string name="date_migration_error">La normalisation des dates ne peut pas être terminée. Aucune conversion partielle enregistrée. Vérifier l’accès aux sauvegardes et réessayer sans modifier les opérations pendant la sauvegarde.</string>
 </resources>

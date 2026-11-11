@@ -65,3 +65,6 @@ Diagnostic complete : exemple utilisateur 2 nov., 2 nov., 10 nov. en tri recent.
 Regression reproduite avec dates ISO et anciennes dates MEDIUM localisees.
 Correctif 0.7.0.1-dev : lecture stricte FR/US/UK pour le tri uniquement ;
 aucune reecriture du coffre. Raccourcis 0.7.1 et periode 0.7.2 inchanges.
+
+0.7.1-dev realisee : raccourcis version/tri et migration des dates sauvegardee.
+L affichage mensuel 0.7.2 reste a venir.
