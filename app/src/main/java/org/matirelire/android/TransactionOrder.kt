@@ -7,8 +7,8 @@ internal enum class TransactionOrder {
     fun arrange(rows: List<DemoTransaction>): List<DemoTransaction> {
         if (this == ORIGINAL) return rows
         return rows.sortedWith { a, b ->
-            val da = OperationDates.parse(a.date)
-            val db = OperationDates.parse(b.date)
+            val da = OperationDates.forOrdering(a.date)
+            val db = OperationDates.forOrdering(b.date)
             when {
                 da == null && db == null -> 0
                 da == null -> 1

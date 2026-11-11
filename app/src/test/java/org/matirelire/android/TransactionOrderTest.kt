@@ -13,6 +13,23 @@ class TransactionOrderTest {
         assertEquals(listOf(1L,2L,3L,4L), rows.map { it.id })
         assertEquals(rows, TransactionOrder.ORIGINAL.arrange(rows))
     }
+    @Test fun mixedLegacyNamedMonthsAndIsoMatchReportedRegression() {
+        val mixed = listOf(row(1, "2026-11-02"), row(2, "2026-11-02"), row(3, "10 nov. 2026"))
+        assertEquals(listOf(3L,1L,2L), TransactionOrder.NEWEST.arrange(mixed).map { it.id })
+        assertEquals(listOf(1L,2L,3L), TransactionOrder.OLDEST.arrange(mixed).map { it.id })
+        assertEquals("10 nov. 2026", mixed.last().date)
+        assertNull(OperationDates.parse(mixed.last().date))
+        for (locale in listOf(java.util.Locale.FRANCE, java.util.Locale.US, java.util.Locale.UK)) {
+            val label = OperationDates.display("2026-11-10", locale)
+            assertEquals(java.time.LocalDate.of(2026, 11, 10), OperationDates.forOrdering(label))
+        }
+    }
+    @Test fun invalidOrAmbiguousLegacyDatesAreNotGuessed() {
+        for (bad in listOf("01/02/2026", "31 avr. 2026", "29 févr. 2025", "8 novembre · exemple fictif")) {
+            assertNull(OperationDates.forOrdering(bad))
+        }
+        assertEquals(java.time.LocalDate.of(2024, 2, 29), OperationDates.forOrdering("29 févr. 2024"))
+    }
     private fun model() = DemoViewModel().apply { initialize(listOf(rows[0], rows[1])) }
     @Test fun encryptedSnapshotRoundTripAndLocking() {
         val model = model()

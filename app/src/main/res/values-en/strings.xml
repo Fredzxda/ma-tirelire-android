@@ -76,8 +76,8 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">First customization release: choose transaction date order in Settings, saved in the encrypted vault and backups. Existing order remains the default. Landscape title returns to dark blue and the navigation background extends to the bottom.</string>
-    <string name="release_notes_tests">1. Check dark title and full-height navigation in landscape.\n2. In Settings choose newest first, then oldest first; verify transactions and search.\n3. Lock and reopen: order is retained and balances unchanged.\n4. Restore a backup made with this version: order should be restored.\n5. Return to entry order to recover the original presentation.</string>
+    <string name="release_notes_changes">Date sorting now also recognizes older French and English dates with named months, written before version 0.3.5. Stored dates are unchanged. Ambiguous numeric dates remain last.</string>
+    <string name="release_notes_tests">1. Newest first: 10 November must appear before 2 November, including older transactions.\n2. Oldest first: 2 November must appear before 10 November.\n3. Check unchanged balances, clearing and stored dates.\n4. Lock and reopen: selected order is retained.</string>
     <string name="account_add">Add account</string>
     <string name="account_edit">Account settings</string>
     <string name="account_configure">Configure %1$s</string>

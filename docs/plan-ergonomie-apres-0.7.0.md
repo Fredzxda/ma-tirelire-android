@@ -60,3 +60,8 @@ Demande a Frederic : uniquement les trois dernieres dates dans l ordre affiche
 et le mode de tri. Aucun libelle, montant, extrait du coffre ou capture requis.
 Tests existants verifies par lecture : tri dans les deux sens, egalites, dates
 illisibles, conservation du choix via snapshot. Aucun code applicatif modifie ici.
+
+Diagnostic complete : exemple utilisateur 2 nov., 2 nov., 10 nov. en tri recent.
+Regression reproduite avec dates ISO et anciennes dates MEDIUM localisees.
+Correctif 0.7.0.1-dev : lecture stricte FR/US/UK pour le tri uniquement ;
+aucune reecriture du coffre. Raccourcis 0.7.1 et periode 0.7.2 inchanges.

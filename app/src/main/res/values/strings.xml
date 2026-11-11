@@ -76,8 +76,8 @@
     <string name="release_notes_title">Nouveautés · %1$s</string>
     <string name="release_notes_test_title">À vérifier avec des données fictives</string>
     <string name="release_notes_understood">Compris</string>
-    <string name="release_notes_changes">Premier lot de personnalisation : choisir le tri des opérations par date dans les réglages, conservé dans le coffre chiffré et ses sauvegardes. Ordre actuel maintenu par défaut. En paysage, le titre retrouve son fond bleu foncé et le menu se prolonge en bas.</string>
-    <string name="release_notes_tests">1. Vérifier le titre bleu foncé et le fond du menu jusqu’en bas en paysage.\n2. Dans les réglages, choisir le tri récent puis ancien : vérifier opérations et recherche.\n3. Verrouiller puis rouvrir : tri conservé et soldes inchangés.\n4. Restaurer une sauvegarde créée avec cette version : le tri doit être restauré.\n5. Revenir à Ordre de saisie pour retrouver la présentation initiale.</string>
+    <string name="release_notes_changes">Le tri reconnaît désormais aussi les anciennes dates françaises et anglaises avec le mois en lettres, enregistrées avant la 0.3.5. Les dates stockées restent inchangées. Les dates numériques ambiguës restent en fin de liste.</string>
+    <string name="release_notes_tests">1. Tri récent : le 10 novembre doit apparaître avant le 2 novembre, y compris pour les anciennes écritures.\n2. Tri ancien : le 2 novembre doit apparaître avant le 10 novembre.\n3. Vérifier que soldes, pointages et dates enregistrées restent inchangés.\n4. Verrouiller puis rouvrir : le choix de tri est conservé.</string>
     <string name="account_add">Ajouter un compte</string>
     <string name="account_edit">Configurer le compte</string>
     <string name="account_configure">Configurer %1$s</string>
