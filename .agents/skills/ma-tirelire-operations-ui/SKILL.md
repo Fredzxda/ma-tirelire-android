@@ -10,11 +10,9 @@ ou de l'ajout d'une commande à cette vue. Il ne concerne pas les autres projets
 La référence versionnée se trouve dans le dépôt `C:/Dev/ma-tirelire-android` :
 `docs/design/operations-proposition.md` et sa maquette HTML voisine.
 
-Statut initial : organisation générale demandée par Frédéric le 11 novembre 2026 ;
-carte et maquette proposées pour validation. La demande courante impose de montrer
-la proposition avant de modifier l'application. Une validation ultérieure autorise
-l'implémentation correspondante sans redemander cet accord à chaque ajustement.
-Actualiser le statut dans la référence quand Frédéric valide ou corrige la proposition.
+Statut : maquette et carte validées par Frédéric le 11 novembre 2026,
+avec autorisation explicite d'implémentation. Cette référence s'applique aux
+évolutions suivantes ; conserver les corrections ultérieures dans le document.
 
 ## Structure à préserver
 

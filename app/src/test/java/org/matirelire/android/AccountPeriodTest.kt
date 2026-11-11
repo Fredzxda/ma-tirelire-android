@@ -48,9 +48,11 @@ class AccountPeriodTest {
         val model = DemoViewModel().apply { initialize(rows) }
         val before = model.exportData()
         model.accountPeriod = AccountPeriod(YearMonth.of(2020,1),PeriodScope.ALL,false)
+        model.operationsMenu = OperationsMenu.SEARCH
         assertEquals(before,model.exportData())
         model.clearSensitive()
         assertEquals(PeriodScope.MONTH,model.accountPeriod.scope)
         assertTrue(model.accountPeriod.followsCurrent)
+        assertEquals(OperationsMenu.NONE, model.operationsMenu)
     }
 }

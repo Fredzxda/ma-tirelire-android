@@ -1,9 +1,17 @@
 # Ma Tirelire — Android
 
-Prototype de sécurité **0.7.2-dev** du portage de Ma Tirelire Palm.
+Prototype de sécurité **0.7.3-dev** du portage de Ma Tirelire Palm.
 Android 12 minimum, téléphone et tablette, français et anglais.
 
 ## Utilisation de cette version
+
+0.7.3 : vue Operations conforme a la maquette validee : compte et soldes fixes,
+menu unique et une ligne contextuelle temporaire ; recherche integree combinee
+a la periode, explications dans Informations, + dans le bandeau fixe.
+Statut en haut a gauche des cartes ; description et montant alignes, pointage
+sous le montant. Libelles des limites periodiques toujours dans leur encoche.
+Le harnais teste ces interactions dans une activite vierge a donnees fictives.
+
 
 0.7.2 : affichage mensuel avec historique complet et dates a verifier.
 Recherche sur tout le compte, soldes globaux inchanges. Sauvegarder et Normaliser

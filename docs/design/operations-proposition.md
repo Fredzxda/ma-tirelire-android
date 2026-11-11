@@ -1,6 +1,6 @@
 # Vue Opérations — proposition du 11 novembre 2026
 
-Statut : **à valider avant implémentation**. Application actuelle inchangée :
+Statut : **validée par Frédéric le 11 novembre 2026, implémentation autorisée**. Base de conception :
 0.7.2-dev, commit `7f73139`. La maquette emploie uniquement des données fictives.
 
 Ouvrir [la maquette interactive](operations-proposition.html) dans un navigateur.
@@ -89,4 +89,8 @@ Apercus : operations-proposition.png (menus fermes), operations-menus.png
 en mode sans fenetre et relus visuellement ; syntaxe JavaScript verifiee par Node.
 Skill projet et copie installee valides par quick_validate.py. Ce controle
 structurel ne vaut pas validation de l ergonomie par Frederic. Aucun test ou
-deploiement Android realise : aucun fichier applicatif n a ete modifie.
+deploiement Android realise a cette etape de conception : aucun fichier applicatif
+n avait alors ete modifie.
+
+Validation utilisateur : « C’est parfait. Tu peux implémenter. »
+Implémentation livrée en 0.7.3-dev, contrôles consignés dans ../VALIDATION-0.7.3-dev.md.

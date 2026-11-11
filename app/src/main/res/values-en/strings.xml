@@ -76,8 +76,8 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">Account transactions now open on the current month, with previous/next month navigation and Full history. Search covers the entire account. Dates to check remain accessible. Normalize is separate from backup: create a backup first, then normalize without creating another archive.</string>
-    <string name="release_notes_tests">1. Navigate months and return to This month.\n2. Show Full history: balances must remain unchanged.\n3. Search for a transaction outside the displayed month and edit it.\n4. Check Dates to check when present.\n5. Rotate: period is retained. Lock/reopen: current month.\n6. Verify the Normalize action in Settings.</string>
+    <string name="release_notes_changes">Operations now follow the approved layout: fixed balances and command bar, one temporary row for Account, Filter, Search or Actions, inline search combined with the period. Cards place status at the top left and clearing below the amount. Recurrence labels always stay in the outline notch. The + button moves to the fixed header.</string>
+    <string name="release_notes_tests">1. Open each menu: one temporary row; tap outside to close it.\n2. With a menu open, tap a card or checkbox: exactly one action, no blocked first tap.\n3. Combine month and search; Full history widens the search. Closing preserves the query, Clear removes it.\n4. Check portrait, landscape, rotation, keyboard and larger text.\n5. Edit recurrence limits: empty, focused and filled fields keep labels and height stable.\n6. + creates a transaction; bank clearing and series confirmation remain independent.</string>
     <string name="account_add">Add account</string>
     <string name="account_edit">Account settings</string>
     <string name="account_configure">Configure %1$s</string>
@@ -199,4 +199,15 @@
     <string name="period_empty">No transactions in this period.</string>
     <string name="period_hint">%1$d displayed transaction(s). Balances cover the entire account; search covers full history.</string>
     <string name="date_migration_backup_required">Create a new backup of current data with Back up now, then retry Normalize without editing data. The archive must remain accessible.</string>
+    <string name="operations_account">Account</string>
+    <string name="operations_filter">Filter</string>
+    <string name="operations_functions">Actions</string>
+    <string name="operations_search_placeholder">Description, category, payment…</string>
+    <string name="operations_empty">No transactions match the selected period and search.</string>
+    <string name="repeat_end_label">End date</string>
+    <string name="operations_information">Balances cover the whole account; the total includes recorded forecasts. Confirmation and bank clearing are independent. Search combines with the selected period: choose Full history to search the entire account. Closing the search row keeps its text active; Clear removes it. Tap a transaction to edit it, or its checkbox to change clearing.</string>
+    <string name="repeat_unlimited">Unlimited</string>
+    <string name="operations_search">Search</string>
+    <string name="operations_sort_action">%1$s. Tap to change sorting.</string>
+    <string name="repeat_choose_date_short">Choose</string>
 </resources>

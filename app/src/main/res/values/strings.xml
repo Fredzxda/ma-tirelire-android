@@ -76,8 +76,8 @@
     <string name="release_notes_title">Nouveautés · %1$s</string>
     <string name="release_notes_test_title">À vérifier avec des données fictives</string>
     <string name="release_notes_understood">Compris</string>
-    <string name="release_notes_changes">Les opérations s’ouvrent sur le mois courant : navigation entre les mois et accès à tout l’historique. La recherche couvre tout le compte. Les dates à vérifier restent accessibles. Normaliser est distinct de la sauvegarde : sauvegarder d’abord, puis normaliser sans créer une autre archive.</string>
-    <string name="release_notes_tests">1. Naviguer entre les mois puis revenir à Ce mois.\n2. Afficher Tout l’historique : soldes inchangés.\n3. Rechercher une opération hors du mois affiché puis la modifier.\n4. Consulter Dates à vérifier si présent.\n5. Faire une rotation : période conservée. Verrouiller/rouvrir : mois courant.\n6. Vérifier le bouton Normaliser dans les réglages.</string>
+    <string name="release_notes_changes">La vue Opérations suit la maquette validée : soldes et menu fixes, une ligne temporaire pour Compte, Filtre, Recherche ou Fonctions, recherche intégrée combinée à la période. Les cartes placent le statut en haut à gauche et le pointage sous le montant. Les libellés de périodicité restent dans l’encoche. Le bouton + rejoint le bandeau fixe.</string>
+    <string name="release_notes_tests">1. Ouvrir chaque menu : une seule ligne temporaire ; toucher ailleurs pour la fermer.\n2. Menu ouvert, toucher une carte ou sa case : une seule action, sans premier clic perdu.\n3. Combiner mois et recherche ; Tout l’historique élargit la recherche. Fermer conserve le texte, Effacer le supprime.\n4. Vérifier portrait, paysage, rotation, clavier et texte agrandi.\n5. Modifier les limites de périodicité : champs vides, en saisie et remplis gardent leurs libellés et une hauteur stable.\n6. + crée une opération ; pointage et confirmation restent indépendants.</string>
     <string name="account_add">Ajouter un compte</string>
     <string name="account_edit">Configurer le compte</string>
     <string name="account_configure">Configurer %1$s</string>
@@ -199,4 +199,15 @@
     <string name="period_empty">Aucune opération sur cette période.</string>
     <string name="period_hint">%1$d opération(s) affichée(s). Soldes du compte entier ; recherche sur tout l’historique.</string>
     <string name="date_migration_backup_required">Créer une sauvegarde des données actuelles avec Sauvegarder maintenant, puis relancer Normaliser sans modifier les données. Le fichier de sauvegarde doit rester accessible.</string>
+    <string name="operations_account">Compte</string>
+    <string name="operations_filter">Filtre</string>
+    <string name="operations_functions">Fonctions</string>
+    <string name="operations_search_placeholder">Libellé, catégorie, moyen…</string>
+    <string name="operations_empty">Aucune opération ne correspond à la période et à la recherche sélectionnées.</string>
+    <string name="repeat_end_label">Date de fin</string>
+    <string name="operations_information">Les soldes concernent tout le compte ; le total comprend les prévisions enregistrées. Confirmation et pointage bancaire sont indépendants. La recherche se combine à la période : choisir Tout l’historique pour rechercher dans tout le compte. Fermer la ligne de recherche conserve son texte ; Effacer le supprime. Toucher une opération ouvre sa fiche ; sa case change uniquement son pointage.</string>
+    <string name="repeat_unlimited">Sans limite</string>
+    <string name="operations_search">Recherche</string>
+    <string name="operations_sort_action">%1$s. Toucher pour changer le tri.</string>
+    <string name="repeat_choose_date_short">Choisir</string>
 </resources>

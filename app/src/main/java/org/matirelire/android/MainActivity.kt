@@ -1,5 +1,8 @@
 package org.matirelire.android
 
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.clearAndSetSemantics
+
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 
@@ -121,6 +124,7 @@ internal data class AccountDraft(val index: Int?, val name: String = "", val ope
 
 /** Session state; snapshots are persisted only through the encrypted vault callback. */
 class DemoViewModel : ViewModel() {
+    internal var operationsMenu by mutableStateOf(OperationsMenu.NONE)
     internal var accountPeriod by mutableStateOf(AccountPeriod())
     internal var searchQuery by mutableStateOf("")
     internal val transactions = mutableStateListOf<DemoTransaction>()
@@ -385,6 +389,7 @@ class DemoViewModel : ViewModel() {
     internal fun clearSensitive() {
         searchQuery = ""
         accountPeriod = AccountPeriod()
+        operationsMenu = OperationsMenu.NONE
         transactionOrder = TransactionOrder.ORIGINAL
         dateMigrationVersion = 0
         onChange = null
@@ -521,7 +526,7 @@ class DemoViewModel : ViewModel() {
 }
 
 @Composable
-private fun money(amount: BigDecimal): String = NumberFormat.getCurrencyInstance(LocalConfiguration.current.locales[0]).apply {
+internal fun money(amount: BigDecimal): String = NumberFormat.getCurrencyInstance(LocalConfiguration.current.locales[0]).apply {
     currency = Currency.getInstance("EUR")
 }.format(amount)
 
@@ -578,7 +583,7 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
                     labels.forEachIndexed { index, label ->
                         NavigationRailItem(
                             selected = destination == index,
-                            onClick = { destination = index },
+                            onClick = { model.operationsMenu = OperationsMenu.NONE; destination = index },
                             icon = { Text(symbols[index]) },
                             label = { Text(label) },
                         )
@@ -593,7 +598,7 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
                         labels.forEachIndexed { index, label ->
                             NavigationBarItem(
                                 selected = destination == index,
-                                onClick = { destination = index },
+                                onClick = { model.operationsMenu = OperationsMenu.NONE; destination = index },
                                 icon = { Text(symbols[index]) },
                                 label = { Text(label) },
                             )
@@ -601,13 +606,13 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
                     }
                 },
                 floatingActionButton = {
-                    if (destination != 2) ExtendedFloatingActionButton(onClick = { model.beginEntry() }) {
+                    if (destination == 0) ExtendedFloatingActionButton(onClick = { model.beginEntry() }) {
                         Text(stringResource(R.string.enter_transaction))
                     }
                 },
             ) { padding ->
                 Column(Modifier.padding(padding).fillMaxSize()) {
-                    if (!wide) BrandHeader(vault::openReleaseNotes)
+                    if (!wide && destination != 1) BrandHeader(vault::openReleaseNotes)
                     when (destination) {
                         0 -> AccountsScreen(accountNames, balances, clearedBalances,
                             onConfigure = { model.beginAccount(it, activity.resources.configuration.locales[0]) },
@@ -616,7 +621,8 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
                         1 -> TransactionsScreen(accountNames, account, balances[account], clearedBalances[account], model.transactionOrder.arrange(transactions.filter { it.account == account }),
                             onAccount = { account = it }, onToggle = model::toggleCleared,
                             onReconcile = { model.beginReconciliation(account) },
-                            onEdit = { model.editEntry(it, activity.resources.configuration.locales[0]) })
+                            onEdit = { model.editEntry(it, activity.resources.configuration.locales[0]) },
+                            onNew = { model.beginEntry() })
                         else -> SettingsScreen(vault, activity)
                     }
                 }
@@ -679,184 +685,6 @@ private fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, clea
             }
         }
         item { Text(stringResource(R.string.account_hint), color = MaterialTheme.colorScheme.secondary) }
-    }
-}
-
-@Composable
-private fun TransactionsScreen(names: List<String>, account: Int, balance: BigDecimal, clearedBalance: BigDecimal, transactions: List<DemoTransaction>, onAccount: (Int) -> Unit, onToggle: (Long) -> Unit, onReconcile: () -> Unit, onEdit: (Long) -> Unit) {
-    val model: DemoViewModel = viewModel()
-    val period = model.accountPeriod
-    val periodMonth = period.effectiveMonth(model.calendarToday)
-    val visibleTransactions = period.filter(transactions, model.calendarToday)
-    val undatedCount = transactions.count { OperationDates.forOrdering(it.date) == null }
-    var showUpcoming by rememberSaveable { mutableStateOf(false) }
-    var showSearch by rememberSaveable { mutableStateOf(false) }
-    var showInfo by remember { mutableStateOf(false) }
-    if (showUpcoming) UpcomingDialog(model, account, names) { showUpcoming = false }
-    if (showSearch) TransactionSearchDialog(model, transactions, onEdit = { id -> showSearch = false; onEdit(id) }, onDismiss = { showSearch = false })
-    if (showInfo) AlertDialog(onDismissRequest = { showInfo = false },
-        title = { Text(stringResource(R.string.balance)) },
-        text = { Text(stringResource(R.string.anticipation_balance_hint)) },
-        confirmButton = { TextButton(onClick = { showInfo = false }) { Text(stringResource(android.R.string.ok)) } },
-        properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn))
-    val landscape = LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-    Column(Modifier.fillMaxSize()) {
-        Surface(color = MaterialTheme.colorScheme.secondaryContainer) {
-            if (landscape) {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(names[account], style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                    Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.balance), style = MaterialTheme.typography.labelMedium)
-                        Text(money(balance), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    }
-                    Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.cleared_balance), style = MaterialTheme.typography.labelMedium)
-                        Text(money(clearedBalance), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    }
-                    TextButton(onClick = { showInfo = true }) { Text(stringResource(R.string.balance_info)) }
-                }
-            } else Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(names[account], style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                    TextButton(onClick = { showInfo = true }) { Text(stringResource(R.string.balance_info)) }
-                }
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.balance), style = MaterialTheme.typography.labelMedium)
-                        Text(money(balance), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    }
-                    Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.cleared_balance), style = MaterialTheme.typography.labelMedium)
-                        Text(money(clearedBalance), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-        LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 110.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            item {
-                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    names.forEachIndexed { index, name -> FilterChip(selected = index == account, onClick = { onAccount(index) }, label = { Text(name) }) }
-                }
-            }
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        val previous = period.move(-1, model.calendarToday)
-                        val next = period.move(1, model.calendarToday)
-                        val previousLabel = stringResource(R.string.period_previous)
-                        val nextLabel = stringResource(R.string.period_next)
-                        IconButton(onClick = { previous?.let { model.accountPeriod = it } }, enabled = previous != null,
-                            modifier = Modifier.semantics { contentDescription = previousLabel }) { Text("‹", style = MaterialTheme.typography.headlineSmall) }
-                        Text(when (period.scope) {
-                            PeriodScope.MONTH -> periodMonth.format(java.time.format.DateTimeFormatter.ofPattern("LLLL uuuu", LocalConfiguration.current.locales[0]))
-                            PeriodScope.ALL -> stringResource(R.string.period_all)
-                            PeriodScope.UNDATED -> stringResource(R.string.date_needs_review)
-                        }, style = MaterialTheme.typography.titleMedium)
-                        IconButton(onClick = { next?.let { model.accountPeriod = it } }, enabled = next != null,
-                            modifier = Modifier.semantics { contentDescription = nextLabel }) { Text("›", style = MaterialTheme.typography.headlineSmall) }
-                        FilterChip(selected = period.scope == PeriodScope.MONTH && period.followsCurrent,
-                            onClick = { model.accountPeriod = AccountPeriod() }, label = { Text(stringResource(R.string.period_current)) })
-                        FilterChip(selected = period.scope == PeriodScope.ALL, onClick = { model.accountPeriod = period.copy(scope = PeriodScope.ALL) },
-                            label = { Text(stringResource(R.string.period_all)) })
-                        if (undatedCount > 0) FilterChip(selected = period.scope == PeriodScope.UNDATED,
-                            onClick = { model.accountPeriod = period.copy(scope = PeriodScope.UNDATED) },
-                            label = { Text(stringResource(R.string.period_undated, undatedCount)) })
-                    }
-                    Text(stringResource(R.string.period_hint, visibleTransactions.size), style = MaterialTheme.typography.bodySmall)
-                }
-            }
-            item {
-                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    val sortLabel = stringResource(when (model.transactionOrder) {
-                        TransactionOrder.ORIGINAL -> R.string.order_original
-                        TransactionOrder.NEWEST -> R.string.order_newest
-                        TransactionOrder.OLDEST -> R.string.order_oldest
-                    })
-                    IconButton(onClick = { model.setTransactionOrder(when (model.transactionOrder) {
-                        TransactionOrder.ORIGINAL -> TransactionOrder.NEWEST
-                        TransactionOrder.NEWEST -> TransactionOrder.OLDEST
-                        TransactionOrder.OLDEST -> TransactionOrder.ORIGINAL
-                    }) }, modifier = Modifier.semantics { contentDescription = sortLabel }) {
-                        Text(when (model.transactionOrder) {
-                            TransactionOrder.ORIGINAL -> "↕"
-                            TransactionOrder.NEWEST -> "↓"
-                            TransactionOrder.OLDEST -> "↑"
-                        }, style = MaterialTheme.typography.titleLarge)
-                    }
-                    OutlinedButton(onClick = { showSearch = true }) { Text(stringResource(R.string.search_open)) }
-                    OutlinedButton(onClick = onReconcile) { Text(stringResource(R.string.reconcile_open)) }
-                    OutlinedButton(onClick = { showUpcoming = true }) { Text(stringResource(R.string.upcoming_open)) }
-                }
-            }
-            if (visibleTransactions.isEmpty()) item { Text(stringResource(if (transactions.isEmpty()) R.string.empty_transactions else R.string.period_empty)) }
-        items(visibleTransactions, key = { it.id }) { tx ->
-            Card(onClick = { onEdit(tx.id) }, modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text(tx.description, style = MaterialTheme.typography.titleMedium)
-                            Text(OperationDates.display(tx.date, LocalConfiguration.current.locales[0]), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(money(tx.amount), fontWeight = FontWeight.Bold, color = if (tx.amount.signum() < 0) Color(0xFF944C3C) else MaterialTheme.colorScheme.primary)
-                            Row(Modifier.toggleable(value = tx.cleared, role = androidx.compose.ui.semantics.Role.Checkbox,
-                                onValueChange = { onToggle(tx.id) }).heightIn(min = 48.dp).padding(start = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically) {
-                                Text(stringResource(if (tx.cleared) R.string.marked else R.string.unmarked), style = MaterialTheme.typography.labelMedium)
-                                Checkbox(checked = tx.cleared, onCheckedChange = null)
-                            }
-                        }
-                    }
-                    RecurringBadge(tx, model.calendarToday)
-                    if (tx.peerId != null) {
-                        Text(stringResource(R.string.transfer_linked), style = MaterialTheme.typography.labelMedium)
-                    }
-                    if (OperationDates.forOrdering(tx.date) == null) Text(stringResource(R.string.date_needs_review),
-                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
-                    Text("${tx.category} · ${tx.payment}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 8.dp))
-                }
-            }
-        }
-        }
-    }
-}
-
-@Composable
-private fun TransactionSearchDialog(model: DemoViewModel, transactions: List<DemoTransaction>, onEdit: (Long) -> Unit, onDismiss: () -> Unit) {
-    val visible = TransactionSearch.filter(transactions, model.searchQuery)
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, securePolicy = SecureFlagPolicy.SecureOn)) {
-        Surface(Modifier.fillMaxSize().imePadding(), color = MaterialTheme.colorScheme.background) {
-            Column(Modifier.padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.search_label), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-                }
-                OutlinedTextField(value = model.searchQuery, onValueChange = { model.searchQuery = it.take(200) },
-                    label = { Text(stringResource(R.string.search_open)) }, singleLine = true,
-                    supportingText = { Text(stringResource(R.string.search_hint)) }, modifier = Modifier.fillMaxWidth(),
-                    trailingIcon = { if (model.searchQuery.isNotEmpty()) TextButton(onClick = { model.searchQuery = "" }) { Text(stringResource(R.string.search_clear)) } })
-                Text(stringResource(R.string.search_summary, visible.size, money(visible.fold(BigDecimal.ZERO) { sum, row -> sum + row.amount })), style = MaterialTheme.typography.bodyMedium)
-                Text(stringResource(R.string.search_balance_hint), style = MaterialTheme.typography.bodySmall)
-                LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(vertical = 12.dp)) {
-                    if (visible.isEmpty()) item { Text(stringResource(R.string.search_empty)) }
-                    items(visible, key = { it.id }) { tx ->
-                        Card(onClick = { onEdit(tx.id) }, modifier = Modifier.fillMaxWidth()) {
-                            Column(Modifier.padding(12.dp)) {
-                                Text(tx.description, style = MaterialTheme.typography.titleMedium)
-                                Text(money(tx.amount), fontWeight = FontWeight.Bold)
-                                Text(OperationDates.display(tx.date, LocalConfiguration.current.locales[0]), style = MaterialTheme.typography.bodySmall)
-                                if (OperationDates.forOrdering(tx.date) == null) Text(stringResource(R.string.date_needs_review),
-                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
-                    Text("${tx.category} · ${tx.payment}", style = MaterialTheme.typography.bodySmall)
-                                RecurringBadge(tx, model.calendarToday)
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -1367,7 +1195,7 @@ private fun repeatLabel(frequency: RepeatFrequency): String = stringResource(whe
 })
 
 @Composable
-private fun EntryRepeat(model: DemoViewModel, draft: EntryDraft) {
+internal fun EntryRepeat(model: DemoViewModel, draft: EntryDraft) {
     val row = model.transactions.firstOrNull { it.id == draft.editingId }
     val rule = model.rules.firstOrNull { it.id == row?.seriesId }
     var expanded by remember { mutableStateOf(false) }
@@ -1386,12 +1214,25 @@ private fun EntryRepeat(model: DemoViewModel, draft: EntryDraft) {
         }
         if (draft.repeatFrequency != RepeatFrequency.NONE) {
             Text(stringResource(if (rule == null) R.string.repeat_limits_hint else R.string.repeat_remaining_hint), style = MaterialTheme.typography.bodySmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
-                Box(Modifier.weight(1f)) { RepeatEndDate(model, draft) }
-                OutlinedTextField(value = draft.repeatCount,
-                    onValueChange = { model.updateDraft(draft.copy(repeatCount = it.take(5), repeatUntil = if (it.isNotBlank()) "" else draft.repeatUntil)) },
-                    label = { Text(stringResource(if (rule == null) R.string.repeat_count else R.string.repeat_remaining)) }, singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f))
+            BoxWithConstraints {
+                val stacked = maxWidth < 340.dp || LocalConfiguration.current.fontScale > 1.15f
+                val countField: @Composable (Modifier) -> Unit = { fieldModifier ->
+                    Box(fieldModifier.testTag("repeat-count-frame")) {
+                    PinnedLabelField(value = draft.repeatCount,
+                        onValueChange = { model.updateDraft(draft.copy(repeatCount = it, repeatUntil = if (it.isNotBlank()) "" else draft.repeatUntil)) },
+                        label = stringResource(if (rule == null) R.string.repeat_count else R.string.repeat_remaining),
+                        placeholder = stringResource(R.string.repeat_unlimited), maxLength = 5,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth().testTag("repeat-count"))
+                    }
+                }
+                if (stacked) Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    RepeatEndDate(model, draft)
+                    countField(Modifier.fillMaxWidth())
+                } else Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+                    Box(Modifier.weight(1f)) { RepeatEndDate(model, draft) }
+                    countField(Modifier.weight(1f))
+                }
             }
         }
     }
@@ -1428,29 +1269,27 @@ private fun RepeatEndDate(model: DemoViewModel, draft: EntryDraft) {
     val locale = LocalConfiguration.current.locales[0]
     var picker by remember { mutableStateOf<DatePickerDialog?>(null) }
     DisposableEffect(Unit) { onDispose { picker?.dismiss() } }
-    val currentDraft by rememberUpdatedState(draft)
+    val label = stringResource(R.string.repeat_end_label)
+    val prompt = stringResource(R.string.repeat_choose_date_short)
+    val value = draft.repeatUntil.takeIf { it.isNotEmpty() }?.let { OperationDates.display(it, locale) }.orEmpty()
     Column {
-        val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-        LaunchedEffect(interaction) {
-            interaction.interactions.collect { event ->
-                if (event is androidx.compose.foundation.interaction.PressInteraction.Release) {
-            val start = OperationDates.parse(currentDraft.date) ?: java.time.LocalDate.now()
-            val selected = (OperationDates.parse(currentDraft.repeatUntil) ?: start).coerceAtLeast(start)
-            picker?.dismiss()
-            picker = DatePickerDialog(context, { _, year, month, day ->
-                model.selectRepeatEnd(java.time.LocalDate.of(year, month + 1, day).toString())
-            }, selected.year, selected.monthValue - 1, selected.dayOfMonth).apply {
-                window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
-                datePicker.minDate = start.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
-                show()
-            }
-                }
-            }
+        Box(Modifier.fillMaxWidth().testTag("repeat-end")) {
+            PinnedLabelField(value = value, onValueChange = {}, label = label, readOnly = true,
+                placeholder = prompt, modifier = Modifier.fillMaxWidth().testTag("repeat-end-field").clearAndSetSemantics {})
+            Spacer(Modifier.matchParentSize().clickable(role = androidx.compose.ui.semantics.Role.Button,
+                onClickLabel = prompt, onClick = {
+                    val start = OperationDates.parse(draft.date) ?: java.time.LocalDate.now()
+                    val selected = (OperationDates.parse(draft.repeatUntil) ?: start).coerceAtLeast(start)
+                    picker?.dismiss()
+                    picker = DatePickerDialog(context, { _, year, month, day ->
+                        model.selectRepeatEnd(java.time.LocalDate.of(year, month + 1, day).toString())
+                    }, selected.year, selected.monthValue - 1, selected.dayOfMonth).apply {
+                        window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                        datePicker.minDate = start.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+                        show()
+                    }
+                }).semantics { contentDescription = "$label: ${value.ifEmpty { prompt }}" })
         }
-        OutlinedTextField(value = if (draft.repeatUntil.isEmpty()) "" else OperationDates.display(draft.repeatUntil, locale),
-            onValueChange = {}, readOnly = true, singleLine = true,
-            label = { Text(stringResource(R.string.repeat_pick_end)) },
-            interactionSource = interaction, modifier = Modifier.fillMaxWidth())
         if (draft.repeatUntil.isNotEmpty()) TextButton(onClick = { model.selectRepeatEnd(null) }) {
             Text(stringResource(R.string.repeat_clear_end))
         }
@@ -1458,7 +1297,7 @@ private fun RepeatEndDate(model: DemoViewModel, draft: EntryDraft) {
 }
 
 @Composable
-private fun UpcomingDialog(model: DemoViewModel, account: Int, names: List<String>, onDismiss: () -> Unit) {
+internal fun UpcomingDialog(model: DemoViewModel, account: Int, names: List<String>, onDismiss: () -> Unit) {
     var days by rememberSaveable { mutableIntStateOf(90) }
     var today by remember { mutableStateOf(java.time.LocalDate.now()) }
     val locale = LocalConfiguration.current.locales[0]
@@ -1511,7 +1350,7 @@ private fun UpcomingDialog(model: DemoViewModel, account: Int, names: List<Strin
 }
 
 @Composable
-private fun RecurringBadge(row: DemoTransaction, today: java.time.LocalDate) {
+internal fun RecurringBadge(row: DemoTransaction, today: java.time.LocalDate) {
     val state = RecurringState.of(row, today) ?: return
     val color = when (state) {
         RecurringState.FORECAST -> MaterialTheme.colorScheme.secondaryContainer

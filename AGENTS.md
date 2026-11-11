@@ -46,4 +46,7 @@
 - Avant de modifier la presentation de la vue Operations, lire le skill projet
   .agents/skills/ma-tirelire-operations-ui/SKILL.md et la reference de conception
   docs/design/operations-proposition.md. La proposition du 11 novembre 2026
-  attend la validation de Frederic avant implementation dans l application.
+  a ete validee par Frederic avec autorisation explicite d implementation.
+
+- Play execute aussi OperationsUiDeviceTest dans une activite vierge avec
+  donnees fictives ; ne jamais utiliser le coffre personnel pour ces tests.
