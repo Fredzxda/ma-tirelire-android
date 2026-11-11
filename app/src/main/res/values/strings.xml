@@ -76,8 +76,8 @@
     <string name="release_notes_title">Nouveautés · %1$s</string>
     <string name="release_notes_test_title">À vérifier avec des données fictives</string>
     <string name="release_notes_understood">Compris</string>
-    <string name="release_notes_changes">Recherche dans les opérations du compte par description, catégorie et moyen de paiement. Les accents et majuscules sont ignorés ; tous les mots saisis doivent être présents. Le nombre de résultats et leur somme sont affichés sans modifier les soldes du compte.</string>
-    <string name="release_notes_tests">1. Rechercher un libellé avec et sans accents ou majuscules.\n2. Combiner un mot du libellé et un moyen de paiement.\n3. Vérifier le nombre de résultats et leur somme ; les soldes du compte restent identiques.\n4. Ouvrir et modifier un résultat, puis effacer la recherche pour retrouver toute la liste.\n5. Faire une rotation : la recherche reste présente. Verrouiller puis rouvrir : elle est effacée.</string>
+    <string name="release_notes_changes">Les soldes total et pointé restent visibles côte à côte pendant le défilement. La recherche dispose de sa fenêtre : toucher un résultat ouvre sa fiche. Le bandeau prototype est retiré ; les explications sur les soldes sont accessibles via Informations. Les champs de fin de série sont harmonisés.</string>
+    <string name="release_notes_tests">1. Faire défiler les opérations : les deux soldes restent visibles.\n2. Ouvrir Informations.\n3. Rechercher puis toucher un résultat pour le modifier.\n4. Modifier une série : vérifier les champs date de fin et occurrences restantes en portrait et paysage.\n5. Faire tourner la fenêtre de recherche et vérifier que le verrouillage efface la recherche.</string>
     <string name="account_add">Ajouter un compte</string>
     <string name="account_edit">Configurer le compte</string>
     <string name="account_configure">Configurer %1$s</string>
@@ -176,4 +176,6 @@
     <string name="search_summary">%1$d opération(s) trouvée(s) · somme : %2$s</string>
     <string name="search_balance_hint">Les soldes ci-dessus concernent tout le compte. Cette somme inclut les prévisions et les virements affichés.</string>
     <string name="search_empty">Aucune opération ne correspond à cette recherche.</string>
+    <string name="search_open">Rechercher</string>
+    <string name="balance_info">Informations</string>
 </resources>

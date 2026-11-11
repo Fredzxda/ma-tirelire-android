@@ -76,8 +76,8 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">Search account transactions by description, category and payment method. Accents and case are ignored; all entered words must match. Result count and sum are displayed without changing account balances.</string>
-    <string name="release_notes_tests">1. Search a description with different accents and case.\n2. Combine a description word and a payment method.\n3. Check result count and sum; account balances remain unchanged.\n4. Open and edit a result, then clear search to restore the full list.\n5. Rotate: search remains. Lock and reopen: search is cleared.</string>
+    <string name="release_notes_changes">Account balances now remain visible side by side while scrolling. Search opens in a dedicated window; tap a result to edit it. The prototype banner is removed and balance explanations are available on demand. Recurrence end date and remaining count use matching fields.</string>
+    <string name="release_notes_tests">1. Scroll transactions: both balances stay visible.\n2. Open Information.\n3. Search and tap a result to edit it.\n4. Edit a series: check end date and remaining count in portrait and landscape.\n5. Rotate the search window and verify locking still clears the query.</string>
     <string name="account_add">Add account</string>
     <string name="account_edit">Account settings</string>
     <string name="account_configure">Configure %1$s</string>
@@ -176,4 +176,6 @@
     <string name="search_summary">%1$d matching transaction(s) · sum: %2$s</string>
     <string name="search_balance_hint">Balances above cover the whole account. This sum includes displayed forecasts and transfers.</string>
     <string name="search_empty">No transactions match this search.</string>
+    <string name="search_open">Search</string>
+    <string name="balance_info">Information</string>
 </resources>
