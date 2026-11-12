@@ -10,6 +10,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalConfiguration
+import android.content.res.Configuration
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -53,7 +55,8 @@ internal fun CategoryTree(model: DemoViewModel, selected: String, selectable: Li
                                 expanded = if (row.name in expanded) expanded - row.name else expanded + row.name
                             }.semantics { contentDescription = model.categoryPath(row.name); stateDescription = expandedDescription },
                             contentAlignment = Alignment.Center) { Text(if (open) "▾" else "▸") }
-                    } else Spacer(Modifier.width(48.dp))
+                    } else Box(Modifier.size(48.dp).testTag("$stateKey-leaf-${row.name}").clearAndSetSemantics { },
+                        contentAlignment = Alignment.Center) { Text("•", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     Row(Modifier.weight(1f).heightIn(min = 48.dp).testTag("$stateKey-select-${row.name}")
                         .clickable(enabled = row.selectable, role = Role.Button) { onSelect(row.name) }
                         .semantics { contentDescription = model.categoryPath(row.name); this.selected = selected == row.name }
@@ -87,8 +90,20 @@ internal fun CategorySelectorField(model: DemoViewModel, selected: String, optio
     }
     if (open) Dialog(onDismissRequest = { open = false }, properties = DialogProperties(
         usePlatformDefaultWidth = false, securePolicy = SecureFlagPolicy.SecureOn)) {
-        Surface(Modifier.padding(12.dp).widthIn(max = 620.dp).fillMaxWidth().fillMaxHeight(.9f), shape = MaterialTheme.shapes.large) {
-            Column(Modifier.padding(16.dp).imePadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+        val actions: @Composable () -> Unit = {
+            Text(label, style = MaterialTheme.typography.titleMedium)
+            if (allowNone) TextButton(onClick = { onSelect(""); open = false }) { Text(stringResource(R.string.refs_no_parent)) }
+            if (onCreate != null) TextButton(onClick = { open = false; onCreate() }) { Text(stringResource(R.string.refs_new_category)) }
+            TextButton(onClick = { open = false }) { Text(stringResource(R.string.refs_close)) }
+        }
+        Surface(Modifier.padding(if (landscape) 6.dp else 12.dp).widthIn(max = if (landscape) 1000.dp else 620.dp)
+            .fillMaxWidth().fillMaxHeight(if (landscape) .96f else .9f), shape = MaterialTheme.shapes.large) {
+            if (landscape) Row(Modifier.padding(8.dp).imePadding(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(Modifier.width(156.dp).fillMaxHeight().verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)) { actions() }
+                CategoryTree(model, selected, options, stateKey, { onSelect(it); open = false }, Modifier.weight(1f).fillMaxHeight())
+            } else Column(Modifier.padding(16.dp).imePadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(label, style = MaterialTheme.typography.titleMedium)
                 CategoryTree(model, selected, options, stateKey, { onSelect(it); open = false }, Modifier.weight(1f))
                 if (allowNone) TextButton(onClick = { onSelect(""); open = false }) { Text(stringResource(R.string.refs_no_parent)) }

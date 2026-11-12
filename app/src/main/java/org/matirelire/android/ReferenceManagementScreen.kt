@@ -6,6 +6,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalConfiguration
+import android.content.res.Configuration
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -31,11 +34,37 @@ internal fun ReferenceManagementDialog(model: DemoViewModel, onDismiss: () -> Un
         creating = false
         model.referenceUiStates.keys.removeAll { it.startsWith("management-create-") }
     }
+    val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val commands: @Composable () -> Unit = {
+        Text(stringResource(R.string.refs_title), style = MaterialTheme.typography.titleMedium)
+        FilterChip(selected = category, onClick = { category = true }, label = { Text(stringResource(R.string.refs_categories)) })
+        FilterChip(selected = !category, onClick = { category = false }, label = { Text(stringResource(R.string.refs_payments)) })
+        OutlinedButton(onClick = { creating = true }) { Text(stringResource(if (category) R.string.refs_new_category else R.string.refs_new_payment)) }
+        TextButton(onClick = onDismiss) { Text(stringResource(R.string.refs_close)) }
+    }
+    val picker: @Composable (Modifier) -> Unit = { modifier ->
+        if (category) CategoryTree(model, current.orEmpty(), model.categories, "management-categories", { selected = it }, modifier)
+        else Column(modifier.verticalScroll(rememberScrollState())) {
+            names.forEach { name -> TextButton(onClick = { selected = name }, modifier = Modifier.fillMaxWidth()) {
+                Text(name + if (name == current) " ✓" else "")
+            } }
+        }
+    }
+    val editor: @Composable (Modifier) -> Unit = { modifier ->
+        Column(modifier.verticalScroll(rememberScrollState()).testTag("reference-editor"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (current != null) key(category, current) { ReferenceEditor(model, category, current) { selected = it } }
+        }
+    }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(
         usePlatformDefaultWidth = false, securePolicy = SecureFlagPolicy.SecureOn)) {
-        Surface(Modifier.padding(12.dp).widthIn(max = 980.dp).fillMaxWidth().fillMaxHeight(.92f),
+        Surface(Modifier.padding(if (landscape) 6.dp else 12.dp).widthIn(max = if (landscape) 1200.dp else 980.dp).fillMaxWidth().fillMaxHeight(if (landscape) .96f else .92f),
             shape = MaterialTheme.shapes.large) {
-            Column(Modifier.padding(16.dp).imePadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (landscape) Row(Modifier.padding(8.dp).imePadding(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.width(156.dp).fillMaxHeight().verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)) { commands() }
+                picker(Modifier.weight(.44f).fillMaxHeight())
+                editor(Modifier.weight(.56f).fillMaxHeight())
+            } else Column(Modifier.padding(16.dp).imePadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.refs_title), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                     TextButton(onClick = onDismiss) { Text(stringResource(R.string.refs_close)) }
@@ -46,27 +75,11 @@ internal fun ReferenceManagementDialog(model: DemoViewModel, onDismiss: () -> Un
                     OutlinedButton(onClick = { creating = true }) { Text(stringResource(if (category) R.string.refs_new_category else R.string.refs_new_payment)) }
                 }
                 BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
-                    val wide = maxWidth >= 600.dp
                     val treeHeight = 190.dp.coerceAtMost(maxHeight * .45f)
-                    val picker: @Composable (Modifier) -> Unit = { modifier ->
-                        if (category) CategoryTree(model, current.orEmpty(), model.categories, "management-categories", { selected = it }, modifier)
-                        else Column(modifier.verticalScroll(rememberScrollState())) {
-                            names.forEach { name -> TextButton(onClick = { selected = name }, modifier = Modifier.fillMaxWidth()) {
-                                Text(name + if (name == current) " ✓" else "")
-                            } }
-                        }
-                    }
-                    val editor: @Composable (Modifier) -> Unit = { modifier ->
-                        Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            if (current != null) key(category, current) { ReferenceEditor(model, category, current) { selected = it } }
-                        }
-                    }
-                    if (wide) Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                        picker(Modifier.weight(1f).fillMaxHeight())
-                        editor(Modifier.weight(1f).fillMaxHeight())
+                    if (maxWidth >= 600.dp) Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                        picker(Modifier.weight(1f).fillMaxHeight()); editor(Modifier.weight(1f).fillMaxHeight())
                     } else Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        picker(Modifier.fillMaxWidth().height(treeHeight))
-                        HorizontalDivider()
+                        picker(Modifier.fillMaxWidth().height(treeHeight)); HorizontalDivider()
                         editor(Modifier.weight(1f).fillMaxWidth())
                     }
                 }

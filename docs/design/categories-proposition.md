@@ -47,3 +47,7 @@ Validation locale : 134 tests unitaires, lint et 9 tests sur ASUS réussis. Les
 contrôles d'interface utilisent uniquement un modèle fictif, sans ouvrir le coffre
 personnel. Installation et relancement de 0.7.7-dev confirmés par le harnais.
 Portrait/paysage, grands caractères et rotation restent à confirmer par l'utilisateur.
+
+## Retour ergonomique du 12 novembre 2026
+
+Correctif 0.7.9-dev : en paysage, commandes dans un rail lateral defilant ; arbre et proprietes disposent de toute la hauteur et defilent independamment. Le selecteur de categorie de la saisie reprend cette organisation. Les categories sans enfant ont un point decoratif dans l emplacement de la fleche. La structure portrait validee est conservee.

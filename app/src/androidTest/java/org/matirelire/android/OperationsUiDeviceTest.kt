@@ -1,5 +1,7 @@
 package org.matirelire.android
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
@@ -41,6 +43,31 @@ class OperationsUiDeviceTest {
                     onReconcile = {},onEdit = onEdit,onNew = {},model = model)
             }
         }
+    }
+    @Test fun landscapeCategoryPanesKeepHeightAndScrollToLastItems() {
+        ui.runOnUiThread { ui.activity.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
+        ui.waitUntil(10_000) { ui.activity.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE }
+        val model = model()
+        model.ensureAccountNames(listOf("Current", "Savings"))
+        repeat(40) { model.createReference(true, "Category %02d".format(it)) }
+        var showManager by androidx.compose.runtime.mutableStateOf(true)
+        ui.setContent { MaterialTheme {
+            CategorySelectorField(model, "Food", model.categories, "landscape-entry", {}, "Category")
+            if (showManager) ReferenceManagementDialog(model) { showManager = false }
+        } }
+        val density = ui.activity.resources.displayMetrics.density
+        val tree = ui.onNodeWithTag("management-categories-tree")
+        assertTrue(tree.fetchSemanticsNode().layoutInfo.height > 144 * density)
+        tree.performScrollToNode(hasTestTag("management-categories-select-Category 39"))
+        ui.onNodeWithTag("management-categories-select-Category 39").performClick()
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        ui.onNodeWithText(context.getString(R.string.refs_remove)).performScrollTo().assertIsDisplayed()
+        ui.onNodeWithText(context.getString(R.string.refs_close)).performClick()
+        ui.onNodeWithTag("landscape-entry-open").performClick()
+        val entryTree = ui.onNodeWithTag("landscape-entry-tree")
+        assertTrue(entryTree.fetchSemanticsNode().layoutInfo.height > 144 * density)
+        entryTree.performScrollToNode(hasTestTag("landscape-entry-select-Category 39"))
+        ui.onNodeWithTag("landscape-entry-select-Category 39").assertIsDisplayed()
     }
     @Test fun hierarchySearchCollapseAndCreationFromSettings() {
         val model = model()

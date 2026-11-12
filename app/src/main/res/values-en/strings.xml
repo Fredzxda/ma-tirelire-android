@@ -76,8 +76,8 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">New Ma Tirelire icon supplied by Frédéric: standard, adaptive and monochrome variants for Android themed icons.</string>
-    <string name="release_notes_tests">Check the new icon on the home screen and in the app list. If supported by your launcher, try themed icons. Check that the app opens normally.</string>
+    <string name="release_notes_changes">Landscape category fix: side controls, full-height scrollable tree and editor. Leaf categories now have a dot marker.</string>
+    <string name="release_notes_tests">In landscape, scroll through categories and properties to the Remove button. Also try category selection in an entry. Check leaf dots and the portrait layout.</string>
     <string name="account_add">Add account</string>
     <string name="account_edit">Account settings</string>
     <string name="account_configure">Configure %1$s</string>
