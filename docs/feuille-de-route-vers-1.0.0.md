@@ -29,9 +29,9 @@ non-régression et les validations finales de sécurité/récupération.
 | Version | Reste à implémenter | Résultat attendu |
 |---|---|---|
 | 0.7.6-dev (implémentée, validation utilisateur à venir) | Catégories/moyens avancés et stockage associé | Renommer, organiser, retirer ou remplacer sans casser les références ; catégories hiérarchiques, types et visibilité par compte. Regroupe le socle des historiques longs initialement prévu en 0.7.5 : stockage, chargement, migrations et sauvegardes adaptés. Pas de version technique distincte à tester. |
-| 0.7.8-dev | Ventilation des opérations | Répartir une écriture entre plusieurs catégories/descriptions ; somme exacte, édition des sous-opérations et articulation avec les virements. |
-| 0.7.9-dev | Devises et virements complémentaires | Devise par compte, taux locaux, montant d'origine et montant du compte, arrondis, transferts entre devises, dissociation d'un lien de virement et consolidation cohérente. |
-| 0.7.10-dev | Champs bancaires et chéquiers | Heure, date de valeur, règles associées aux moyens de paiement, numéros de chèque et de relevé, numérotation/changement/épuisement des chéquiers. |
+| 0.7.9-dev | Ventilation des opérations | Répartir une écriture entre plusieurs catégories/descriptions ; somme exacte, édition des sous-opérations et articulation avec les virements. |
+| 0.7.10-dev | Devises et virements complémentaires | Devise par compte, taux locaux, montant d'origine et montant du compte, arrondis, transferts entre devises, dissociation d'un lien de virement et consolidation cohérente. |
+| 0.7.11-dev | Champs bancaires et chéquiers | Heure, date de valeur, règles associées aux moyens de paiement, numéros de chèque et de relevé, numérotation/changement/épuisement des chéquiers. |
 | 0.8.0-dev | Modèles de saisie et macros | Préremplir description, compte, catégorie, moyen, montant/signe et éventuel virement ; options de validation/raccourcis historiques à détailler. |
 | 0.8.1-dev | Rappels et alertes | Rappels d'opérations/échéances, seuils de découvert, réglages de notifications ; contenu générique protégeant les informations financières. |
 | 0.8.2-dev | Recherche avancée | Période personnalisée, montants, catégories/moyens précis, chèques, relevés, états et combinaisons de critères au-delà de la recherche textuelle actuelle. |
@@ -131,3 +131,7 @@ Validation locale du 11 novembre : compilation et lint sans erreur, 129 tests un
 Maquette catégories validée et intégrée : même arbre dans la saisie et les réglages, branches repliables, recherche avec ascendance, chemin complet, création de catégories principales/filles et de moyens depuis les réglages. Les parents hors filtre restent un contexte non sélectionnable ; aucun masquage implicite des descendants. États sensibles en mémoire uniquement et effacés au verrouillage. Schéma de sauvegarde 12 inchangé. Les lots ventilation, devises et champs bancaires passent à 0.7.8, 0.7.9 et 0.7.10-dev.
 
 Validation locale 0.7.7-dev : 134 tests unitaires et lint réussis ; 9 tests ASUS sur données fictives réussis, installation et relancement confirmés. Validation utilisateur de la nouvelle hiérarchie à venir.
+
+## Icône 0.7.8-dev — 12 novembre 2026
+
+Intégration des ressources fournies par Frédéric dans MaTirelire_Android_Complet.zip : variantes classiques, adaptatives et monochromes ; original conservé dans docs/design/branding. Aucun changement du coffre. Les lots ventilation, devises et champs bancaires sont désormais prévus en 0.7.9, 0.7.10 et 0.7.11-dev.

@@ -2,7 +2,7 @@
 
 Portage Android libre inspiré de [Ma Tirelire Palm de Maxime Soulé](https://github.com/maxatome/ma-tirelire).
 
-**Version actuelle : 0.7.7-dev.** Le projet est en développement ; la parité
+**Version actuelle : 0.7.8-dev.** Le projet est en développement ; la parité
 fonctionnelle Palm et les validations de la version stable restent en cours.
 Android 12 minimum, téléphone et tablette, portrait/paysage, français et anglais.
 
@@ -35,7 +35,7 @@ et outils de maintenance font partie des lots restants avant 1.0.0.
 - [Feuille de route jusqu'à 1.0.0](docs/feuille-de-route-vers-1.0.0.md)
 - [Import bancaire prévu : CSV puis OFX/QIF et prévention des doublons](docs/import-releves-bancaires.md)
 - [Modèle visuel de la vue Opérations](docs/design/operations-proposition.md)
-- [Validation de la version actuelle](docs/VALIDATION-0.7.7-dev.md)
+- [Validation de la version actuelle](docs/VALIDATION-0.7.8-dev.md)
 
 La connexion bancaire directe et iOS sont des chantiers ultérieurs distincts.
 Les numéros de versions de la feuille de route sont un découpage proposé,
@@ -75,7 +75,7 @@ stable mais n'autorise ni publication ni distribution.
 La CI compile les APK et exécute les tests unitaires, lint et le contrôle de version.
 Elle n'ouvre aucun coffre utilisateur et ne déploie sur aucun téléphone.
 Les tests Android matériels et d'interface sont exécutés séparément sur appareil :
-115 tests unitaires et 7 tests isolés ASUS passent pour la version 0.7.7-dev.
+115 tests unitaires et 7 tests isolés ASUS passent pour la version 0.7.8-dev.
 Cela ne constitue pas une certification de sécurité ni une validation de toutes
 les fonctions prévues pour 1.0.0.
 
