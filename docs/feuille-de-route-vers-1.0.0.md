@@ -140,4 +140,4 @@ Intégration des ressources fournies par Frédéric dans MaTirelire_Android_Comp
 
 Catégories en paysage : commandes sur le côté, hauteur rendue à l’arbre et au formulaire ; repère par un point pour les catégories sans enfant. Aucun lot Devises ou Ventilation n’est livré dans ce correctif. Les numéros des lots fonctionnels restent prévisionnels et doivent être réévalués explicitement avant leur livraison.
 
-Validation locale du correctif : compilation application et APK de tests, 134 tests unitaires et lint reussis. Nouveau test instrumente de paysage compile ; execution sur ASUS et installation en attente de reconnexion du telephone.
+Validation locale du correctif : compilation application et APK de tests, 134 tests unitaires et lint reussis. Installation 0.7.9-dev confirmee sur ASUS ; les 10 tests instrumentes ont reussi, dont le controle de hauteur et de defilement en paysage dans les reglages et le selecteur de saisie. Application relancee. Une premiere execution a ete interrompue par une perte ADB ; la suite complete a reussi apres reconnexion.
