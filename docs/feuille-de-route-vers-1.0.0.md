@@ -1,6 +1,6 @@
 # Feuille de route vers 1.0.0
 
-État au 11 novembre 2026, après validation utilisateur de 0.7.4-dev ; 0.7.7-dev livrée pour validation.
+État au 13 novembre 2026 : 0.7.9-dev validée par Frédéric ; 0.7.10-dev livrée pour validation.
 **Découpage proposé : ordre et numéros ajustables, sans dates promises.**
 Ce document actualise les lots initiaux du cadrage du 8 novembre ; leur numéro
 ne prouve pas leur achèvement. Les fonctions manquantes des anciens lots sont
@@ -12,9 +12,12 @@ reprises ici. Chaque lot pourra être fractionné selon sa taille et les essais.
   facultatif, verrouillage en arrière-plan, aperçu et captures protégés.
 - Sauvegardes chiffrées locales manuelles et hebdomadaires dues à l'ouverture,
   restauration et normalisation des dates avec sauvegarde distincte vérifiée.
-- Comptes en euros : création, nom, solde initial, soldes total et pointé.
+- Comptes multidevises : création, nom, solde initial, soldes total et pointé.
 - Saisie, modification, suppression, catégories/moyens simples réutilisables,
-  dates, virements internes liés en euros et conversion d'une écriture simple.
+  dates, virements internes liés, y compris entre devises et conversion d'une écriture simple.
+- Catégories hiérarchiques, types et visibilité par compte ; remplacement et retrait.
+- Taux locaux, montants d’origine, arrondis et consolidation en EUR, dissociation
+  des liens de virement. Voir [le lot Devises livré](devises-0.7.10.md).
 - Séries : fréquences, limites, génération/anticipation, prévision/à confirmer/
   confirmée, portée des modifications et préservation des écritures enregistrées.
 - Pointage manuel et rapprochement guidé par solde cible, échéances à venir.
@@ -28,10 +31,8 @@ non-régression et les validations finales de sécurité/récupération.
 
 | Version | Reste à implémenter | Résultat attendu |
 |---|---|---|
-| 0.7.6-dev (implémentée, validation utilisateur à venir) | Catégories/moyens avancés et stockage associé | Renommer, organiser, retirer ou remplacer sans casser les références ; catégories hiérarchiques, types et visibilité par compte. Regroupe le socle des historiques longs initialement prévu en 0.7.5 : stockage, chargement, migrations et sauvegardes adaptés. Pas de version technique distincte à tester. |
-| À planifier après le correctif 0.7.9-dev | Ventilation des opérations | Répartir une écriture entre plusieurs catégories/descriptions ; somme exacte, édition des sous-opérations et articulation avec les virements. |
-| 0.7.10-dev | Devises et virements complémentaires | Devise par compte, taux locaux, montant d'origine et montant du compte, arrondis, transferts entre devises, dissociation d'un lien de virement et consolidation cohérente. |
-| 0.7.11-dev | Champs bancaires et chéquiers | Heure, date de valeur, règles associées aux moyens de paiement, numéros de chèque et de relevé, numérotation/changement/épuisement des chéquiers. |
+| Prochain lot fonctionnel après 0.7.10-dev ; numéro à confirmer | Ventilation des opérations | Répartir une écriture entre plusieurs catégories/descriptions ; somme exacte, édition des sous-opérations et articulation avec les virements. |
+| Après ventilation ; numéro à confirmer | Champs bancaires et chéquiers | Heure, date de valeur, règles associées aux moyens de paiement, numéros de chèque et de relevé, numérotation/changement/épuisement des chéquiers. |
 | 0.8.0-dev | Modèles de saisie et macros | Préremplir description, compte, catégorie, moyen, montant/signe et éventuel virement ; options de validation/raccourcis historiques à détailler. |
 | 0.8.1-dev | Rappels et alertes | Rappels d'opérations/échéances, seuils de découvert, réglages de notifications ; contenu générique protégeant les informations financières. |
 | 0.8.2-dev | Recherche avancée | Période personnalisée, montants, catégories/moyens précis, chèques, relevés, états et combinaisons de critères au-delà de la recherche textuelle actuelle. |
@@ -141,3 +142,28 @@ Intégration des ressources fournies par Frédéric dans MaTirelire_Android_Comp
 Catégories en paysage : commandes sur le côté, hauteur rendue à l’arbre et au formulaire ; repère par un point pour les catégories sans enfant. Aucun lot Devises ou Ventilation n’est livré dans ce correctif. Les numéros des lots fonctionnels restent prévisionnels et doivent être réévalués explicitement avant leur livraison.
 
 Validation locale du correctif : compilation application et APK de tests, 134 tests unitaires et lint reussis. Installation 0.7.9-dev confirmee sur ASUS ; les 10 tests instrumentes ont reussi, dont le controle de hauteur et de defilement en paysage dans les reglages et le selecteur de saisie. Application relancee. Une premiere execution a ete interrompue par une perte ADB ; la suite complete a reussi apres reconnexion.
+
+## Livraison 0.7.10-dev — 13 novembre 2026
+
+Le lot Devises est implémenté : devise par compte, précision propre à chaque
+devise, taux locaux et quotes par opération, conservation des montants d’origine,
+virements entre devises, séries associées, dissociation de liens et consolidation
+cohérente en EUR (total indisponible si un taux manque). Schéma de sauvegarde 13,
+lecture conservée des anciens schémas. Les règles de récupération et les cas
+utilisateur sont dans [devises-0.7.10.md](devises-0.7.10.md).
+
+Skill portrait/paysage créé, installé et validé :
+`.agents/skills/ma-tirelire-adaptive-forms/SKILL.md`, référencé par AGENTS.md.
+Il conserve le portrait validé et impose des contrôles concrets de hauteur,
+défilement, clavier, grands textes et états sensibles à la rotation.
+
+Validation : compilation application et APK de tests, 148 tests unitaires,
+lint et 11 tests isolés sur ASUS réussis ; installation 0.7.10-dev et relancement
+confirmés. Les tests instrumentés incluent une saisie en devise et la conservation
+du montant d’origine ; une sauvegarde/restauration multidevise réelle et la
+revue visuelle restent à valider par Frédéric. Aucun audit externe n’est revendiqué.
+
+Les ajouts ergonomiques ont décalé les lots précédents ; le prochain contenu
+fonctionnel restant est la ventilation. Son numéro et celui des champs bancaires
+seront fixés explicitement, plutôt que de présenter un numéro ancien comme une
+fonctionnalité déjà livrée.

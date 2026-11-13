@@ -98,8 +98,8 @@ internal fun TransactionsScreen(names: List<String>, account: Int, balance: BigD
                 Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(names[account], style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                    BalanceValue(R.string.balance, balance, Modifier.weight(1f), compact = true)
-                    BalanceValue(R.string.cleared_balance, clearedBalance, Modifier.weight(1f), compact = true)
+                    BalanceValue(R.string.balance, balance, Modifier.weight(1f), compact = true, currencyCode = model.currencyCode(account))
+                    BalanceValue(R.string.cleared_balance, clearedBalance, Modifier.weight(1f), compact = true, currencyCode = model.currencyCode(account))
                     HeaderActions(onInfo = { closeMenu(); showInfo = true }, onNew = { closeMenu(); onNew() })
                 }
             } else Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
@@ -108,8 +108,8 @@ internal fun TransactionsScreen(names: List<String>, account: Int, balance: BigD
                     HeaderActions(onInfo = { closeMenu(); showInfo = true }, onNew = { closeMenu(); onNew() })
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(bottom = 6.dp)) {
-                    BalanceValue(R.string.balance, balance, Modifier.weight(1f))
-                    BalanceValue(R.string.cleared_balance, clearedBalance, Modifier.weight(1f))
+                    BalanceValue(R.string.balance, balance, Modifier.weight(1f), currencyCode = model.currencyCode(account))
+                    BalanceValue(R.string.cleared_balance, clearedBalance, Modifier.weight(1f), currencyCode = model.currencyCode(account))
                 }
             }
         }
@@ -213,7 +213,7 @@ internal fun TransactionsScreen(names: List<String>, account: Int, balance: BigD
             }
             items(visible, key = { it.id }) { row ->
                 OperationCard(row, model.calendarToday, onEdit = { closeMenu(); onEdit(row.id) },
-                    onToggle = { closeMenu(); onToggle(row.id) })
+                    onToggle = { closeMenu(); onToggle(row.id) }, currencyCode = model.currencyCode(row.account))
             }
         }
     }
@@ -232,10 +232,10 @@ private fun HeaderActions(onInfo: () -> Unit, onNew: () -> Unit) {
 }
 
 @Composable
-private fun BalanceValue(label: Int, value: BigDecimal, modifier: Modifier, compact: Boolean = false) {
+private fun BalanceValue(label: Int, value: BigDecimal, modifier: Modifier, compact: Boolean = false, currencyCode: String = "EUR") {
     Column(modifier) {
         Text(stringResource(label), style = MaterialTheme.typography.labelMedium)
-        Text(money(value), style = if (compact) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge,
+        Text(money(value, currencyCode), style = if (compact) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold)
     }
 }
@@ -247,7 +247,7 @@ internal fun orderResource(order: TransactionOrder): Int = when (order) {
 }
 
 @Composable
-private fun OperationCard(row: DemoTransaction, today: java.time.LocalDate, onEdit: () -> Unit, onToggle: () -> Unit) {
+private fun OperationCard(row: DemoTransaction, today: java.time.LocalDate, onEdit: () -> Unit, onToggle: () -> Unit, currencyCode: String = "EUR") {
     Card(onClick = onEdit, modifier = Modifier.fillMaxWidth().testTag("operation-${row.id}")) {
         Column(Modifier.padding(12.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -258,12 +258,13 @@ private fun OperationCard(row: DemoTransaction, today: java.time.LocalDate, onEd
             Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.Top,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(row.description, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                Text(money(row.amount), textAlign = androidx.compose.ui.text.style.TextAlign.End, fontWeight = FontWeight.Bold, modifier = Modifier.widthIn(max = 200.dp),
+                Text(money(row.amount, currencyCode), textAlign = androidx.compose.ui.text.style.TextAlign.End, fontWeight = FontWeight.Bold, modifier = Modifier.widthIn(max = 200.dp),
                     color = if (row.amount.signum() < 0) Color(0xFF944C3C) else MaterialTheme.colorScheme.primary)
             }
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(Modifier.weight(1f)) {
                     Text(if (row.peerId != null) row.payment else "${row.category} · ${row.payment}", style = MaterialTheme.typography.bodySmall)
+                    if (row.originalAmount != null && row.originalCurrency != null) Text(money(row.originalAmount, row.originalCurrency), style = MaterialTheme.typography.bodySmall)
                     if (row.peerId != null) Text(stringResource(R.string.transfer_linked), style = MaterialTheme.typography.labelSmall)
                     if (OperationDates.forOrdering(row.date) == null) Text(stringResource(R.string.date_needs_review),
                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)

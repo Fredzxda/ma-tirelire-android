@@ -7,6 +7,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.*
@@ -42,6 +43,33 @@ class OperationsUiDeviceTest {
                     model.transactionOrder.arrange(model.transactions.toList()),onAccount = {},onToggle = onToggle,
                     onReconcile = {},onEdit = onEdit,onNew = {},model = model)
             }
+        }
+    }
+    @Test fun foreignCurrencyEntryShowsConversionAndSavesOriginalAmount() {
+        val model = model(); model.ensureAccountNames(listOf("Current", "Savings"))
+        model.beginEntry(today)
+        model.updateDraft(model.draft!!.copy(amount = "10", description = "Fixture foreign expense"))
+        ui.setContent { MaterialTheme {
+            Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                model.draft?.let { EntryCurrencyFields(model, it) }
+                androidx.compose.material3.Button(onClick = {
+                    model.saveEntry(ui.activity.resources.configuration.locales[0], "unused")
+                }, modifier = Modifier.testTag("fixture-save-currency")) { androidx.compose.material3.Text("Save fixture") }
+            }
+        } }
+        ui.onNodeWithTag("currency-selector").performClick()
+        ui.onNodeWithTag("currency-search").performTextInput("USD")
+        ui.onNodeWithTag("currency-list").performScrollToNode(hasTestTag("currency-USD"))
+        ui.onNodeWithTag("currency-USD").performClick()
+        val separator = java.text.DecimalFormatSymbols.getInstance(ui.activity.resources.configuration.locales[0]).decimalSeparator
+        ui.onNodeWithTag("entry-fx-rate").performTextInput("0" + separator + "9")
+        ui.runOnIdle { assertEquals(BigDecimal("9.00"), model.nativeAmount(requireNotNull(model.draft), ui.activity.resources.configuration.locales[0])) }
+        ui.onNodeWithTag("fixture-save-currency").performScrollTo().performClick()
+        ui.runOnIdle {
+            val row = model.transactions.last()
+            assertEquals("USD", row.originalCurrency)
+            assertEquals(BigDecimal("-10.00"), row.originalAmount)
+            assertEquals(BigDecimal("-9.00"), row.amount)
         }
     }
     @Test fun landscapeCategoryPanesKeepHeightAndScrollToLastItems() {

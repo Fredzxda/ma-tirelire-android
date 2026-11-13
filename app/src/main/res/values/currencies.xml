@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="fr">
+    <string name="currency_label">Devise</string>
+    <string name="currency_search">Rechercher une devise</string>
+    <string name="currency_no_results">Aucune devise trouvée</string>
+    <string name="currency_settings_title">Devises et taux locaux</string>
+    <string name="currency_local_only">Taux saisis manuellement, conservés dans le coffre et ses sauvegardes. Aucune connexion réseau. Leur modification ne recalcule pas les anciennes opérations.</string>
+    <string name="currency_eur_fixed">1 EUR = 1 EUR</string>
+    <string name="currency_local_rate_label">1 %1$s = combien d’EUR ?</string>
+    <string name="currency_invalid_rate">Vérifiez le montant et le taux : une valeur positive valide est nécessaire.</string>
+    <string name="currency_rate_saved">Taux local enregistré.</string>
+    <string name="currency_conversion_rate_label">1 %1$s = combien de %2$s ?</string>
+    <string name="currency_use_local_rate">Utiliser le taux local : %1$s</string>
+    <string name="currency_account_amount">Montant dans le compte : %1$s</string>
+    <string name="currency_target_amount">Montant dans le compte lié : %1$s</string>
+    <string name="currency_missing_rates">Taux manquants pour le total en EUR</string>
+    <string name="currency_account_locked">La devise ne peut changer que si le compte est vide, sans série et avec un solde initial nul.</string>
+    <string name="currency_detach">Dissocier</string>
+    <string name="currency_detach_warning">Les deux écritures sont conservées avec leurs montants et leur pointage. Elles deviennent indépendantes et entrent dans les revenus/dépenses. Les échéances futures de la série restent liées. Les modifications non enregistrées de cette fiche sont abandonnées.</string>
+</resources>

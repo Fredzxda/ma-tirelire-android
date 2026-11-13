@@ -94,6 +94,10 @@ internal data class DemoTransaction(
     val occurrence: Int? = null,
     val amountConfirmed: Boolean = true,
     val readyToConfirm: Boolean = false,
+    val exchangeAmount: BigDecimal? = null,
+    val originalCurrency: String? = null,
+    val originalAmount: BigDecimal? = null,
+    val fxRate: BigDecimal? = null,
 )
 
 internal data class EntryDraft(
@@ -115,12 +119,14 @@ internal data class EntryDraft(
     val repeatCount: String = "",
     val applyToSeries: Boolean = false,
     val date: String = "",
+    val inputCurrency: String = "",
+    val fxRate: String = "",
 )
 
 internal data class ReconciliationDraft(val account: Int, val target: String = "", val selected: Set<Long>,
     val original: List<DemoTransaction>, val opening: BigDecimal)
 
-internal data class AccountDraft(val index: Int?, val name: String = "", val opening: String = "0", val attempted: Boolean = false)
+internal data class AccountDraft(val index: Int?, val name: String = "", val opening: String = "0", val attempted: Boolean = false, val currency: String = "EUR")
 
 /** Session state; snapshots are persisted only through the encrypted vault callback. */
 class DemoViewModel : ViewModel() {
@@ -133,6 +139,8 @@ class DemoViewModel : ViewModel() {
     internal var openings by mutableStateOf(listOf(BigDecimal("500.00"), BigDecimal("3000.00")))
         private set
     internal var onChange: (() -> Unit)? = null
+    internal val accountCurrencies = mutableStateListOf<String>()
+    internal val localRates = androidx.compose.runtime.mutableStateMapOf<String, String>()
     internal val accountNames = mutableStateListOf<String>()
     internal var accountDraft by mutableStateOf<AccountDraft?>(null)
         private set
@@ -143,23 +151,33 @@ class DemoViewModel : ViewModel() {
         if (index != null && index !in openings.indices) return
         val separator = java.text.DecimalFormatSymbols.getInstance(locale).decimalSeparator
         accountDraft = AccountDraft(index, index?.let { accountNames[it] }.orEmpty(),
-            index?.let { openings[it].toPlainString().replace('.', separator) } ?: "0")
+            index?.let { openings[it].toPlainString().replace('.', separator) } ?: "0", currency = index?.let(::currencyCode) ?: "EUR")
     }
     internal fun updateAccountDraft(value: AccountDraft) { accountDraft = value.copy(attempted = false) }
     internal fun cancelAccount() { accountDraft = null }
     internal fun saveAccount(locale: Locale): Boolean {
         val current = accountDraft ?: return false
         val name = current.name.trim()
-        val value = Money.parseOpening(current.opening, locale)
+        val value = if (Fx.valid(current.currency)) Money.parseOpening(current.opening, locale, Fx.digits(current.currency)) else null
         if (name.isEmpty() || name.length > 60 || value == null ||
+            (current.index != null && current.currency != currencyCode(current.index) &&
+                (transactions.any { it.account == current.index } || rules.any { it.account == current.index || it.target == current.index } || openings[current.index].signum() != 0 || draft?.account == current.index || draft?.transferTarget == current.index)) ||
             accountNames.withIndex().any { it.index != current.index && it.value.equals(name, true) } ||
             (current.index == null && accountNames.size >= 50) ||
             (current.index != null && current.index !in openings.indices)) {
             accountDraft = current.copy(attempted = true); return false
         }
         if (current.index == null) {
+            if (accountCurrencies.isNotEmpty() || current.currency != "EUR") {
+                if (accountCurrencies.isEmpty()) accountCurrencies.addAll(openings.map { "EUR" })
+                accountCurrencies.add(current.currency)
+            }
             accountNames.add(name); openings = openings + value
         } else {
+            if (accountCurrencies.isNotEmpty() || current.currency != "EUR") {
+                if (accountCurrencies.isEmpty()) accountCurrencies.addAll(openings.map { "EUR" })
+                accountCurrencies[current.index] = current.currency
+            }
             accountNames[current.index] = name
             openings = openings.toMutableList().also { it[current.index] = value }
         }
@@ -186,7 +204,7 @@ class DemoViewModel : ViewModel() {
     }
     internal fun reconciliationDifference(locale: Locale): BigDecimal? {
         val current = reconciliation ?: return null
-        val target = Money.parseOpening(current.target, locale) ?: return null
+        val target = Money.parseOpening(current.target, locale, currencyDigits(current.account)) ?: return null
         return target - requireNotNull(reconciliationBalance())
     }
     internal fun cancelReconciliation() { reconciliation = null }
@@ -330,7 +348,9 @@ class DemoViewModel : ViewModel() {
         val row = transactions.firstOrNull { it.id == id } ?: return
         val separator = java.text.DecimalFormatSymbols.getInstance(locale).decimalSeparator
         draft = EntryDraft(account = row.account, income = row.amount.signum() > 0,
-            amount = row.amount.abs().toPlainString().replace('.', separator),
+            amount = (row.originalAmount ?: row.amount).abs().toPlainString().replace('.', separator),
+            inputCurrency = row.originalCurrency.orEmpty(),
+            fxRate = (row.fxRate ?: row.exchangeAmount?.let { Fx.quotient(it.abs(), row.amount.abs()) })?.stripTrailingZeros()?.toPlainString()?.replace('.', separator).orEmpty(),
             description = row.description, category = row.category, payment = row.payment, editingId = id,
             repeatFrequency = rules.firstOrNull { it.id == row.seriesId }?.frequency ?: RepeatFrequency.NONE,
             repeatUntil = rules.firstOrNull { it.id == row.seriesId }?.until.orEmpty(),
@@ -358,6 +378,8 @@ class DemoViewModel : ViewModel() {
     internal fun updateDraft(next: EntryDraft) {
         val previous = draft ?: return
         var value = next.copy(attempted = false)
+        if (previous.account != next.account || previous.transferTarget != next.transferTarget)
+            value = value.copy(inputCurrency = "", fxRate = "")
         if (next.editingId == null && (previous.account != next.account || previous.income != next.income)) {
             val categoryChoices = referenceChoices(true, next.account, next.income)
             val paymentChoices = referenceChoices(false, next.account, next.income)
@@ -379,11 +401,13 @@ class DemoViewModel : ViewModel() {
     }
     internal fun cancelEntry() { draft = null; onChange?.invoke() }
 
-    internal fun exportData() = LedgerData(transactions.toList(), categories.toList(), payments.toList(), openings.toList(), draft, accountNames.toList(), transferPayment, rules.toList(), anticipation, transactionOrder, dateMigrationVersion, referenceOptions.toMap())
+    internal fun exportData() = LedgerData(transactions.toList(), categories.toList(), payments.toList(), openings.toList(), draft, accountNames.toList(), transferPayment, rules.toList(), anticipation, transactionOrder, dateMigrationVersion, referenceOptions.toMap(), accountCurrencies.toList(), localRates.toMap())
 
     internal fun restoreData(data: LedgerData) {
         referenceUiStates.clear()
         transactions.clear(); transactions.addAll(data.transactions)
+        accountCurrencies.clear(); accountCurrencies.addAll(data.accountCurrencies)
+        localRates.clear(); localRates.putAll(data.localRates)
         referenceOptions.clear(); referenceOptions.putAll(data.referenceOptions)
         categories.clear(); categories.addAll(data.categories)
         payments.clear(); payments.addAll(data.payments)
@@ -413,6 +437,7 @@ class DemoViewModel : ViewModel() {
         rules.clear(); recurrenceEpoch++; recurrenceBlocked = false
         anticipation = Anticipation.DUE; calendarToday = java.time.LocalDate.now()
         accountNames.clear(); accountDraft = null; reconciliation = null
+        accountCurrencies.clear(); localRates.clear()
         referenceUiStates.clear()
         referenceOptions.clear()
         transactions.clear(); categories.clear(); payments.clear(); draft = null; transferPayment = null
@@ -423,10 +448,14 @@ class DemoViewModel : ViewModel() {
     internal fun operationFieldsChanged(locale: Locale): Boolean {
         val current = draft ?: return false
         val row = transactions.firstOrNull { it.id == current.editingId } ?: return true
-        val amount = Money.parseAmount(current.amount, locale) ?: return true
+        val amount = nativeAmount(current, locale) ?: return true
         val signed = if (current.income) amount else amount.negate()
         val target = row.peerId?.let { id -> transactions.firstOrNull { it.id == id }?.account }
         return current.account != row.account || signed.compareTo(row.amount) != 0 ||
+            current.inputCurrency.ifBlank { currencyCode(current.account) } != (row.originalCurrency ?: currencyCode(row.account)) ||
+            (row.originalCurrency != null && row.fxRate?.let { oldRate -> entryRate(current, row.originalCurrency, currencyCode(current.account), locale)?.compareTo(oldRate) } != 0) ||
+            (row.originalAmount != null && Money.parseAmount(current.amount, locale, Fx.digits(requireNotNull(row.originalCurrency)))?.compareTo(row.originalAmount.abs()) != 0) ||
+            (row.exchangeAmount != null && targetAmount(current, locale)?.compareTo(row.exchangeAmount.abs()) != 0) ||
             current.description.trim() != row.description || current.category != row.category || current.payment != row.payment ||
             current.date.ifEmpty { row.date } != row.date || current.transferTarget != target || current.addingCategory || current.addingPayment
     }
@@ -468,7 +497,7 @@ class DemoViewModel : ViewModel() {
         val additional = if (current.editingId == null) (if (current.transferTarget == null) 1 else 2)
             else if (current.transferTarget != null && old?.peerId == null) 1 else 0
         if (transactions.size + additional > LedgerLimits.MAX_TRANSACTIONS) { limitReached = true; return false }
-        val amount = Money.parseAmount(current.amount, locale)
+        val amount = nativeAmount(current, locale)
         if (amount == null || current.description.isBlank() || current.account !in openings.indices ||
             current.category !in categories || current.payment !in payments ||
             (old == null && (current.category !in referenceChoices(true, current.account, current.income) ||
@@ -490,6 +519,12 @@ class DemoViewModel : ViewModel() {
                 (previous?.peerId != null && (peer == null || previous.account != current.account || peer.account != target || current.income != (previous.amount.signum() > 0))))) {
             draft = current.copy(attempted = true); return false
         }
+        val targetValue = if (target != null) targetAmount(current, locale) ?: run { draft = current.copy(attempted = true); return false } else null
+        val different = target != null && currencyCode(target) != currencyCode(current.account)
+        val inputCode = current.inputCurrency.ifBlank { currencyCode(current.account) }
+        val foreignOriginal = target == null && inputCode != currencyCode(current.account)
+        val original = if (foreignOriginal) Money.parseAmount(current.amount, locale, Fx.digits(inputCode)) else null
+        val originalRate = if (foreignOriginal) entryRate(current, inputCode, currencyCode(current.account), locale) else null
         val nextId = (transactions.maxOfOrNull { it.id } ?: 0) + 1
         if (previous == null && (nextId <= 0 || nextId >= Long.MAX_VALUE - 1)) return false
         if (previous != null && target != null && peer == null && (nextId <= 0 || nextId == Long.MAX_VALUE)) return false
@@ -499,7 +534,10 @@ class DemoViewModel : ViewModel() {
             current.account, current.description.trim(), if (current.income) amount else amount.negate(),
             current.category, current.payment,
             current.date.ifEmpty { previous?.date ?: OperationDates.parse(date)?.toString() ?: return false },
-            previous?.cleared ?: false, peerId, previous?.seriesId, previous?.occurrence, !preparing, preparing || previous?.readyToConfirm == true)
+            previous?.cleared ?: false, peerId, previous?.seriesId, previous?.occurrence, !preparing, preparing || previous?.readyToConfirm == true,
+            exchangeAmount = if (different) (if (current.income) requireNotNull(targetValue).negate() else targetValue) else null,
+            originalCurrency = if (foreignOriginal) inputCode else null,
+            originalAmount = original?.let { if (current.income) it else it.negate() }, fxRate = originalRate)
         val nextRules = rules.toMutableList()
         val oldRule = previous?.seriesId?.let { id -> nextRules.firstOrNull { it.id == id } }
         if (oldRule == null && current.repeatFrequency != RepeatFrequency.NONE) {
@@ -513,7 +551,8 @@ class DemoViewModel : ViewModel() {
             }
             val id = java.util.UUID.randomUUID().toString()
             nextRules.add(RecurringRule(id, row.date, current.repeatFrequency, row.account, target, row.amount,
-                row.description, row.category, row.payment, until = until?.toString(), count = count))
+                row.description, row.category, row.payment, until = until?.toString(), count = count,
+                targetAmount = row.exchangeAmount, originalCurrency = row.originalCurrency, originalAmount = row.originalAmount, fxRate = row.fxRate))
             row = row.copy(seriesId = id, occurrence = 0)
         } else if (oldRule != null) {
             var revised = oldRule
@@ -528,7 +567,8 @@ class DemoViewModel : ViewModel() {
         val nextRows = transactions.toMutableList()
         if (index == null) nextRows.add(row) else nextRows[index] = row
         if (target != null) {
-            val counterpart = row.copy(id = requireNotNull(peerId), account = target, amount = row.amount.negate(),
+            val counterpart = row.copy(id = requireNotNull(peerId), account = target, amount = row.exchangeAmount ?: row.amount.negate(),
+                exchangeAmount = if (different) row.amount else null, originalCurrency = null, originalAmount = null, fxRate = null,
                 cleared = peer?.cleared ?: false, peerId = row.id)
             val peerIndex = peer?.let { old -> nextRows.indexOfFirst { it.id == old.id } }
             if (peerIndex == null) nextRows.add(counterpart) else nextRows[peerIndex] = counterpart
@@ -547,8 +587,9 @@ class DemoViewModel : ViewModel() {
 }
 
 @Composable
-internal fun money(amount: BigDecimal): String = NumberFormat.getCurrencyInstance(LocalConfiguration.current.locales[0]).apply {
-    currency = Currency.getInstance("EUR")
+internal fun money(amount: BigDecimal, currencyCode: String = "EUR"): String = NumberFormat.getCurrencyInstance(LocalConfiguration.current.locales[0]).apply {
+    currency = Currency.getInstance(currencyCode)
+    minimumFractionDigits = Fx.digits(currencyCode); maximumFractionDigits = Fx.digits(currencyCode)
 }.format(amount)
 
 @Composable
@@ -635,7 +676,7 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
                 Column(Modifier.padding(padding).fillMaxSize()) {
                     if (!wide && destination != 1) BrandHeader(vault::openReleaseNotes)
                     when (destination) {
-                        0 -> AccountsScreen(accountNames, balances, clearedBalances,
+                        0 -> AccountsScreen(accountNames, balances, clearedBalances, model,
                             onConfigure = { model.beginAccount(it, activity.resources.configuration.locales[0]) },
                             onAdd = { model.beginAccount(null, activity.resources.configuration.locales[0]) },
                             onAccount = { selected -> account = selected; destination = 1 })
@@ -670,15 +711,15 @@ private fun BrandHeader(onVersion: () -> Unit) {
 }
 
 @Composable
-private fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, clearedBalances: List<BigDecimal>, onConfigure: (Int) -> Unit, onAdd: () -> Unit, onAccount: (Int) -> Unit) {
+private fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, clearedBalances: List<BigDecimal>, model: DemoViewModel, onConfigure: (Int) -> Unit, onAdd: () -> Unit, onAccount: (Int) -> Unit) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 110.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item { Text(stringResource(R.string.overview), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold) }
         item {
             Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF206859)), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(24.dp)) {
                     Text(stringResource(R.string.total_balance), color = Color(0xFFDAEBDF))
-                    Text(money(balances.fold(BigDecimal.ZERO, BigDecimal::add)), style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold, color = Color.White)
-                    Text(stringResource(R.string.consolidated_cleared, money(clearedBalances.fold(BigDecimal.ZERO, BigDecimal::add))), color = Color(0xFFDAEBDF), modifier = Modifier.padding(top = 8.dp))
+                    Text(model.consolidated()?.let { money(it) } ?: stringResource(R.string.currency_missing_rates), style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text(stringResource(R.string.consolidated_cleared, model.consolidated(true)?.let { money(it) } ?: stringResource(R.string.currency_missing_rates)), color = Color(0xFFDAEBDF), modifier = Modifier.padding(top = 8.dp))
                 }
             }
         }
@@ -693,11 +734,11 @@ private fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, clea
                 Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(names[index], style = MaterialTheme.typography.titleMedium)
-                        Text("EUR", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary)
+                        Text(model.currencyCode(index), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary)
                     }
                     Column(horizontalAlignment = Alignment.End) {
-                        Text(stringResource(R.string.total_short, money(balances[index])), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                        Text(stringResource(R.string.cleared_short, money(clearedBalances[index])), style = MaterialTheme.typography.bodySmall)
+                        Text(stringResource(R.string.total_short, money(balances[index], model.currencyCode(index))), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.cleared_short, money(clearedBalances[index], model.currencyCode(index))), style = MaterialTheme.typography.bodySmall)
                     }
                     IconButton(onClick = { onConfigure(index) }) {
                         Icon(painterResource(R.drawable.ic_edit_account), contentDescription = stringResource(R.string.account_configure, names[index]))
@@ -739,6 +780,7 @@ private fun SettingsScreen(vault: VaultController, activity: FragmentActivity) {
                 Text(stringResource(R.string.order_hint), style = MaterialTheme.typography.bodySmall)
             }
         }
+        CurrencySettings(model)
         AnticipationSettings(model, enabled = !vault.busy)
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -785,8 +827,15 @@ private fun PauseScreen(onResume: () -> Unit) {
 private fun EntryDialog(names: List<String>, model: DemoViewModel) {
     val draft = model.draft ?: return
     val locale = LocalConfiguration.current.locales[0]
+    var detach by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     val toDelete = model.transactions.firstOrNull { it.id == draft.editingId }
+    if (detach && toDelete != null) AlertDialog(onDismissRequest = { detach = false },
+        title = { Text(stringResource(R.string.currency_detach)) },
+        text = { Text(stringResource(R.string.currency_detach_warning)) },
+        confirmButton = { TextButton(onClick = { detach = false; model.detachTransfer(toDelete.id) }) { Text(stringResource(R.string.currency_detach)) } },
+        dismissButton = { TextButton(onClick = { detach = false }) { Text(stringResource(R.string.cancel)) } },
+        properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn))
     Dialog(
         onDismissRequest = model::cancelEntry,
         properties = DialogProperties(
@@ -812,6 +861,7 @@ private fun EntryDialog(names: List<String>, model: DemoViewModel) {
                         horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(stringResource(if (draft.editingId == null) R.string.new_transaction else R.string.edit_transaction),
                             modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                        if (toDelete?.peerId != null) TextButton(onClick = { detach = true }) { Text(stringResource(R.string.currency_detach)) }
                         if (draft.editingId != null) IconButton(onClick = { confirmDelete = true }) {
                             Icon(painterResource(R.drawable.ic_delete), contentDescription = stringResource(R.string.delete_action),
                                 tint = MaterialTheme.colorScheme.error)
@@ -836,6 +886,7 @@ private fun EntryDialog(names: List<String>, model: DemoViewModel) {
                                     EntryDirection(model, draft)
                                     EntryDate(model, draft)
                                 }
+                                EntryCurrencyFields(model, draft)
                                 EntryAmounts(model, draft, compact = true)
                                 EntryReferences(model, draft, compact = true)
                                 EntryRepeat(model, draft)
@@ -862,7 +913,7 @@ private fun EntryDialog(names: List<String>, model: DemoViewModel) {
         title = { Text(stringResource(R.string.delete_transaction)) },
         text = {
             Column {
-                Text(stringResource(if (toDelete.peerId == null) R.string.delete_transaction_warning else R.string.transfer_delete_warning, toDelete.description, money(toDelete.amount)))
+                Text(stringResource(if (toDelete.peerId == null) R.string.delete_transaction_warning else R.string.transfer_delete_warning, toDelete.description, money(toDelete.amount, model.currencyCode(toDelete.account))))
                 if (toDelete.seriesId != null) Text(stringResource(R.string.repeat_delete_hint))
             }
         },
@@ -930,6 +981,7 @@ private fun EntryBasics(names: List<String>, model: DemoViewModel, draft: EntryD
     EntryAccounts(names, model, draft, horizontal = true)
     EntryDirection(model, draft)
     EntryDate(model, draft)
+    EntryCurrencyFields(model, draft)
     EntryAmounts(model, draft)
 }
 
@@ -1068,7 +1120,7 @@ private fun EntryActions(model: DemoViewModel, draft: EntryDraft, locale: Locale
                 Text(stringResource(R.string.repeat_scope_title), style = MaterialTheme.typography.titleLarge)
                 Text(stringResource(R.string.repeat_scope_description))
                 val rule = model.rules.firstOrNull { it.id == row?.seriesId }
-                val amount = Money.parseAmount(draft.amount, locale)
+                val amount = model.nativeAmount(draft, locale)
                 val proposed = if (rule != null && row != null && amount != null) SeriesRevision.update(rule, draft,
                     row.copy(date = draft.date.ifEmpty { row.date }, amount = if (draft.income) amount else amount.negate()),
                     model.transactions.toList(), java.time.LocalDate.now()) else null
@@ -1097,6 +1149,9 @@ private fun AccountDialog(model: DemoViewModel) {
         title = { Text(stringResource(if (draft.index == null) R.string.account_add else R.string.account_edit)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                CurrencySelector(draft.currency, { model.updateAccountDraft(draft.copy(currency = it)) },
+                    enabled = draft.index == null || (model.openings[draft.index].signum() == 0 && model.transactions.none { it.account == draft.index } && model.rules.none { it.account == draft.index || it.target == draft.index }), model = model, stateKey = "account-currency-selector")
+                if (draft.index != null) Text(stringResource(R.string.currency_account_locked), style = MaterialTheme.typography.bodySmall)
                 OutlinedTextField(value = draft.name, onValueChange = { model.updateAccountDraft(draft.copy(name = it.take(60))) },
                     label = { Text(stringResource(R.string.account_name)) }, singleLine = true)
                 OutlinedTextField(value = draft.opening, onValueChange = { model.updateAccountDraft(draft.copy(opening = it.take(30))) },
@@ -1128,9 +1183,9 @@ private fun ReconciliationDialog(model: DemoViewModel, names: List<String>) {
                 OutlinedTextField(value = draft.target, onValueChange = model::reconciliationTarget,
                     label = { Text(stringResource(R.string.reconcile_target)) }, singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth())
-                Text(stringResource(R.string.reconcile_selected, money(requireNotNull(model.reconciliationBalance()))))
+                Text(stringResource(R.string.reconcile_selected, money(requireNotNull(model.reconciliationBalance()), model.currencyCode(draft.account))))
                 Text(if (difference == null) stringResource(R.string.reconcile_invalid)
-                    else stringResource(R.string.reconcile_difference, money(difference)),
+                    else stringResource(R.string.reconcile_difference, money(difference, model.currencyCode(draft.account))),
                     color = if (difference?.signum() == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
                 LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     items(draft.original, key = { it.id }) { row ->
@@ -1141,7 +1196,7 @@ private fun ReconciliationDialog(model: DemoViewModel, names: List<String>) {
                                 Text(row.description)
                                 Text(OperationDates.display(row.date, LocalConfiguration.current.locales[0]), style = MaterialTheme.typography.bodySmall)
                             }
-                            Text(money(row.amount))
+                            Text(money(row.amount, model.currencyCode(row.account)))
                         }
                     }
                 }
@@ -1359,7 +1414,7 @@ internal fun UpcomingDialog(model: DemoViewModel, account: Int, names: List<Stri
                             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                     Text(item.description, modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
-                                    Text(money(item.amount), fontWeight = FontWeight.Bold)
+                                    Text(money(item.amount, model.currencyCode(account)), fontWeight = FontWeight.Bold)
                                 }
                                 Text(OperationDates.display(item.date.toString(), locale))
                                 item.otherAccount?.let { other -> Text(stringResource(R.string.upcoming_transfer, names[other]),

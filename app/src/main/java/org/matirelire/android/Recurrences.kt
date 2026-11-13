@@ -16,6 +16,7 @@ internal data class RecurringRule(
     val until: String? = null, val count: Int? = null, val active: Boolean = true,
     val confirmedThrough: Int = 0,
     val scheduleBase: Int = 0, val scheduleOffset: Int = 0, val generatedThrough: String? = null,
+    val targetAmount: BigDecimal? = null, val originalCurrency: String? = null, val originalAmount: BigDecimal? = null, val fxRate: BigDecimal? = null,
 ) {
     fun dateAt(index: Int): LocalDate? = runCatching {
         val start = requireNotNull(OperationDates.parse(anchor))
@@ -60,10 +61,12 @@ internal object Recurrences {
                 if (recorded.add(rule.id to rule.next)) {
                     val first = DemoTransaction(nextId++, rule.account, rule.description, rule.amount,
                         rule.category, rule.payment, due.toString(), false,
-                        if (rule.target == null) null else nextId, rule.id, rule.next, false)
+                        if (rule.target == null) null else nextId, rule.id, rule.next, false,
+                        exchangeAmount = rule.targetAmount, originalCurrency = rule.originalCurrency, originalAmount = rule.originalAmount, fxRate = rule.fxRate)
                     rows.add(first)
                     if (rule.target != null) rows.add(first.copy(id = nextId++, account = rule.target,
-                        amount = rule.amount.negate(), peerId = first.id))
+                        amount = rule.targetAmount ?: rule.amount.negate(), peerId = first.id,
+                        exchangeAmount = if (rule.targetAmount != null) rule.amount else null, originalCurrency = null, originalAmount = null, fxRate = null))
                 }
                 rule = rule.copy(next = rule.next + 1, generatedThrough = due.toString())
                 changed = true; made++

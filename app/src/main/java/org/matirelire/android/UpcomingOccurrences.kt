@@ -31,7 +31,7 @@ internal object UpcomingOccurrences {
                 if (date > today) {
                     val receiver = rule.target == account
                     items.add(UpcomingOccurrence(rule.id, index, date, rule.description,
-                        if (receiver) rule.amount.negate() else rule.amount,
+                        if (receiver) rule.targetAmount ?: rule.amount.negate() else rule.amount,
                         if (receiver) rule.account else rule.target))
                 }
                 index++

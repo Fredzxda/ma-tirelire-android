@@ -13,7 +13,8 @@ internal object SeriesRevision {
         if (draft.repeatFrequency != rule.frequency) {
             val revised = update(rule, draft, row, rows, today) ?: return null
             return revised.copy(account = rule.account, target = rule.target, amount = rule.amount,
-                description = rule.description, category = rule.category, payment = rule.payment)
+                description = rule.description, category = rule.category, payment = rule.payment,
+                targetAmount = rule.targetAmount, originalCurrency = rule.originalCurrency, originalAmount = rule.originalAmount, fxRate = rule.fxRate)
         }
         val until = draft.repeatUntil.takeIf { it.isNotBlank() }?.let(OperationDates::parse)
         val remaining = draft.repeatCount.takeIf { it.isNotBlank() }?.toIntOrNull()
@@ -54,7 +55,9 @@ internal object SeriesRevision {
         return rule.copy(anchor = anchor.toString(), frequency = frequency,
             account = if (receiver) requireNotNull(draft.transferTarget) else row.account,
             target = if (receiver) row.account else draft.transferTarget,
-            amount = if (receiver) row.amount.negate() else row.amount,
+            amount = if (receiver) row.exchangeAmount ?: row.amount.negate() else row.amount,
+            targetAmount = if (receiver && row.exchangeAmount != null) row.amount else row.exchangeAmount,
+            originalCurrency = row.originalCurrency, originalAmount = row.originalAmount, fxRate = row.fxRate,
             description = row.description, category = row.category, payment = row.payment,
             until = until?.toString(), count = remaining?.let { rule.next + it },
             active = (rule.active || wasExhausted) && remaining != 0,

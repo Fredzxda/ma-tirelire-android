@@ -59,3 +59,5 @@
   courante et ne pas pousser --all. Les anciennes branches locales conservent
   l historique d origine avec e-mail prive ; la copie publique utilise noreply.
   Details et correspondance locale : docs/publication-github.md.
+
+- Formulaires et selecteurs : appliquer .agents/skills/ma-tirelire-adaptive-forms/SKILL.md pour les adaptations portrait/paysage, clavier et grands textes.

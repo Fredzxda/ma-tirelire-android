@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="currency_label">Currency</string>
+    <string name="currency_search">Search currencies</string>
+    <string name="currency_no_results">No currencies found</string>
+    <string name="currency_settings_title">Currencies and local rates</string>
+    <string name="currency_local_only">Manually entered rates stay in the vault and its backups. No network connection. Changing rates does not recalculate previous entries.</string>
+    <string name="currency_eur_fixed">1 EUR = 1 EUR</string>
+    <string name="currency_local_rate_label">1 %1$s = how many EUR?</string>
+    <string name="currency_invalid_rate">Check the amount and rate: a valid positive value is required.</string>
+    <string name="currency_rate_saved">Local rate saved.</string>
+    <string name="currency_conversion_rate_label">1 %1$s = how many %2$s?</string>
+    <string name="currency_use_local_rate">Use local rate: %1$s</string>
+    <string name="currency_account_amount">Account amount: %1$s</string>
+    <string name="currency_target_amount">Linked account amount: %1$s</string>
+    <string name="currency_missing_rates">Rates missing for EUR total</string>
+    <string name="currency_account_locked">Currency can only change on an empty account without a series and with zero opening balance.</string>
+    <string name="currency_detach">Unlink</string>
+    <string name="currency_detach_warning">Both entries keep their amounts and clearing. They become independent income/expenses. Future series occurrences stay linked. Unsaved changes in this form are discarded.</string>
+</resources>
