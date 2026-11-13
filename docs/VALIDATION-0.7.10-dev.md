@@ -17,4 +17,4 @@ la nouvelle version, la restauration réelle multidevise, le Samsung A36, les
 tablettes et les caractères Android agrandis. Source et scénarios :
 [Devises](devises-0.7.10.md). Aucun tag ni publication stable.
 
-Dernier etat de livraison : le candidat avec les devises a ete installe et a passe les 11 tests ASUS. Un dernier ajustement compare les taux numeriquement pour eviter un dialogue de serie lors du seul changement de format 0,9/0,90 ; les 148 tests unitaires et lint passent avec cet ajustement. Sa reinstallation attend le retour de la connexion ADB. Ne pas assimiler les 11 tests du candidat precedent a une execution sur ce dernier APK.
+Dernier etat de livraison : le dernier APK 0.7.10-dev, incluant la comparaison numerique des taux, a ete installe sur ASUS le 13 novembre 2026. Les 11 tests instrumentes ont reussi sur cet APK et le relancement est confirme par le harnais. Aucune installation restante en attente.
