@@ -1,6 +1,6 @@
 # Feuille de route vers 1.0.0
 
-État au 13 novembre 2026 : 0.7.9-dev validée par Frédéric ; 0.7.10-dev livrée pour validation.
+État au 13 novembre 2026 : 0.7.10-dev validée par Frédéric ; 0.7.11-dev livrée pour validation.
 **Découpage proposé : ordre et numéros ajustables, sans dates promises.**
 Ce document actualise les lots initiaux du cadrage du 8 novembre ; leur numéro
 ne prouve pas leur achèvement. Les fonctions manquantes des anciens lots sont
@@ -31,7 +31,7 @@ non-régression et les validations finales de sécurité/récupération.
 
 | Version | Reste à implémenter | Résultat attendu |
 |---|---|---|
-| Prochain lot fonctionnel après 0.7.10-dev ; numéro à confirmer | Ventilation des opérations | Répartir une écriture entre plusieurs catégories/descriptions ; somme exacte, édition des sous-opérations et articulation avec les virements. |
+| Prochain lot fonctionnel après 0.7.11-dev ; numéro à confirmer | Ventilation des opérations | Répartir une écriture entre plusieurs catégories/descriptions ; somme exacte, édition des sous-opérations et articulation avec les virements. |
 | Après ventilation ; numéro à confirmer | Champs bancaires et chéquiers | Heure, date de valeur, règles associées aux moyens de paiement, numéros de chèque et de relevé, numérotation/changement/épuisement des chéquiers. |
 | 0.8.0-dev | Modèles de saisie et macros | Préremplir description, compte, catégorie, moyen, montant/signe et éventuel virement ; options de validation/raccourcis historiques à détailler. |
 | 0.8.1-dev | Rappels et alertes | Rappels d'opérations/échéances, seuils de découvert, réglages de notifications ; contenu générique protégeant les informations financières. |
@@ -167,3 +167,19 @@ Les ajouts ergonomiques ont décalé les lots précédents ; le prochain contenu
 fonctionnel restant est la ventilation. Son numéro et celui des champs bancaires
 seront fixés explicitement, plutôt que de présenter un numéro ancien comme une
 fonctionnalité déjà livrée.
+
+## Livraison 0.7.11-dev — comptes archivés/supprimés
+
+Demande complémentaire de Frédéric : gestes gauche/droite sur les cartes des comptes,
+avec confirmation après le geste. Archivage sans perte d’historique et suspension
+des séries, désarchivage en configuration. Suppression de l’historique du compte,
+contreparties dissociées conservées dans les autres comptes, sans changement de
+leurs soldes ni pointages. Les statuts prévisionnels des écritures survivantes restent.
+Schéma 14 pour l’archivage ; compatibilité de lecture des schémas précédents.
+
+Le dernier compte reste non supprimable, mais archivable. Les règles et les essais
+sont dans [gestion-comptes-0.7.11.md](gestion-comptes-0.7.11.md). Cette livraison ne
+comprend pas la ventilation ni les champs bancaires. Validation locale : 157 tests
+unitaires, lint et 12 tests ASUS réussis, installation et relancement confirmés.
+Les essais utilisent des données fictives, jamais une suppression automatique
+dans le coffre personnel. Validation utilisateur de la nouvelle version à venir.

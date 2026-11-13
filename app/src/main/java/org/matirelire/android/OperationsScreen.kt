@@ -97,15 +97,15 @@ internal fun TransactionsScreen(names: List<String>, account: Int, balance: BigD
             if (landscape && LocalConfiguration.current.fontScale <= 1.3f) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(names[account], style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                    Text(names[account] + if (model.isArchived(account)) " · " + stringResource(R.string.account_archived_badge) else "", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                     BalanceValue(R.string.balance, balance, Modifier.weight(1f), compact = true, currencyCode = model.currencyCode(account))
                     BalanceValue(R.string.cleared_balance, clearedBalance, Modifier.weight(1f), compact = true, currencyCode = model.currencyCode(account))
-                    HeaderActions(onInfo = { closeMenu(); showInfo = true }, onNew = { closeMenu(); onNew() })
+                    HeaderActions(onInfo = { closeMenu(); showInfo = true }, onNew = { closeMenu(); onNew() }, enabled = !model.isArchived(account))
                 }
             } else Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(names[account], style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                    HeaderActions(onInfo = { closeMenu(); showInfo = true }, onNew = { closeMenu(); onNew() })
+                    Text(names[account] + if (model.isArchived(account)) " · " + stringResource(R.string.account_archived_badge) else "", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                    HeaderActions(onInfo = { closeMenu(); showInfo = true }, onNew = { closeMenu(); onNew() }, enabled = !model.isArchived(account))
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(bottom = 6.dp)) {
                     BalanceValue(R.string.balance, balance, Modifier.weight(1f), currencyCode = model.currencyCode(account))
@@ -173,7 +173,7 @@ internal fun TransactionsScreen(names: List<String>, account: Int, balance: BigD
                         horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         when (model.operationsMenu) {
                             OperationsMenu.ACCOUNT -> names.forEachIndexed { index, name ->
-                                FilterChip(selected = account == index, onClick = { onAccount(index) }, label = { Text(name) })
+                                if (!model.isArchived(index) || index == account) FilterChip(selected = account == index, onClick = { onAccount(index) }, label = { Text(name) })
                             }
                             OperationsMenu.FILTER -> {
                                 val previous = period.move(-1, model.calendarToday)
@@ -196,7 +196,7 @@ internal fun TransactionsScreen(names: List<String>, account: Int, balance: BigD
                                     label = { Text(stringResource(R.string.period_undated, undated)) })
                             }
                             OperationsMenu.FUNCTIONS -> {
-                                OutlinedButton(onClick = { closeMenu(); onReconcile() }) { Text(stringResource(R.string.reconcile_open)) }
+                                OutlinedButton(onClick = { closeMenu(); onReconcile() }, enabled = !model.isArchived(account)) { Text(stringResource(R.string.reconcile_open)) }
                                 OutlinedButton(onClick = { closeMenu(); showUpcoming = true }) { Text(stringResource(R.string.upcoming_open)) }
                             }
                             else -> Unit
@@ -213,19 +213,19 @@ internal fun TransactionsScreen(names: List<String>, account: Int, balance: BigD
             }
             items(visible, key = { it.id }) { row ->
                 OperationCard(row, model.calendarToday, onEdit = { closeMenu(); onEdit(row.id) },
-                    onToggle = { closeMenu(); onToggle(row.id) }, currencyCode = model.currencyCode(row.account))
+                    onToggle = { closeMenu(); onToggle(row.id) }, currencyCode = model.currencyCode(row.account), editable = model.canEditTransaction(row), pointingEnabled = !model.isArchived(row.account))
             }
         }
     }
 }
 
 @Composable
-private fun HeaderActions(onInfo: () -> Unit, onNew: () -> Unit) {
+private fun HeaderActions(onInfo: () -> Unit, onNew: () -> Unit, enabled: Boolean = true) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         val info = stringResource(R.string.balance_info)
         val add = stringResource(R.string.enter_transaction)
         IconButton(onClick = onInfo, modifier = Modifier.testTag("operations-info").semantics { contentDescription = info }) { Text("ⓘ") }
-        FilledIconButton(onClick = onNew, modifier = Modifier.testTag("operations-add").semantics { contentDescription = add }) {
+        FilledIconButton(onClick = onNew, enabled = enabled, modifier = Modifier.testTag("operations-add").semantics { contentDescription = add }) {
             Text("+", style = MaterialTheme.typography.headlineSmall)
         }
     }
@@ -247,8 +247,8 @@ internal fun orderResource(order: TransactionOrder): Int = when (order) {
 }
 
 @Composable
-private fun OperationCard(row: DemoTransaction, today: java.time.LocalDate, onEdit: () -> Unit, onToggle: () -> Unit, currencyCode: String = "EUR") {
-    Card(onClick = onEdit, modifier = Modifier.fillMaxWidth().testTag("operation-${row.id}")) {
+private fun OperationCard(row: DemoTransaction, today: java.time.LocalDate, onEdit: () -> Unit, onToggle: () -> Unit, currencyCode: String = "EUR", editable: Boolean = true, pointingEnabled: Boolean = true) {
+    Card(enabled = editable, onClick = onEdit, modifier = Modifier.fillMaxWidth().testTag("operation-${row.id}")) {
         Column(Modifier.padding(12.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(Modifier.weight(1f)) { RecurringBadge(row, today) }
@@ -270,10 +270,10 @@ private fun OperationCard(row: DemoTransaction, today: java.time.LocalDate, onEd
                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                 }
                 Row(Modifier.heightIn(min = 48.dp).testTag("pointing-${row.id}")
-                    .toggleable(value = row.cleared, role = Role.Checkbox, onValueChange = { onToggle() }),
+                    .toggleable(enabled = pointingEnabled, value = row.cleared, role = Role.Checkbox, onValueChange = { onToggle() }),
                     verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(if (row.cleared) R.string.marked else R.string.unmarked), style = MaterialTheme.typography.labelMedium)
-                    Checkbox(checked = row.cleared, onCheckedChange = null)
+                    Checkbox(enabled = pointingEnabled, checked = row.cleared, onCheckedChange = null)
                 }
             }
         }

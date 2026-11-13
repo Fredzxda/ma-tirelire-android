@@ -45,6 +45,31 @@ class OperationsUiDeviceTest {
             }
         }
     }
+    @Test fun accountSwipesRequireConfirmationAndCancelDoesNotArchive() {
+        val model = model(); model.ensureAccountNames(listOf("Current", "Savings"))
+        var opened = 0
+        ui.setContent { MaterialTheme {
+            AccountsScreen(model.accountNames, model.openings.indices.map { model.balance(it) },
+                model.openings.indices.map { model.balance(it, true) }, model,
+                onConfigure = {}, onAdd = {}, onAccount = { opened++ })
+            AccountActionConfirmation(model)
+        } }
+        ui.onNodeWithTag("accounts-list").performScrollToNode(hasTestTag("account-swipe-1"))
+        ui.onNodeWithTag("account-swipe-1").performTouchInput { swipeLeft() }
+        ui.onNodeWithTag("account-action-confirmation").assertExists()
+        ui.runOnIdle { assertFalse(model.isArchived(1)); assertEquals(0, opened) }
+        ui.onNodeWithTag("account-cancel-action").performClick()
+        ui.runOnIdle { assertFalse(model.isArchived(1)) }
+        ui.onNodeWithTag("account-swipe-1").performTouchInput { swipeLeft() }
+        ui.onNodeWithTag("account-confirm-action").performClick()
+        ui.runOnIdle { assertTrue(model.isArchived(1)); assertEquals(2, model.openings.size) }
+        ui.onNodeWithTag("accounts-list").performScrollToNode(hasTestTag("account-swipe-1"))
+        ui.onNodeWithTag("account-swipe-1").performTouchInput { swipeRight() }
+        ui.onNodeWithTag("account-action-confirmation").assertExists()
+        ui.runOnIdle { assertEquals(2, model.openings.size) }
+        ui.onNodeWithTag("account-confirm-action").performClick()
+        ui.runOnIdle { assertEquals(listOf("Current"), model.accountNames.toList()); assertEquals(0, opened) }
+    }
     @Test fun foreignCurrencyEntryShowsConversionAndSavesOriginalAmount() {
         val model = model(); model.ensureAccountNames(listOf("Current", "Savings"))
         model.beginEntry(today)

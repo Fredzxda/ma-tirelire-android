@@ -2,7 +2,7 @@
 
 Portage Android libre inspiré de [Ma Tirelire Palm de Maxime Soulé](https://github.com/maxatome/ma-tirelire).
 
-**Version actuelle : 0.7.10-dev.** Le projet est en développement ; la parité
+**Version actuelle : 0.7.11-dev.** Le projet est en développement ; la parité
 fonctionnelle Palm et les validations de la version stable restent en cours.
 Android 12 minimum, téléphone et tablette, portrait/paysage, français et anglais.
 
@@ -14,6 +14,7 @@ Android 12 minimum, téléphone et tablette, portrait/paysage, français et angl
 - Sauvegardes chiffrées locales, manuelles et hebdomadaires à la prochaine
   ouverture déverrouillée ; restauration et normalisation des anciennes dates.
 - Plusieurs comptes avec devise propre, soldes total et pointé, saisie/modification/suppression.
+- Archivage et suppression de comptes par glissement confirmé ; désarchivage en configuration.
 - Catégories hiérarchisées et moyens de paiement configurables, virements internes liés.
 - Taux locaux, montants d’origine et convertis, virements entre devises et dissociation.
 - Opérations périodiques : limites, anticipation, prévision/à confirmer/confirmée,
@@ -33,11 +34,12 @@ Ventilation, chéquiers, macros, rappels, recherche
 avancée, actions groupées, statistiques, imports/exports bancaires, plusieurs bases
 et outils de maintenance font partie des lots restants avant 1.0.0.
 
+- [Archivage et suppression de comptes](docs/gestion-comptes-0.7.11.md)
 - [Devises : fonctionnement, sauvegardes et essais](docs/devises-0.7.10.md)
 - [Feuille de route jusqu'à 1.0.0](docs/feuille-de-route-vers-1.0.0.md)
 - [Import bancaire prévu : CSV puis OFX/QIF et prévention des doublons](docs/import-releves-bancaires.md)
 - [Modèle visuel de la vue Opérations](docs/design/operations-proposition.md)
-- [Validation de la version actuelle](docs/VALIDATION-0.7.10-dev.md)
+- [Validation de la version actuelle](docs/VALIDATION-0.7.11-dev.md)
 
 La connexion bancaire directe et iOS sont des chantiers ultérieurs distincts.
 Les numéros de versions de la feuille de route sont un découpage proposé,
@@ -77,7 +79,7 @@ stable mais n'autorise ni publication ni distribution.
 La CI compile les APK et exécute les tests unitaires, lint et le contrôle de version.
 Elle n'ouvre aucun coffre utilisateur et ne déploie sur aucun téléphone.
 Les tests Android matériels et d'interface sont exécutés séparément sur appareil :
-115 tests unitaires et 7 tests isolés ASUS passent pour la version 0.7.10-dev.
+115 tests unitaires et 7 tests isolés ASUS passent pour la version 0.7.11-dev.
 Cela ne constitue pas une certification de sécurité ni une validation de toutes
 les fonctions prévues pour 1.0.0.
 

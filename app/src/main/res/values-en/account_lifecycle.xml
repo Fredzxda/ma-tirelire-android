@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="account_archive">Archive</string>
+    <string name="account_delete">Permanently delete</string>
+    <string name="account_archive_title">Archive “%1$s”?</string>
+    <string name="account_delete_title">Delete “%1$s”?</string>
+    <string name="account_archive_details">The account and history remain available for viewing. It is excluded from new entries and active totals. Related recurring entries and transfers are paused. Unarchive from account configuration; series will not resume automatically.</string>
+    <string name="account_delete_details">Counterparts become external entries included in income and expenses. The account, opening balance, configuration and all its entries will be erased. Counterparts in other accounts remain, unlinked: their balances and clearing do not change. Related series are stopped; surviving historical states are preserved. This is permanent. Existing backups remain available.</string>
+    <string name="account_delete_impact">%1$d entry/entries erased; %2$d counterpart(s) kept; %3$d series affected.</string>
+    <string name="account_delete_balance">Balance of the erased account: %1$s.</string>
+    <string name="account_delete_blocked_title">Cannot delete: %1$s</string>
+    <string name="account_delete_blocked">The vault must retain at least one account. Archive the last account or create another one before deleting it.</string>
+    <string name="account_archived_section">Archived accounts</string>
+    <string name="account_archived_badge">Archived</string>
+    <string name="account_archived_readonly">Archived — history is read-only</string>
+    <string name="account_unarchive">Unarchive account</string>
+    <string name="account_swipe_hint">Swipe left to archive, right to delete. Confirmation is always required.</string>
+    <string name="account_active_total">Active accounts total (EUR)</string>
+</resources>

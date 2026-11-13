@@ -49,6 +49,9 @@ internal object Recurrences {
         var blocked = false
         for (i in rules.indices) {
             var rule = rules[i]
+            if (rule.account in data.archivedAccounts || rule.target in data.archivedAccounts) {
+                if (rule.active) { rules[i] = rule.copy(active = false); changed = true }; continue
+            }
             while (rule.active) {
                 val due = rule.nextDate()
                 if (due == null) { rule = rule.copy(active = false); changed = true; break }

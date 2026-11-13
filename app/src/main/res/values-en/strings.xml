@@ -76,8 +76,8 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">Account currencies, local EUR quotes, original and converted amounts, cross-currency transfers and unlinking. Half-even rounding follows each currency precision. Rates never change recorded entries.</string>
-    <string name="release_notes_tests">Create a USD account and configure its rate in Settings. Enter a foreign-currency expense and a transfer between EUR and USD accounts. Check both amounts, edit an occurrence without changing past ones, and try backup/restore. Test portrait and landscape.</string>
+    <string name="release_notes_changes">Swipe accounts to archive or delete, with detailed confirmation. Archived history remains viewable; unarchive in configuration. Deleting keeps other accounts’ counterparts and balances.</string>
+    <string name="release_notes_tests">Using dummy data, swipe left and cancel, then archive and confirm. View its history and unarchive from configuration. Swipe right on a test account and check the detailed confirmation and retained counterparts.</string>
     <string name="account_add">Add account</string>
     <string name="account_edit">Account settings</string>
     <string name="account_configure">Configure %1$s</string>

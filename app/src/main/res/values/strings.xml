@@ -76,8 +76,8 @@
     <string name="release_notes_title">Nouveautés · %1$s</string>
     <string name="release_notes_test_title">À vérifier avec des données fictives</string>
     <string name="release_notes_understood">Compris</string>
-    <string name="release_notes_changes">Devises par compte, taux locaux en EUR, montants d’origine et convertis, virements entre devises et dissociation des liens. Arrondis au pair selon la précision de chaque devise. Les taux ne modifient pas les écritures enregistrées.</string>
-    <string name="release_notes_tests">Créez un compte en USD et renseignez un taux dans Réglages. Saisissez une dépense en devise puis un virement entre comptes en EUR et USD. Vérifiez les deux montants, modifiez une occurrence sans toucher les précédentes et essayez une sauvegarde/restauration. Testez portrait et paysage.</string>
+    <string name="release_notes_changes">Archivage et suppression de comptes par glissement avec confirmation détaillée. Historique archivé consultable, désarchivage depuis la configuration. La suppression conserve les contreparties et les soldes des autres comptes.</string>
+    <string name="release_notes_tests">Sur des données fictives, glissez un compte à gauche puis annulez ; recommencez et confirmez l’archivage. Consultez l’historique, désarchivez via la configuration. Glissez à droite un compte de test et vérifiez la confirmation détaillée et les contreparties conservées.</string>
     <string name="account_add">Ajouter un compte</string>
     <string name="account_edit">Configurer le compte</string>
     <string name="account_configure">Configurer %1$s</string>

@@ -139,6 +139,8 @@ class DemoViewModel : ViewModel() {
     internal var openings by mutableStateOf(listOf(BigDecimal("500.00"), BigDecimal("3000.00")))
         private set
     internal var onChange: (() -> Unit)? = null
+    internal val archivedAccounts = androidx.compose.runtime.mutableStateListOf<Int>()
+    internal var pendingAccountAction by mutableStateOf<AccountAction?>(null)
     internal val accountCurrencies = mutableStateListOf<String>()
     internal val localRates = androidx.compose.runtime.mutableStateMapOf<String, String>()
     internal val accountNames = mutableStateListOf<String>()
@@ -157,6 +159,8 @@ class DemoViewModel : ViewModel() {
     internal fun cancelAccount() { accountDraft = null }
     internal fun saveAccount(locale: Locale): Boolean {
         val current = accountDraft ?: return false
+        if (current.index != null && isArchived(current.index) &&
+            (current.currency != currencyCode(current.index) || Money.parseOpening(current.opening, locale, currencyDigits(current.index))?.compareTo(openings[current.index]) != 0)) return false
         val name = current.name.trim()
         val value = if (Fx.valid(current.currency)) Money.parseOpening(current.opening, locale, Fx.digits(current.currency)) else null
         if (name.isEmpty() || name.length > 60 || value == null ||
@@ -188,7 +192,7 @@ class DemoViewModel : ViewModel() {
     internal var reconciliation by mutableStateOf<ReconciliationDraft?>(null)
         private set
     internal fun beginReconciliation(index: Int) {
-        if (index !in openings.indices) return
+        if (index !in openings.indices || isArchived(index)) return
         val rows = transactions.filter { it.account == index }
         reconciliation = ReconciliationDraft(index, selected = rows.filter { it.cleared }.map { it.id }.toSet(),
             original = rows, opening = openings[index])
@@ -288,6 +292,7 @@ class DemoViewModel : ViewModel() {
     internal fun setSeriesActive(id: String, active: Boolean) {
         val index = rules.indexOfFirst { it.id == id }
         if (index < 0) return
+        if (active && (isArchived(rules[index].account) || rules[index].target?.let(::isArchived) == true)) return
         val next = rules[index].copy(active = active)
         if (active && next.nextDate() == null) return
         rules[index] = next; recurrenceEpoch++; onChange?.invoke()
@@ -314,7 +319,7 @@ class DemoViewModel : ViewModel() {
 
     internal fun toggleCleared(id: Long) {
         val index = transactions.indexOfFirst { it.id == id }
-        if (index >= 0) {
+        if (index >= 0 && !isArchived(transactions[index].account)) {
             transactions[index] = transactions[index].copy(cleared = !transactions[index].cleared)
             onChange?.invoke()
         }
@@ -336,6 +341,7 @@ class DemoViewModel : ViewModel() {
 
     internal fun beginEntry(today: java.time.LocalDate = java.time.LocalDate.now()) {
         if (draft == null) {
+            if (isArchived(account.intValue)) return
             referenceUiStates.keys.removeAll { it.startsWith("entry-category") }
             draft = EntryDraft(account = account.intValue, date = today.toString(),
                 category = referenceChoices(true, account.intValue, false).firstOrNull().orEmpty(), payment = referenceChoices(false, account.intValue, false).firstOrNull().orEmpty())
@@ -346,6 +352,7 @@ class DemoViewModel : ViewModel() {
     internal fun editEntry(id: Long, locale: Locale) {
         if (draft != null) return
         val row = transactions.firstOrNull { it.id == id } ?: return
+        if (!canEditTransaction(row)) return
         val separator = java.text.DecimalFormatSymbols.getInstance(locale).decimalSeparator
         draft = EntryDraft(account = row.account, income = row.amount.signum() > 0,
             amount = (row.originalAmount ?: row.amount).abs().toPlainString().replace('.', separator),
@@ -361,6 +368,7 @@ class DemoViewModel : ViewModel() {
 
     internal fun deleteEntry(id: Long) {
         val row = transactions.firstOrNull { it.id == id } ?: return
+        if (!canEditTransaction(row)) return
         val ids = setOfNotNull(row.id, row.peerId)
         if (transactions.removeAll { it.id in ids }) {
             if (draft?.editingId in ids) draft = null
@@ -370,6 +378,7 @@ class DemoViewModel : ViewModel() {
 
     internal fun changeDraftAccount(index: Int) {
         val current = draft ?: return
+        if (isArchived(index)) return
         if (current.editingId != null && current.transferTarget != null) return
         val target = if (current.transferTarget == index) openings.indices.firstOrNull { it != index } else current.transferTarget
         updateDraft(current.copy(account = index, transferTarget = target))
@@ -401,11 +410,13 @@ class DemoViewModel : ViewModel() {
     }
     internal fun cancelEntry() { draft = null; onChange?.invoke() }
 
-    internal fun exportData() = LedgerData(transactions.toList(), categories.toList(), payments.toList(), openings.toList(), draft, accountNames.toList(), transferPayment, rules.toList(), anticipation, transactionOrder, dateMigrationVersion, referenceOptions.toMap(), accountCurrencies.toList(), localRates.toMap())
+    internal fun exportData() = LedgerData(transactions.toList(), categories.toList(), payments.toList(), openings.toList(), draft, accountNames.toList(), transferPayment, rules.toList(), anticipation, transactionOrder, dateMigrationVersion, referenceOptions.toMap(), accountCurrencies.toList(), localRates.toMap(), archivedAccounts.toSet())
 
     internal fun restoreData(data: LedgerData) {
+        pendingAccountAction = null
         referenceUiStates.clear()
         transactions.clear(); transactions.addAll(data.transactions)
+        archivedAccounts.clear(); archivedAccounts.addAll(data.archivedAccounts.sorted())
         accountCurrencies.clear(); accountCurrencies.addAll(data.accountCurrencies)
         localRates.clear(); localRates.putAll(data.localRates)
         referenceOptions.clear(); referenceOptions.putAll(data.referenceOptions)
@@ -437,6 +448,7 @@ class DemoViewModel : ViewModel() {
         rules.clear(); recurrenceEpoch++; recurrenceBlocked = false
         anticipation = Anticipation.DUE; calendarToday = java.time.LocalDate.now()
         accountNames.clear(); accountDraft = null; reconciliation = null
+        archivedAccounts.clear(); pendingAccountAction = null
         accountCurrencies.clear(); localRates.clear()
         referenceUiStates.clear()
         referenceOptions.clear()
@@ -482,7 +494,7 @@ class DemoViewModel : ViewModel() {
         val revised = SeriesRevision.updateSettings(rules[index], current, row, transactions.toList(), today) ?: run {
             draft = current.copy(attempted = true); return false
         }
-        val nextRules = rules.toMutableList().also { it[index] = revised }
+        val nextRules = rules.toMutableList().also { it[index] = archiveSafeRule(revised) }
         val checked = SnapshotCodec.encode(exportData().copy(rules = nextRules, draft = null)); checked.fill(0)
         rules.clear(); rules.addAll(nextRules)
         draft = null; recurrenceEpoch++; onChange?.invoke()
@@ -492,6 +504,7 @@ class DemoViewModel : ViewModel() {
     internal fun saveEntry(locale: Locale, date: String, scope: SeriesEditScope = SeriesEditScope.CURRENT,
         today: java.time.LocalDate = java.time.LocalDate.now()): Boolean {
         val current = draft ?: return false
+        if (isArchived(current.account) || current.transferTarget?.let(::isArchived) == true) return false
         if (seriesOnlyEdit(locale)) return saveSeriesOnly(today)
         val old = transactions.firstOrNull { it.id == current.editingId }
         val additional = if (current.editingId == null) (if (current.transferTarget == null) 1 else 2)
@@ -562,7 +575,7 @@ class DemoViewModel : ViewModel() {
                 }
             }
             if (row.amountConfirmed) revised = revised.copy(confirmedThrough = maxOf(revised.confirmedThrough, requireNotNull(row.occurrence)))
-            nextRules[nextRules.indexOf(oldRule)] = revised
+            nextRules[nextRules.indexOf(oldRule)] = archiveSafeRule(revised)
         }
         val nextRows = transactions.toMutableList()
         if (index == null) nextRows.add(row) else nextRows[index] = row
@@ -668,7 +681,10 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
                     }
                 },
                 floatingActionButton = {
-                    if (destination == 0) ExtendedFloatingActionButton(onClick = { model.beginEntry() }) {
+                    if (destination == 0 && model.activeAccountIndices().isNotEmpty()) ExtendedFloatingActionButton(onClick = {
+                        if (model.isArchived(model.account.intValue)) model.account.intValue = model.activeAccountIndices().first()
+                        model.beginEntry()
+                    }) {
                         Text(stringResource(R.string.enter_transaction))
                     }
                 },
@@ -693,6 +709,7 @@ private fun DemoApp(vault: VaultController, activity: FragmentActivity) {
     }
     if (model.draft != null) EntryDialog(accountNames, model)
     if (model.accountDraft != null) AccountDialog(model)
+    AccountActionConfirmation(model)
     if (model.reconciliation != null) ReconciliationDialog(model, accountNames)
     if (vault.showReleaseNotes && vault.feedback == null) ReleaseNotesDialog(vault)
 }
@@ -711,13 +728,13 @@ private fun BrandHeader(onVersion: () -> Unit) {
 }
 
 @Composable
-private fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, clearedBalances: List<BigDecimal>, model: DemoViewModel, onConfigure: (Int) -> Unit, onAdd: () -> Unit, onAccount: (Int) -> Unit) {
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 110.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+internal fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, clearedBalances: List<BigDecimal>, model: DemoViewModel, onConfigure: (Int) -> Unit, onAdd: () -> Unit, onAccount: (Int) -> Unit) {
+    LazyColumn(Modifier.fillMaxSize().testTag("accounts-list"), contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 110.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item { Text(stringResource(R.string.overview), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold) }
         item {
             Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF206859)), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(24.dp)) {
-                    Text(stringResource(R.string.total_balance), color = Color(0xFFDAEBDF))
+                    Text(stringResource(R.string.account_active_total), color = Color(0xFFDAEBDF))
                     Text(model.consolidated()?.let { money(it) } ?: stringResource(R.string.currency_missing_rates), style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold, color = Color.White)
                     Text(stringResource(R.string.consolidated_cleared, model.consolidated(true)?.let { money(it) } ?: stringResource(R.string.currency_missing_rates)), color = Color(0xFFDAEBDF), modifier = Modifier.padding(top = 8.dp))
                 }
@@ -729,7 +746,9 @@ private fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, clea
                 TextButton(onClick = onAdd, enabled = names.size < 50) { Text(stringResource(R.string.account_add)) }
             }
         }
-        items(names.indices.toList()) { index ->
+        item { Text(stringResource(R.string.account_swipe_hint), style = MaterialTheme.typography.bodySmall) }
+        items(model.activeAccountIndices()) { index ->
+            AccountSwipeActions(model, index) {
             Card(Modifier.fillMaxWidth().clickable { onAccount(index) }) {
                 Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
@@ -742,6 +761,26 @@ private fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, clea
                     }
                     IconButton(onClick = { onConfigure(index) }) {
                         Icon(painterResource(R.drawable.ic_edit_account), contentDescription = stringResource(R.string.account_configure, names[index]))
+                    }
+                }
+            }
+        }
+        }
+        if (model.archivedAccounts.isNotEmpty()) item {
+            Text(stringResource(R.string.account_archived_section), style = MaterialTheme.typography.titleMedium)
+        }
+        items(model.archivedAccounts.sorted()) { index ->
+            AccountSwipeActions(model, index) {
+                Card(Modifier.fillMaxWidth().clickable { onAccount(index) }) {
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(names[index], style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.account_archived_readonly), style = MaterialTheme.typography.bodySmall)
+                            Text(money(balances[index], model.currencyCode(index)))
+                        }
+                        IconButton(onClick = { onConfigure(index) }) {
+                            Icon(painterResource(R.drawable.ic_edit_account), contentDescription = stringResource(R.string.account_configure, names[index]))
+                        }
                     }
                 }
             }
@@ -931,13 +970,13 @@ private fun EntryAccounts(names: List<String>, model: DemoViewModel, draft: Entr
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             names.forEachIndexed { index, name ->
-                FilterChip(selected = draft.account == index,
+                if (!model.isArchived(index) || draft.account == index) FilterChip(selected = draft.account == index,
                     onClick = { model.changeDraftAccount(index) }, enabled = draft.editingId == null || draft.transferTarget == null,
                     label = { Text(name, maxLines = 1) })
             }
         }
     } else {
-        names.forEachIndexed { index, name -> FilterChip(selected = draft.account == index, onClick = { model.changeDraftAccount(index) }, enabled = draft.editingId == null || draft.transferTarget == null, modifier = Modifier.fillMaxWidth(), label = { Text(name) }) }
+        names.forEachIndexed { index, name -> if (!model.isArchived(index) || draft.account == index) FilterChip(selected = draft.account == index, onClick = { model.changeDraftAccount(index) }, enabled = draft.editingId == null || draft.transferTarget == null, modifier = Modifier.fillMaxWidth(), label = { Text(name) }) }
     }
 }
 
@@ -1149,12 +1188,16 @@ private fun AccountDialog(model: DemoViewModel) {
         title = { Text(stringResource(if (draft.index == null) R.string.account_add else R.string.account_edit)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (draft.index != null && model.isArchived(draft.index)) {
+                    Text(stringResource(R.string.account_archived_readonly))
+                    Button(onClick = { model.unarchiveAccount(draft.index) }, modifier = Modifier.testTag("account-unarchive")) { Text(stringResource(R.string.account_unarchive)) }
+                }
                 CurrencySelector(draft.currency, { model.updateAccountDraft(draft.copy(currency = it)) },
-                    enabled = draft.index == null || (model.openings[draft.index].signum() == 0 && model.transactions.none { it.account == draft.index } && model.rules.none { it.account == draft.index || it.target == draft.index }), model = model, stateKey = "account-currency-selector")
+                    enabled = draft.index == null || (!model.isArchived(draft.index) && model.openings[draft.index].signum() == 0 && model.transactions.none { it.account == draft.index } && model.rules.none { it.account == draft.index || it.target == draft.index }), model = model, stateKey = "account-currency-selector")
                 if (draft.index != null) Text(stringResource(R.string.currency_account_locked), style = MaterialTheme.typography.bodySmall)
                 OutlinedTextField(value = draft.name, onValueChange = { model.updateAccountDraft(draft.copy(name = it.take(60))) },
                     label = { Text(stringResource(R.string.account_name)) }, singleLine = true)
-                OutlinedTextField(value = draft.opening, onValueChange = { model.updateAccountDraft(draft.copy(opening = it.take(30))) },
+                OutlinedTextField(readOnly = draft.index?.let(model::isArchived) == true, value = draft.opening, onValueChange = { model.updateAccountDraft(draft.copy(opening = it.take(30))) },
                     label = { Text(stringResource(R.string.account_opening)) }, singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
                 Text(stringResource(R.string.account_opening_hint))
@@ -1250,7 +1293,7 @@ private fun TransferTargetPicker(model: DemoViewModel, draft: EntryDraft, linked
                     model.updateDraft(draft.copy(transferTarget = null)); expanded = false
                 })
                 model.accountNames.forEachIndexed { index, name ->
-                    if (index != draft.account) DropdownMenuItem(text = { Text(name) }, onClick = {
+                    if (index != draft.account && !model.isArchived(index)) DropdownMenuItem(text = { Text(name) }, onClick = {
                         model.updateDraft(draft.copy(transferTarget = index)); expanded = false
                     })
                 }

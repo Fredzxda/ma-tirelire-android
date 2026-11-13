@@ -53,7 +53,7 @@ internal fun DemoViewModel.targetAmount(draft: EntryDraft, locale: Locale): BigD
 }
 internal fun DemoViewModel.consolidated(cleared: Boolean = false): BigDecimal? {
     var total = BigDecimal.ZERO
-    openings.indices.forEach { index ->
+    activeAccountIndices().forEach { index ->
         val rate = suggestedRate(currencyCode(index), "EUR") ?: return null
         total += Fx.convert(balance(index, cleared), rate, "EUR")
     }
@@ -62,6 +62,7 @@ internal fun DemoViewModel.consolidated(cleared: Boolean = false): BigDecimal? {
 
 internal fun DemoViewModel.detachTransfer(id: Long): Boolean {
     val row = transactions.firstOrNull { it.id == id } ?: return false
+    if (!canEditTransaction(row)) return false
     val peer = row.peerId ?: return false
     val ids = setOf(id, peer)
     val next = transactions.map { if (it.id in ids) it.copy(peerId = null, exchangeAmount = null, seriesId = null, occurrence = null) else it }
