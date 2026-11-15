@@ -208,6 +208,8 @@ internal object SnapshotCodec {
         require(result.rules.none { it.active && (it.account in archived || it.target in archived) })
         require(result.draft == null || (result.draft.account !in archived && result.draft.transferTarget !in archived))
         RecurrenceCodec.validate(result, schema)
-        return result
+        val normalized = normalizeArchivedTransferTemplates(result)
+        RecurrenceCodec.validate(normalized, schema)
+        return normalized
     }
 }

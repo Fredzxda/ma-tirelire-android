@@ -777,6 +777,9 @@ internal fun AccountsScreen(names: List<String>, balances: List<BigDecimal>, cle
                             Text(names[index], style = MaterialTheme.typography.titleMedium)
                             Text(stringResource(R.string.account_archived_readonly), style = MaterialTheme.typography.bodySmall)
                             Text(money(balances[index], model.currencyCode(index)))
+                            TextButton(onClick = { model.unarchiveAccount(index) }, modifier = Modifier.testTag("unarchive-account-$index")) {
+                                Text(stringResource(R.string.account_unarchive_short))
+                            }
                         }
                         IconButton(onClick = { onConfigure(index) }) {
                             Icon(painterResource(R.drawable.ic_edit_account), contentDescription = stringResource(R.string.account_configure, names[index]))

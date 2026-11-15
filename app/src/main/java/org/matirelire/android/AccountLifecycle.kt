@@ -15,11 +15,32 @@ internal fun DemoViewModel.requestAccountAction(index: Int, kind: AccountActionK
     pendingAccountAction = AccountAction(index, accountNames[index], kind)
 }
 
+/** Convert only the future template, using its current native amounts, never an old occurrence. */
+internal fun externalTransferTemplate(rule: RecurringRule, removed: Int, archived: Set<Int>): RecurringRule? {
+    val target = rule.target ?: return null
+    if (rule.account != removed && target != removed) return null
+    val surviving = if (rule.account == removed) target else rule.account
+    val amount = if (rule.account == removed) rule.targetAmount ?: rule.amount.negate() else rule.amount
+    return rule.copy(account = surviving, target = null, amount = amount, targetAmount = null,
+        originalCurrency = null, originalAmount = null, fxRate = null,
+        active = rule.active && surviving !in archived)
+}
+
+/** Old 0.7.11 archives had stopped their transfers. Convert them but preserve their stopped state. */
+internal fun normalizeArchivedTransferTemplates(data: LedgerData): LedgerData = data.copy(rules = data.rules.map { rule ->
+    if (rule.target != null && ((rule.account in data.archivedAccounts) != (rule.target in data.archivedAccounts))) {
+        externalTransferTemplate(rule, if (rule.account in data.archivedAccounts) rule.account else rule.target, data.archivedAccounts) ?: rule
+    } else rule
+})
+
 internal fun DemoViewModel.archiveAccount(index: Int): Boolean {
     if (index !in openings.indices || isArchived(index)) return false
     val data = exportData()
     val next = data.copy(archivedAccounts = data.archivedAccounts + index,
-        rules = data.rules.map { if (it.account == index || it.target == index) it.copy(active = false) else it },
+        rules = data.rules.map { rule ->
+            externalTransferTemplate(rule, index, data.archivedAccounts + index)
+                ?: if (rule.account == index) rule.copy(active = false) else rule
+        },
         draft = data.draft?.takeUnless { it.account == index || it.transferTarget == index })
     SnapshotCodec.encode(next).fill(0)
     val selected = account.intValue
@@ -32,8 +53,14 @@ internal fun DemoViewModel.archiveAccount(index: Int): Boolean {
 
 internal fun DemoViewModel.unarchiveAccount(index: Int): Boolean {
     if (!isArchived(index) || index !in openings.indices) return false
-    archivedAccounts.remove(index)
-    onChange?.invoke() // Series remain stopped until the user explicitly resumes them.
+    val next = normalizeArchivedTransferTemplates(exportData().copy(archivedAccounts = archivedAccounts.toSet() - index))
+    SnapshotCodec.encode(next).fill(0)
+    val selected = account.intValue
+    val configurationDraft = accountDraft
+    restoreData(next)
+    account.intValue = selected
+    configurationDraft?.let(::updateAccountDraft)
+    onChange?.invoke() // Never re-link externalized transfers or resume a deliberately stopped rule.
     return true
 }
 
@@ -48,7 +75,8 @@ internal fun DemoViewModel.deleteAccount(index: Int): Boolean {
     }
     val nextRules = data.rules.mapNotNull { rule ->
         val affected = rule.account == index || rule.target == index
-        val replacement = if (affected) {
+        val external = externalTransferTemplate(rule, index, data.archivedAccounts)
+        val replacement = external ?: if (affected) {
             // Keep a stopped historical template when surviving entries need their occurrence
             // status. Never turn an unconfirmed forecast into a confirmed ordinary entry.
             val row = survivors.firstOrNull { it.seriesId == rule.id && it.amount.signum() != 0 } ?: return@mapNotNull null

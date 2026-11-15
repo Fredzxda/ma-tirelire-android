@@ -4,8 +4,8 @@
     <string name="account_delete">Supprimer définitivement</string>
     <string name="account_archive_title">Archiver « %1$s » ?</string>
     <string name="account_delete_title">Supprimer « %1$s » ?</string>
-    <string name="account_archive_details">Le compte et son historique sont conservés en consultation. Le compte sort des nouvelles saisies et des totaux actifs. Les séries et virements périodiques concernés sont suspendus. Vous pourrez désarchiver depuis sa configuration, sans reprise automatique des séries.</string>
-    <string name="account_delete_details">Les contreparties deviennent des opérations externes prises en compte dans les revenus et dépenses. Le compte, son solde initial, sa configuration et toutes ses opérations seront effacés. Les contreparties des autres comptes restent enregistrées, sans lien de virement : leurs soldes et pointages ne changent pas. Les séries concernées sont arrêtées ; leurs états historiques restants sont conservés. Cette action est définitive. Les sauvegardes existantes restent disponibles.</string>
+    <string name="account_archive_details">Le compte et son historique sont conservés en consultation et exclus des totaux actifs. Les séries de virements internes deviennent des séries externes sur l’autre compte actif, en conservant leur état actif ou suspendu. Les séries propres à ce compte sont suspendues. Désarchiver ne recrée aucun lien ni série.</string>
+    <string name="account_delete_details">Les contreparties deviennent des opérations externes. Le compte, son solde initial et ses opérations sont effacés ; les écritures et soldes des autres comptes restent inchangés. Les séries de virements continuent comme séries externes sur le compte actif restant, si elles étaient actives. Les autres séries sont arrêtées. Cette action est définitive ; les sauvegardes existantes restent disponibles.</string>
     <string name="account_delete_impact">%1$d opération(s) à effacer ; %2$d contrepartie(s) conservée(s) ; %3$d série(s) concernée(s).</string>
     <string name="account_delete_balance">Solde du compte effacé : %1$s.</string>
     <string name="account_delete_blocked_title">Suppression impossible : %1$s</string>
@@ -16,4 +16,5 @@
     <string name="account_unarchive">Désarchiver le compte</string>
     <string name="account_swipe_hint">Glisser à gauche pour archiver, à droite pour supprimer. Une confirmation est toujours demandée.</string>
     <string name="account_active_total">Total des comptes actifs (EUR)</string>
+    <string name="account_unarchive_short">Désarchiver</string>
 </resources>

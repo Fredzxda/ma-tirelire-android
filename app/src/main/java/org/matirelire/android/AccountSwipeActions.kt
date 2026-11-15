@@ -8,6 +8,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -24,10 +27,11 @@ internal fun AccountSwipeActions(model: DemoViewModel, index: Int, content: @Com
     val scope = rememberCoroutineScope()
     val archive = stringResource(R.string.account_archive)
     val delete = stringResource(R.string.account_delete)
-    SwipeToDismissBox(state = state, modifier = Modifier.testTag("account-swipe-$index").semantics {
-        customActions = listOf(
-            CustomAccessibilityAction(archive) { model.requestAccountAction(index, AccountActionKind.ARCHIVE); true },
-            CustomAccessibilityAction(delete) { model.requestAccountAction(index, AccountActionKind.DELETE); true })
+    SwipeToDismissBox(state = state, modifier = Modifier.clip(MaterialTheme.shapes.medium).testTag("account-swipe-$index").semantics {
+        customActions = buildList {
+            if (!model.isArchived(index)) add(CustomAccessibilityAction(archive) { model.requestAccountAction(index, AccountActionKind.ARCHIVE); true })
+            add(CustomAccessibilityAction(delete) { model.requestAccountAction(index, AccountActionKind.DELETE); true })
+        }
     }, enableDismissFromEndToStart = !model.isArchived(index), onDismiss = { direction ->
         if (direction != SwipeToDismissBoxValue.Settled) {
             model.requestAccountAction(index, if (direction == SwipeToDismissBoxValue.EndToStart) AccountActionKind.ARCHIVE else AccountActionKind.DELETE)
@@ -35,9 +39,13 @@ internal fun AccountSwipeActions(model: DemoViewModel, index: Int, content: @Com
         }
     }, backgroundContent = {
         val deleting = state.dismissDirection == SwipeToDismissBoxValue.StartToEnd
-        Box(Modifier.fillMaxSize().background(if (deleting) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer)
+        Box(Modifier.fillMaxSize().background(if (deleting) Color(0xFFC62828) else Color(0xFF206859))
             .padding(16.dp), contentAlignment = if (deleting) Alignment.CenterStart else Alignment.CenterEnd) {
-            Text(if (deleting) "× $delete" else "▣ $archive")
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Icon(painterResource(if (deleting) R.drawable.ic_delete else R.drawable.ic_archive),
+                    contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
+                Text(if (deleting) delete else archive, color = Color.White, style = MaterialTheme.typography.labelLarge)
+            }
         }
     }) { content() }
 }

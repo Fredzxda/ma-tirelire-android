@@ -17,9 +17,9 @@ class AccountLifecycleTest {
         m.updateAccountDraft(m.accountDraft!!.copy(name = "USD account", currency = "USD", opening = "0"))
         assertTrue(m.saveAccount(Locale.US)); return m.openings.lastIndex
     }
-    private fun series(m: DemoViewModel, target: Int = 1) {
+    private fun series(m: DemoViewModel, target: Int = 1, income: Boolean = false) {
         m.account.intValue = 0; m.beginEntry(today)
-        m.updateDraft(m.draft!!.copy(amount = "10", description = "Fixture monthly", payment = "Transfer", transferTarget = target,
+        m.updateDraft(m.draft!!.copy(income = income, amount = "10", description = "Fixture monthly", payment = "Transfer", transferTarget = target,
             repeatFrequency = RepeatFrequency.MONTH, repeatCount = "3"))
         assertTrue(m.saveEntry(Locale.US, "unused", today = today))
     }
@@ -33,16 +33,19 @@ class AccountLifecycleTest {
         m.accountNames[0] = "Different account"
         assertFalse(m.confirmAccountAction()); assertEquals(0, writes)
     }
-    @Test fun archiveKeepsRowsAndBalancesPausesAllRelatedSeriesAndUnarchiveDoesNotResume() {
+    @Test fun archiveKeepsRowsAndBalancesExternalizesTransferAndDoesNotResumeVoluntaryPause() {
         val m = model(); series(m)
         val rows = m.transactions.toList(); val balance = m.balance(0); var writes = 0
         m.onChange = { writes++; SnapshotCodec.encode(m.exportData()) }
         assertTrue(m.archiveAccount(0)); assertEquals(1, writes)
         assertEquals(rows, m.transactions.toList()); assertEquals(balance, m.balance(0))
-        assertTrue(m.rules.none { it.active }); assertEquals(m.balance(1), m.consolidated())
-        assertFalse(m.generateDue(today.plusMonths(1)))
-        m.setSeriesActive(m.rules.single().id, true); assertFalse(m.rules.single().active)
+        assertTrue(m.rules.single().active); assertNull(m.rules.single().target)
+        assertEquals(1, m.rules.single().account); assertEquals(m.balance(1), m.consolidated())
+        m.setSeriesActive(m.rules.single().id, false)
+        m.beginAccount(0, Locale.US)
+        m.updateAccountDraft(m.accountDraft!!.copy(name = "Pending rename"))
         assertTrue(m.unarchiveAccount(0)); assertFalse(m.rules.single().active)
+        assertEquals("Pending rename", m.accountDraft!!.name); assertEquals("Current", m.accountNames[0])
         assertEquals(rows, m.transactions.toList())
     }
     @Test fun archivedRowsCannotBeEditedDeletedOrPointedAndActiveCounterpartKeepsIndependentPointing() {
@@ -57,12 +60,14 @@ class AccountLifecycleTest {
         m.account.intValue = 1; m.beginEntry(today); assertNull(m.draft)
     }
     @Test fun allAccountsCanBeArchivedWithoutInvalidSelectionOrTotal() {
-        val m = model(); assertTrue(m.archiveAccount(0)); assertTrue(m.archiveAccount(1))
+        val m = model(); series(m); assertTrue(m.archiveAccount(0)); assertTrue(m.archiveAccount(1))
         assertTrue(m.activeAccountIndices().isEmpty()); assertEquals(BigDecimal("0.00"), m.consolidated())
         assertTrue(m.account.intValue in m.openings.indices)
         assertEquals(m.exportData(), SnapshotCodec.decode(SnapshotCodec.encode(m.exportData())))
+        m.unarchiveAccount(0); m.unarchiveAccount(1)
+        assertNull(m.rules.single().target); assertFalse(m.rules.single().active)
     }
-    @Test fun deletingAccountKeepsOtherCounterpartsAndForecastStatesAndStopsHistoricalSeries() {
+    @Test fun deletingAccountKeepsOtherCounterpartsAndForecastStatesAndContinuesExternalSeries() {
         val m = model(); val usd = addUsd(m); m.setLocalRate("USD", "0.8", Locale.US); series(m, usd)
         assertTrue(m.generateDue(today.plusMonths(1)))
         val survivorRows = m.transactions.filter { it.account == usd }; val usdBalance = m.balance(usd)
@@ -72,17 +77,20 @@ class AccountLifecycleTest {
         assertTrue(m.deleteAccount(0)); assertEquals(1, writes)
         assertEquals(usdBalance, m.balance(usd - 1)); assertEquals("USD", m.currencyCode(usd - 1))
         assertEquals(original.map { it.copy(account = usd - 1, peerId = null, exchangeAmount = null) }, m.transactions.toList())
-        assertFalse(m.rules.single().active); assertNull(m.rules.single().target)
+        assertTrue(m.rules.single().active); assertNull(m.rules.single().target)
         assertEquals(usd - 1, m.rules.single().account)
         assertFalse(m.transactions.single { it.occurrence == 1 }.amountConfirmed)
-        assertFalse(m.generateDue(today.plusMonths(2)))
+        assertTrue(m.generateDue(today.plusMonths(2)))
+        val future = m.transactions.single { it.occurrence == 2 }
+        assertEquals(usd - 1, future.account); assertNull(future.peerId)
+        assertEquals(BigDecimal("12.50"), future.amount)
         assertEquals(m.exportData(), SnapshotCodec.decode(SnapshotCodec.encode(m.exportData())))
     }
     @Test fun deletingReceiverKeepsSourceBalanceAndDoesNotLeaveInvalidRuleReferences() {
         val m = model(); series(m); val before = m.balance(0)
         assertTrue(m.deleteAccount(1)); assertEquals(before, m.balance(0))
         assertTrue(m.transactions.all { it.account == 0 && it.peerId == null })
-        assertFalse(m.rules.single().active); assertNull(m.rules.single().target)
+        assertTrue(m.rules.single().active); assertNull(m.rules.single().target)
         assertFalse(m.deleteAccount(0)); assertEquals(1, m.openings.size)
         SnapshotCodec.decode(SnapshotCodec.encode(m.exportData()))
     }
@@ -98,7 +106,7 @@ class AccountLifecycleTest {
         assertNotNull(m.draft); assertEquals(0, m.draft!!.account)
         SnapshotCodec.decode(SnapshotCodec.encode(m.exportData()))
     }
-    @Test fun editingOldOrdinaryOccurrenceCannotResumeAnExhaustedTransferSeriesIntoArchivedAccount() {
+    @Test fun editingOldOrdinaryOccurrenceContinuesOnlyOnActiveAccountAfterExternalization() {
         val m = model(); series(m)
         val pair = m.transactions.filter { it.seriesId != null }
         val source = pair.single { it.account == 0 }
@@ -111,9 +119,72 @@ class AccountLifecycleTest {
         m.updateDraft(m.draft!!.copy(repeatCount = "2"))
         assertTrue(m.seriesOnlyEdit(Locale.US))
         assertTrue(m.saveEntry(Locale.US, "unused", today = today))
-        assertFalse(m.rules.single().active)
-        assertFalse(m.generateDue(today.plusMonths(2)))
+        assertNull(m.rules.single().target)
+        assertTrue(m.generateDue(today.plusMonths(2)))
+        assertTrue(m.transactions.filter { it.occurrence != null }.all { it.account == 0 && it.peerId == null })
         SnapshotCodec.decode(SnapshotCodec.encode(m.exportData()))
+    }
+    @Test fun archivalUsesCurrentFutureNativeAmountAndPreservesIncomingTransferSign() {
+        val m = model(); val usd = addUsd(m); m.setLocalRate("USD", "0.8", Locale.US)
+        series(m, usd, income = true)
+        m.rules[0] = m.rules.single().copy(amount = BigDecimal("20.00"), targetAmount = BigDecimal("-25.00"))
+        val historical = m.transactions.toList()
+        assertTrue(m.archiveAccount(0)); assertEquals(historical, m.transactions.toList())
+        assertEquals(BigDecimal("-25.00"), m.rules.single().amount)
+        assertTrue(m.rules.single().active); assertEquals(usd, m.rules.single().account); assertNull(m.rules.single().target)
+        assertTrue(m.generateDue(today.plusMonths(1)))
+        val future = m.transactions.single { it.occurrence == 1 }
+        assertEquals(usd, future.account); assertEquals(BigDecimal("-25.00"), future.amount); assertNull(future.peerId)
+        assertTrue(m.unarchiveAccount(0)); assertNull(m.rules.single().target)
+        assertTrue(m.rules.single().active)
+        assertFalse(m.generateDue(today.plusMonths(1)))
+    }
+    @Test fun deletionUsesFutureTemplateRatherThanFirstHistoricalAmountAndKeepsPausedState() {
+        val m = model(); val usd = addUsd(m); m.setLocalRate("USD", "0.8", Locale.US); series(m, usd)
+        m.rules[0] = m.rules.single().copy(amount = BigDecimal("-30.00"), targetAmount = BigDecimal("37.50"))
+        m.setSeriesActive(m.rules.single().id, false)
+        assertTrue(m.deleteAccount(0))
+        assertEquals(BigDecimal("37.50"), m.rules.single().amount)
+        assertEquals(usd - 1, m.rules.single().account); assertNull(m.rules.single().target)
+        assertFalse(m.rules.single().active); assertFalse(m.generateDue(today.plusMonths(1)))
+        m.setSeriesActive(m.rules.single().id, true)
+        assertTrue(m.generateDue(today.plusMonths(1)))
+        assertEquals(BigDecimal("37.50"), m.transactions.single { it.occurrence == 1 }.amount)
+    }
+    @Test fun archivingThenDeletingCurrencyTargetKeepsSourceFutureAmountAndDoesNotDuplicate() {
+        val m = model(); val usd = addUsd(m); m.setLocalRate("USD", "0.8", Locale.US); series(m, usd, income = true)
+        m.rules[0] = m.rules.single().copy(amount = BigDecimal("20.00"), targetAmount = BigDecimal("-25.00"))
+        val balance = m.balance(0)
+        m.archiveAccount(usd)
+        assertEquals(BigDecimal("20.00"), m.rules.single().amount); assertEquals(0, m.rules.single().account)
+        assertNull(m.rules.single().target); assertTrue(m.rules.single().active)
+        assertTrue(m.deleteAccount(usd)); assertEquals(balance, m.balance(0))
+        assertTrue(m.generateDue(today.plusMonths(1)))
+        assertEquals(BigDecimal("20.00"), m.transactions.single { it.occurrence == 1 }.amount)
+        assertFalse(m.generateDue(today.plusMonths(1)))
+        assertEquals(1, m.transactions.count { it.occurrence == 1 })
+    }
+    @Test fun oldArchivedInternalSeriesIsMigratedWithoutAutomaticReactivation() {
+        val m = model(); series(m); val data = m.exportData()
+        val old = data.copy(archivedAccounts = setOf(1), rules = data.rules.map { it.copy(active = false) })
+        val migrated = SnapshotCodec.decode(SnapshotCodec.encode(old))
+        assertEquals(old.transactions, migrated.transactions)
+        assertEquals(0, migrated.rules.single().account); assertNull(migrated.rules.single().target)
+        assertFalse(migrated.rules.single().active)
+        m.restoreData(migrated); m.setSeriesActive(m.rules.single().id, true)
+        assertTrue(m.rules.single().active)
+        assertTrue(m.generateDue(today.plusMonths(1)))
+        assertEquals(1, m.transactions.count { it.occurrence == 1 })
+        assertEquals(0, m.transactions.single { it.occurrence == 1 }.account)
+        assertEquals(m.exportData(), SnapshotCodec.decode(SnapshotCodec.encode(m.exportData())))
+    }
+    @Test fun ordinarySeriesStillStopsWhenItsOnlyAccountIsArchived() {
+        val m = model(); m.beginEntry(today)
+        m.updateDraft(m.draft!!.copy(amount = "10", description = "Ordinary", repeatFrequency = RepeatFrequency.MONTH, repeatCount = "3"))
+        assertTrue(m.saveEntry(Locale.US, "unused", today = today))
+        m.archiveAccount(0)
+        assertFalse(m.rules.single().active); assertFalse(m.generateDue(today.plusMonths(1)))
+        m.unarchiveAccount(0); assertFalse(m.rules.single().active)
     }
     @Test fun archiveMetadataRoundTripsAndMalformedReferencesAreRejected() {
         val m = model(); val old = m.exportData()

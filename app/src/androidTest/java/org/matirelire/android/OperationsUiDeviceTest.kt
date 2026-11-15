@@ -63,6 +63,12 @@ class OperationsUiDeviceTest {
         ui.onNodeWithTag("account-swipe-1").performTouchInput { swipeLeft() }
         ui.onNodeWithTag("account-confirm-action").performClick()
         ui.runOnIdle { assertTrue(model.isArchived(1)); assertEquals(2, model.openings.size) }
+        ui.onNodeWithTag("unarchive-account-1").performScrollTo().performClick()
+        ui.runOnIdle { assertFalse(model.isArchived(1)); assertEquals(0, opened) }
+        ui.onNodeWithTag("accounts-list").performScrollToNode(hasTestTag("account-swipe-1"))
+        ui.onNodeWithTag("account-swipe-1").performTouchInput { swipeLeft() }
+        ui.onNodeWithTag("account-confirm-action").performClick()
+        ui.runOnIdle { assertTrue(model.isArchived(1)) }
         ui.onNodeWithTag("accounts-list").performScrollToNode(hasTestTag("account-swipe-1"))
         ui.onNodeWithTag("account-swipe-1").performTouchInput { swipeRight() }
         ui.onNodeWithTag("account-action-confirmation").assertExists()

@@ -76,8 +76,8 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">Swipe accounts to archive or delete, with detailed confirmation. Archived history remains viewable; unarchive in configuration. Deleting keeps other accounts’ counterparts and balances.</string>
-    <string name="release_notes_tests">Using dummy data, swipe left and cancel, then archive and confirm. View its history and unarchive from configuration. Swipe right on a test account and check the detailed confirmation and retained counterparts.</string>
+    <string name="release_notes_changes">Transfer series become external on the surviving account when archiving or deleting. Rounded card corners fixed, green/red backgrounds and proper action icons. Direct unarchive in Archived accounts. Previously stopped series remain stopped and can be resumed manually.</string>
+    <string name="release_notes_tests">Create a recurring transfer between test accounts. Archive and unarchive one account: the next occurrence must exist only on the other account, without duplicates or changes to past entries. Also try deleting and check green/red swipes and rounded corners.</string>
     <string name="account_add">Add account</string>
     <string name="account_edit">Account settings</string>
     <string name="account_configure">Configure %1$s</string>

@@ -1,6 +1,6 @@
 # Feuille de route vers 1.0.0
 
-État au 13 novembre 2026 : 0.7.10-dev validée par Frédéric ; 0.7.11-dev livrée pour validation.
+État au 13 novembre 2026 : 0.7.11-dev testée par Frédéric ; 0.7.12-dev préparée après ses retours.
 **Découpage proposé : ordre et numéros ajustables, sans dates promises.**
 Ce document actualise les lots initiaux du cadrage du 8 novembre ; leur numéro
 ne prouve pas leur achèvement. Les fonctions manquantes des anciens lots sont
@@ -31,7 +31,7 @@ non-régression et les validations finales de sécurité/récupération.
 
 | Version | Reste à implémenter | Résultat attendu |
 |---|---|---|
-| Prochain lot fonctionnel après 0.7.11-dev ; numéro à confirmer | Ventilation des opérations | Répartir une écriture entre plusieurs catégories/descriptions ; somme exacte, édition des sous-opérations et articulation avec les virements. |
+| Prochain lot fonctionnel après 0.7.12-dev ; numéro à confirmer | Ventilation des opérations | Répartir une écriture entre plusieurs catégories/descriptions ; somme exacte, édition des sous-opérations et articulation avec les virements. |
 | Après ventilation ; numéro à confirmer | Champs bancaires et chéquiers | Heure, date de valeur, règles associées aux moyens de paiement, numéros de chèque et de relevé, numérotation/changement/épuisement des chéquiers. |
 | 0.8.0-dev | Modèles de saisie et macros | Préremplir description, compte, catégorie, moyen, montant/signe et éventuel virement ; options de validation/raccourcis historiques à détailler. |
 | 0.8.1-dev | Rappels et alertes | Rappels d'opérations/échéances, seuils de découvert, réglages de notifications ; contenu générique protégeant les informations financières. |
@@ -45,7 +45,7 @@ non-régression et les validations finales de sécurité/récupération.
 | 0.8.9-dev | Import OFX/QIF | Formats supplémentaires, références bancaires et anti-doublon entre relevés chevauchants ; association aux saisies, séries et virements existants. |
 | 0.8.10-dev | Plusieurs bases et propriétés complètes | Créer/ouvrir/cloner/supprimer des bases distinctes, propriétés et notes ; compléter les propriétés des comptes (numéro, notes, sélection pour consolidation) et leurs parcours de gestion. |
 | 0.8.11-dev | Maintenance et purge | Contrôles de cohérence et outils de réparation maîtrisés ; purge avec report des soldes ou agrégation, toujours précédée d'une sauvegarde vérifiée. |
-| 0.8.12-dev | Personnalisation et préférences | Écran initial, champs visibles, présentation selon les types ; langue/région/formats configurables dans l'application et réglages fonctionnels inclus dans les sauvegardes. |
+| 0.8.12-dev | Personnalisation, préférences et refonte des Réglages | Refonte complète de l’organisation des réglages avant 1.0.0, maquette à valider ; écran initial, champs visibles, présentation selon les types ; langue/région/formats configurables dans l'application et réglages fonctionnels inclus dans les sauvegardes. |
 | 0.8.13-dev | Widgets et raccourcis Android | Accès rapide à la saisie et aux fonctions utiles ; actions sensibles après déverrouillage, aucune information financière exposée par défaut. |
 | 0.8.14-dev | Gestion complète du coffre | Modification du code supplémentaire, parcours de changement de protection Android, clés invalidées, récupération depuis archive et réglages de sécurité clairement gérés. |
 | 0.8.15-dev | Rapports de plantage locaux | Collecte limitée et expurgée, consultation et partage volontaire depuis l'application ; aucun envoi automatique. Les journaux techniques actuels ne constituent pas encore ce dispositif. |
@@ -183,3 +183,21 @@ comprend pas la ventilation ni les champs bancaires. Validation locale : 157 tes
 unitaires, lint et 12 tests ASUS réussis, installation et relancement confirmés.
 Les essais utilisent des données fictives, jamais une suppression automatique
 dans le coffre personnel. Validation utilisateur de la nouvelle version à venir.
+
+## Retours utilisateur intégrés en 0.7.12-dev
+
+Virements périodiques : conversion du modèle futur en virement externe sur le
+compte actif conservé, à l’archivage ou à la suppression de l’autre. Conservation
+du montant courant, de la devise, de l’activité et du curseur ; aucun changement
+des écritures historiques à l’archivage. Désarchivage direct dans Comptes archivés.
+Coins arrondis conservés au repos, fonds vert/rouge et icônes vectorielles.
+Les séries déjà suspendues par 0.7.11 ne sont pas réactivées sans action explicite.
+Voir [gestion-comptes-0.7.12.md](gestion-comptes-0.7.12.md).
+
+**Exigence avant 1.0.0 : refondre entièrement l’organisation des Réglages.**
+Le lot 0.8.12 reprend cette exigence ; préparer une maquette avant implémentation,
+avec rubriques compréhensibles (comptes/référentiels, sécurité, sauvegardes,
+prévisions, affichage/formats, maintenance) et vérifier portrait/paysage, clavier
+et grand texte. Cette liste est une piste de conception, pas une interface validée.
+
+État de validation 0.7.12 au 15 novembre : compilation et APK de tests, lint et 162 tests unitaires réussis. Installation et tests ASUS encore en attente de connexion ADB ; voir VALIDATION-0.7.12-dev.md.
