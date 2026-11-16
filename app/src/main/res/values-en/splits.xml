@@ -1,0 +1,10 @@
+<resources>
+    <string name="splits_title">Split transaction</string>
+    <string name="splits_remove_all">Remove split</string>
+    <string name="splits_native">Amounts in the account currency: %1$s</string>
+    <string name="splits_line">Line %1$d</string>
+    <string name="splits_remove">Remove</string>
+    <string name="splits_add">Add split line</string>
+    <string name="splits_invalid">Enter at least two positive shares. Their sum must exactly match the operation amount in the account currency.</string>
+    <string name="splits_transfer_blocked">Remove the split before creating an internal transfer.</string>
+</resources>

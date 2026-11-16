@@ -35,13 +35,14 @@ internal fun normalizeArchivedTransferTemplates(data: LedgerData): LedgerData = 
 
 internal fun DemoViewModel.archiveAccount(index: Int): Boolean {
     if (index !in openings.indices || isArchived(index)) return false
-    val data = exportData()
+    val data = AnticipationForecasts.materialize(exportData())
+    val deferredIds = deferredForecasts.map { it.id }.toSet()
     val next = data.copy(archivedAccounts = data.archivedAccounts + index,
         rules = data.rules.map { rule ->
             externalTransferTemplate(rule, index, data.archivedAccounts + index)
                 ?: if (rule.account == index) rule.copy(active = false) else rule
         },
-        draft = data.draft?.takeUnless { it.account == index || it.transferTarget == index })
+        draft = data.draft?.takeUnless { it.account == index || it.transferTarget == index }).partitionForecasts(deferredIds)
     SnapshotCodec.encode(next).fill(0)
     val selected = account.intValue
     restoreData(next)
@@ -68,7 +69,7 @@ internal fun DemoViewModel.unarchiveAccount(index: Int): Boolean {
 internal fun DemoViewModel.deleteAccount(index: Int): Boolean {
     if (!canDeleteAccount(index)) return false
     fun shifted(value: Int) = if (value > index) value - 1 else value
-    val data = exportData()
+    val data = AnticipationForecasts.materialize(exportData())
     val removedIds = data.transactions.filter { it.account == index }.map { it.id }.toSet()
     val survivors = data.transactions.filterNot { it.id in removedIds }.map { row ->
         if (row.peerId in removedIds) row.copy(peerId = null, exchangeAmount = null) else row
@@ -101,12 +102,13 @@ internal fun DemoViewModel.deleteAccount(index: Int): Boolean {
     }
     val nextDraft = data.draft?.takeUnless { it.account == index || it.transferTarget == index || it.editingId in removedIds }
         ?.let { it.copy(account = shifted(it.account), transferTarget = it.transferTarget?.let(::shifted)) }
+    val deferredIds = deferredForecasts.map { it.id }.toSet()
     val next = data.copy(transactions = rows,
         openings = data.openings.filterIndexed { i, _ -> i != index },
         accountNames = data.accountNames.filterIndexed { i, _ -> i != index },
         accountCurrencies = data.accountCurrencies.filterIndexed { i, _ -> i != index },
         archivedAccounts = data.archivedAccounts.filter { it != index }.map(::shifted).toSet(),
-        rules = nextRules, draft = nextDraft, referenceOptions = nextOptions)
+        rules = nextRules, draft = nextDraft, referenceOptions = nextOptions).partitionForecasts(deferredIds)
     SnapshotCodec.encode(next).fill(0)
     val selected = account.intValue
     restoreData(next)
@@ -127,3 +129,8 @@ internal fun DemoViewModel.confirmAccountAction(): Boolean {
 
 internal fun DemoViewModel.archiveSafeRule(rule: RecurringRule): RecurringRule =
     if (isArchived(rule.account) || rule.target?.let(::isArchived) == true) rule.copy(active = false) else rule
+
+/** Preserve visibility while remapping complete paired histories during account lifecycle changes. */
+private fun LedgerData.partitionForecasts(ids: Set<Long>): LedgerData = copy(
+    transactions = transactions.filterNot { it.id in ids },
+    deferredForecasts = transactions.filter { it.id in ids })

@@ -30,6 +30,38 @@ class ReferenceCatalogTest {
         assertTrue(m.generateDue(java.time.LocalDate.of(2026, 12, 11)))
         assertTrue(m.transactions.filter { it.seriesId != null }.all { it.category == "Other" && it.payment == "Wire" })
     }
+    @Test fun categoryUsedOnlyInSplitCannotBeRemovedAndReplacementRewritesDeferredRulesAndDraft() {
+        val m = model()
+        val today = java.time.LocalDate.of(2026, 11, 11)
+        m.addCategory("Split only")
+        m.beginEntry(today)
+        m.updateDraft(m.draft!!.copy(description = "Split weekly", amount = "10.00", category = "Food", payment = "Card",
+            repeatFrequency = RepeatFrequency.WEEK, splits = listOf(
+                SplitDraft("Split only", "First", "4.00"), SplitDraft("Other", "Second", "6.00"))))
+        assertTrue(m.saveEntry(Locale.US, "unused", today = today))
+        m.generateDue(today)
+        m.setAnticipation(Anticipation.MONTH_END); m.generateDue(today)
+        m.setAnticipation(Anticipation.DUE)
+        assertTrue(m.deferredForecasts.isNotEmpty())
+        m.editEntry(m.transactions.first { it.seriesId != null }.id, Locale.US)
+        var writes = 0
+        m.onChange = { writes++; SnapshotCodec.decode(SnapshotCodec.encode(m.exportData())) }
+        assertFalse(m.removeReference(true, "Split only", null))
+        assertEquals(0, writes)
+        assertTrue(m.saveReference(true, "Split only", "Renamed split", ReferenceOptions()))
+        fun assertReferences(name: String) {
+            assertTrue((m.transactions + m.deferredForecasts).filter { it.splits.isNotEmpty() }.all { it.splits.first().category == name })
+            assertEquals(name, m.rules.single().splits.first().category)
+            assertEquals(name, m.draft!!.splits.first().category)
+        }
+        assertReferences("Renamed split")
+        assertFalse(m.removeReference(true, "Renamed split", null))
+        assertTrue(m.removeReference(true, "Renamed split", "Other"))
+        assertReferences("Other")
+        assertEquals(2, writes)
+        assertEquals(m.exportData(), SnapshotCodec.decode(SnapshotCodec.encode(m.exportData())))
+    }
+
     @Test fun newEntryChangesDirectionAndAccountWithoutKeepingForbiddenReferences() {
         val m = model()
         m.saveReference(true, "Food", "Food", ReferenceOptions(kind = ReferenceKind.EXPENSE, accounts = setOf(0)))

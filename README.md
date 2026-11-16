@@ -2,7 +2,7 @@
 
 Portage Android libre inspiré de [Ma Tirelire Palm de Maxime Soulé](https://github.com/maxatome/ma-tirelire).
 
-**Version actuelle : 0.7.12-dev.** Le projet est en développement ; la parité
+**Version actuelle : 0.7.13-dev.** Le projet est en développement ; la parité
 fonctionnelle Palm et les validations de la version stable restent en cours.
 Android 12 minimum, téléphone et tablette, portrait/paysage, français et anglais.
 
@@ -19,6 +19,8 @@ Android 12 minimum, téléphone et tablette, portrait/paysage, français et angl
 - Taux locaux, montants d’origine et convertis, virements entre devises et dissociation.
 - Opérations périodiques : limites, anticipation, prévision/à confirmer/confirmée,
   édition de l'occurrence ou du modèle futur, sans modifier les autres écritures.
+- Ventilation des opérations entre catégories/descriptions, somme exacte dans la devise du compte.
+- Prévisions hors horizon différées lors de la réduction de l’anticipation, retour sans doublon.
 - Pointage manuel et rapprochement guidé par solde cible, échéances à venir.
 - Recherche textuelle combinée à la période, tri, navigation mensuelle et historique.
 - Interface compacte avec menus contextuels, indépendante du pointage des séries.
@@ -30,16 +32,17 @@ remplacent pas une sauvegarde restaurable et son mot de passe.
 
 ## Ce qui reste à réaliser
 
-Ventilation, chéquiers, macros, rappels, recherche
+Chéquiers, macros, rappels, recherche
 avancée, actions groupées, statistiques, imports/exports bancaires, plusieurs bases
 et outils de maintenance font partie des lots restants avant 1.0.0.
 
+- [Ventilation et anticipation](docs/ventilation-et-anticipation-0.7.13.md)
 - [Archivage et suppression de comptes](docs/gestion-comptes-0.7.12.md)
 - [Devises : fonctionnement, sauvegardes et essais](docs/devises-0.7.10.md)
 - [Feuille de route jusqu'à 1.0.0](docs/feuille-de-route-vers-1.0.0.md)
 - [Import bancaire prévu : CSV puis OFX/QIF et prévention des doublons](docs/import-releves-bancaires.md)
 - [Modèle visuel de la vue Opérations](docs/design/operations-proposition.md)
-- [Validation de la version actuelle](docs/VALIDATION-0.7.12-dev.md)
+- [Validation de la version actuelle](docs/VALIDATION-0.7.13-dev.md)
 
 La connexion bancaire directe et iOS sont des chantiers ultérieurs distincts.
 Les numéros de versions de la feuille de route sont un découpage proposé,
@@ -79,7 +82,7 @@ stable mais n'autorise ni publication ni distribution.
 La CI compile les APK et exécute les tests unitaires, lint et le contrôle de version.
 Elle n'ouvre aucun coffre utilisateur et ne déploie sur aucun téléphone.
 Les tests Android matériels et d'interface sont exécutés séparément sur appareil :
-115 tests unitaires et 7 tests isolés ASUS passent pour la version 0.7.12-dev.
+115 tests unitaires et 7 tests isolés ASUS passent pour la version 0.7.13-dev.
 Cela ne constitue pas une certification de sécurité ni une validation de toutes
 les fonctions prévues pour 1.0.0.
 

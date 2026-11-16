@@ -1,6 +1,6 @@
 # Feuille de route vers 1.0.0
 
-État au 13 novembre 2026 : 0.7.11-dev testée par Frédéric ; 0.7.12-dev préparée après ses retours.
+État au 16 novembre 2026 : 0.7.12-dev installée et validée par Frédéric ; 0.7.13-dev implémentée, validation détaillée dans son compte rendu.
 **Découpage proposé : ordre et numéros ajustables, sans dates promises.**
 Ce document actualise les lots initiaux du cadrage du 8 novembre ; leur numéro
 ne prouve pas leur achèvement. Les fonctions manquantes des anciens lots sont
@@ -31,8 +31,7 @@ non-régression et les validations finales de sécurité/récupération.
 
 | Version | Reste à implémenter | Résultat attendu |
 |---|---|---|
-| Prochain lot fonctionnel après 0.7.12-dev ; numéro à confirmer | Ventilation des opérations | Répartir une écriture entre plusieurs catégories/descriptions ; somme exacte, édition des sous-opérations et articulation avec les virements. |
-| Après ventilation ; numéro à confirmer | Champs bancaires et chéquiers | Heure, date de valeur, règles associées aux moyens de paiement, numéros de chèque et de relevé, numérotation/changement/épuisement des chéquiers. |
+| Après 0.7.13-dev ; numéro à confirmer | Champs bancaires et chéquiers | Heure, date de valeur, règles associées aux moyens de paiement, numéros de chèque et de relevé, numérotation/changement/épuisement des chéquiers. |
 | 0.8.0-dev | Modèles de saisie et macros | Préremplir description, compte, catégorie, moyen, montant/signe et éventuel virement ; options de validation/raccourcis historiques à détailler. |
 | 0.8.1-dev | Rappels et alertes | Rappels d'opérations/échéances, seuils de découvert, réglages de notifications ; contenu générique protégeant les informations financières. |
 | 0.8.2-dev | Recherche avancée | Période personnalisée, montants, catégories/moyens précis, chèques, relevés, états et combinaisons de critères au-delà de la recherche textuelle actuelle. |
@@ -201,3 +200,19 @@ prévisions, affichage/formats, maintenance) et vérifier portrait/paysage, clav
 et grand texte. Cette liste est une piste de conception, pas une interface validée.
 
 État de validation 0.7.12 au 15 novembre : compilation et APK de tests, lint et 162 tests unitaires réussis. Installation et tests ASUS encore en attente de connexion ADB ; voir VALIDATION-0.7.12-dev.md.
+
+## Livraison 0.7.13-dev — ventilation et anticipation
+
+Ventilation facultative avec catégories hiérarchiques, descriptions et somme
+exacte dans la devise du compte. Modèles périodiques, édition, recherche et
+sauvegardes adaptés. Les virements internes liés restent indivisibles.
+
+Réduction de l’anticipation : prévisions futures non confirmées/non pointées
+différées hors des soldes, puis réintroduites sans doublon à l’échéance ou quand
+l’horizon augmente. Les occurrences « À confirmer » sont conservées aussi.
+Les écritures déjà générées restent inchangées lors des modifications du modèle.
+Les catégories et le cycle de vie des comptes prennent en compte cette réserve.
+
+Formats de coffre/sauvegarde : schéma 15 pour les ventilations, 16 pour les
+prévisions différées ; anciens formats conservés en lecture. Détails et limites
+des vérifications : [VALIDATION-0.7.13-dev.md](VALIDATION-0.7.13-dev.md).

@@ -36,8 +36,9 @@
 
 - Anticipation : les previsions generees entrent dans le solde total mais pas
   dans les rapports revenus/depenses tant que futures et non confirmees.
-  Confirmation et pointage restent independants. Reduire un horizon ne supprime
-  jamais les ecritures deja enregistrees. Le reglage reste chiffre/sauvegarde.
+  Confirmation et pointage restent independants. Reduire un horizon retire seulement les previsions futures non confirmees
+  et non pointees au-dela de la limite, avec regeneration sans doublons.
+  Conserver les ecritures confirmees, pointees ou preparees pour confirmation. Le reglage reste chiffre/sauvegarde.
 
 - Statut de recurrence seul : aucun dialogue de portee. Prevision -> A confirmer
   -> Confirmee en deux actions distinctes, etat intermediaire persiste avant

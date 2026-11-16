@@ -76,8 +76,8 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">Transfer series become external on the surviving account when archiving or deleting. Rounded card corners fixed, green/red backgrounds and proper action icons. Direct unarchive in Archived accounts. Previously stopped series remain stopped and can be resumed manually.</string>
-    <string name="release_notes_tests">Create a recurring transfer between test accounts. Archive and unarchive one account: the next occurrence must exist only on the other account, without duplicates or changes to past entries. Also try deleting and check green/red swipes and rounded corners.</string>
+    <string name="release_notes_changes">Split transactions across categories and descriptions, with exact total validation. Reducing anticipation removes forecasts beyond the limit that are neither confirmed nor cleared; confirmed and cleared entries are preserved.</string>
+    <string name="release_notes_tests">Using test data, split an expense across two categories and check the total and editing. Increase anticipation to 30 days, then return to month end: next-month forecasts should disappear. Increase it again: they should return without duplicates. Confirmed or cleared entries must remain.</string>
     <string name="account_add">Add account</string>
     <string name="account_edit">Account settings</string>
     <string name="account_configure">Configure %1$s</string>

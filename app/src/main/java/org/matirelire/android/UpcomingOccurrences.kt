@@ -10,7 +10,7 @@ internal data class UpcomingResult(val items: List<UpcomingOccurrence>, val trun
 
 internal object UpcomingOccurrences {
     /** Read-only projection: no generation, cursor update, clearing or persistence. */
-    fun project(rules: List<RecurringRule>, account: Int, today: LocalDate, days: Int, limit: Int = 500): UpcomingResult {
+    fun project(rules: List<RecurringRule>, account: Int, today: LocalDate, days: Int, limit: Int = 500, deferred: List<DemoTransaction> = emptyList()): UpcomingResult {
         require(days in listOf(30, 90, 365) && limit in 1..500)
         val end = today.plusDays(days.toLong())
         val items = mutableListOf<UpcomingOccurrence>()
@@ -36,6 +36,11 @@ internal object UpcomingOccurrences {
                 }
                 index++
             }
+        }
+        deferred.filter { it.account == account && OperationDates.parse(it.date)?.let { date -> date > today && date <= end } == true }.forEach { row ->
+            items.add(UpcomingOccurrence(requireNotNull(row.seriesId), requireNotNull(row.occurrence),
+                requireNotNull(OperationDates.parse(row.date)), row.description, row.amount,
+                row.peerId?.let { id -> deferred.firstOrNull { it.id == id }?.account }))
         }
         val sorted = items.sortedWith(compareBy<UpcomingOccurrence> { it.date }.thenBy { it.seriesId }.thenBy { it.index })
         return UpcomingResult(sorted.take(limit), sorted.size > limit)

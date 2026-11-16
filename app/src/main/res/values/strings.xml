@@ -76,8 +76,8 @@
     <string name="release_notes_title">Nouveautés · %1$s</string>
     <string name="release_notes_test_title">À vérifier avec des données fictives</string>
     <string name="release_notes_understood">Compris</string>
-    <string name="release_notes_changes">Les séries de virements deviennent externes sur le compte conservé lors d’un archivage ou d’une suppression. Coins des cartes corrigés, fonds vert/rouge et icônes de geste remplacées. Désarchivage direct dans Comptes archivés. Les séries déjà arrêtées restent arrêtées : reprise manuelle possible.</string>
-    <string name="release_notes_tests">Créez un virement périodique entre deux comptes de test. Archivez puis désarchivez l’un : l’échéance suivante doit exister uniquement sur l’autre compte, sans doublon ni modification des opérations passées. Essayez aussi la suppression et vérifiez les gestes vert/rouge et les coins arrondis.</string>
+    <string name="release_notes_changes">Ventilation des opérations entre catégories et descriptions, avec contrôle de la somme. La réduction de l’anticipation retire les prévisions hors limite non confirmées et non pointées ; les opérations confirmées et pointées restent conservées.</string>
+    <string name="release_notes_tests">Sur des données fictives, répartissez une dépense entre deux catégories et vérifiez la somme puis la modification. Augmentez l’anticipation à 30 jours, puis revenez à la fin du mois : les prévisions du mois suivant doivent disparaître. Augmentez à nouveau : elles doivent revenir sans doublon. Une opération confirmée ou pointée doit rester présente.</string>
     <string name="account_add">Ajouter un compte</string>
     <string name="account_edit">Configurer le compte</string>
     <string name="account_configure">Configurer %1$s</string>

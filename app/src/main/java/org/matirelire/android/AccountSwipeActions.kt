@@ -61,7 +61,7 @@ internal fun AccountActionConfirmation(model: DemoViewModel) {
             Column(Modifier.heightIn(max = 380.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(stringResource(if (blocked) R.string.account_delete_blocked else if (action.kind == AccountActionKind.DELETE) R.string.account_delete_details else R.string.account_archive_details))
                 if (!blocked && action.kind == AccountActionKind.DELETE) {
-                    val entries = model.transactions.filter { it.account == action.index }
+                    val entries = (model.transactions + model.deferredForecasts).filter { it.account == action.index }
                     Text(stringResource(R.string.account_delete_impact, entries.size, entries.count { it.peerId != null }, model.rules.count { it.account == action.index || it.target == action.index }))
                     Text(stringResource(R.string.account_delete_balance, money(model.balance(action.index), model.currencyCode(action.index))))
                 }

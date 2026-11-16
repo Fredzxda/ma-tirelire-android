@@ -1,0 +1,10 @@
+<resources>
+    <string name="splits_title">Ventilation</string>
+    <string name="splits_remove_all">Retirer la ventilation</string>
+    <string name="splits_native">Montants dans la devise du compte : %1$s</string>
+    <string name="splits_line">Ligne %1$d</string>
+    <string name="splits_remove">Retirer</string>
+    <string name="splits_add">Ajouter une ligne de ventilation</string>
+    <string name="splits_invalid">Renseignez au moins deux lignes positives. Leur somme doit être exactement égale au montant de l’opération dans la devise du compte.</string>
+    <string name="splits_transfer_blocked">Retirez la ventilation avant de créer un virement interne.</string>
+</resources>

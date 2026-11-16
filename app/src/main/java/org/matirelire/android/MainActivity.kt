@@ -98,6 +98,7 @@ internal data class DemoTransaction(
     val originalCurrency: String? = null,
     val originalAmount: BigDecimal? = null,
     val fxRate: BigDecimal? = null,
+    val splits: List<OperationSplit> = emptyList(),
 )
 
 internal data class EntryDraft(
@@ -121,6 +122,7 @@ internal data class EntryDraft(
     val date: String = "",
     val inputCurrency: String = "",
     val fxRate: String = "",
+    val splits: List<SplitDraft> = emptyList(),
 )
 
 internal data class ReconciliationDraft(val account: Int, val target: String = "", val selected: Set<Long>,
@@ -165,7 +167,7 @@ class DemoViewModel : ViewModel() {
         val value = if (Fx.valid(current.currency)) Money.parseOpening(current.opening, locale, Fx.digits(current.currency)) else null
         if (name.isEmpty() || name.length > 60 || value == null ||
             (current.index != null && current.currency != currencyCode(current.index) &&
-                (transactions.any { it.account == current.index } || rules.any { it.account == current.index || it.target == current.index } || openings[current.index].signum() != 0 || draft?.account == current.index || draft?.transferTarget == current.index)) ||
+                ((transactions + deferredForecasts).any { it.account == current.index } || rules.any { it.account == current.index || it.target == current.index } || openings[current.index].signum() != 0 || draft?.account == current.index || draft?.transferTarget == current.index)) ||
             accountNames.withIndex().any { it.index != current.index && it.value.equals(name, true) } ||
             (current.index == null && accountNames.size >= 50) ||
             (current.index != null && current.index !in openings.indices)) {
@@ -266,9 +268,15 @@ class DemoViewModel : ViewModel() {
         private set
     internal var calendarToday by mutableStateOf(java.time.LocalDate.now())
         private set
+    internal val deferredForecasts = mutableStateListOf<DemoTransaction>()
     internal fun setAnticipation(value: Anticipation) {
         if (anticipation == value) return
-        anticipation = value; recurrenceEpoch++; onChange?.invoke()
+        val next = AnticipationForecasts.adjust(exportData().copy(anticipation = value), calendarToday)
+        SnapshotCodec.encode(next).fill(0)
+        anticipation = value
+        transactions.clear(); transactions.addAll(next.transactions)
+        deferredForecasts.clear(); deferredForecasts.addAll(next.deferredForecasts)
+        recurrenceEpoch++; onChange?.invoke()
     }
     internal val rules = mutableStateListOf<RecurringRule>()
     internal var recurrenceEpoch by mutableIntStateOf(0)
@@ -284,6 +292,7 @@ class DemoViewModel : ViewModel() {
         catch (_: IllegalArgumentException) { recurrenceBlocked = true; return false }
         checked.fill(0)
         transactions.clear(); transactions.addAll(result.data.transactions)
+        deferredForecasts.clear(); deferredForecasts.addAll(result.data.deferredForecasts)
         rules.clear(); rules.addAll(result.data.rules)
         recurrenceEpoch++
         onChange?.invoke()
@@ -359,6 +368,7 @@ class DemoViewModel : ViewModel() {
             inputCurrency = row.originalCurrency.orEmpty(),
             fxRate = (row.fxRate ?: row.exchangeAmount?.let { Fx.quotient(it.abs(), row.amount.abs()) })?.stripTrailingZeros()?.toPlainString()?.replace('.', separator).orEmpty(),
             description = row.description, category = row.category, payment = row.payment, editingId = id,
+            splits = row.splits.map { SplitDraft(it.category, it.description, it.amount.toPlainString().replace('.', separator)) },
             repeatFrequency = rules.firstOrNull { it.id == row.seriesId }?.frequency ?: RepeatFrequency.NONE,
             repeatUntil = rules.firstOrNull { it.id == row.seriesId }?.until.orEmpty(),
             repeatCount = rules.firstOrNull { it.id == row.seriesId }?.let { r -> r.count?.let { (it - r.next).coerceAtLeast(0).toString() } }.orEmpty(),
@@ -410,12 +420,13 @@ class DemoViewModel : ViewModel() {
     }
     internal fun cancelEntry() { draft = null; onChange?.invoke() }
 
-    internal fun exportData() = LedgerData(transactions.toList(), categories.toList(), payments.toList(), openings.toList(), draft, accountNames.toList(), transferPayment, rules.toList(), anticipation, transactionOrder, dateMigrationVersion, referenceOptions.toMap(), accountCurrencies.toList(), localRates.toMap(), archivedAccounts.toSet())
+    internal fun exportData() = LedgerData(transactions.toList(), categories.toList(), payments.toList(), openings.toList(), draft, accountNames.toList(), transferPayment, rules.toList(), anticipation, transactionOrder, dateMigrationVersion, referenceOptions.toMap(), accountCurrencies.toList(), localRates.toMap(), archivedAccounts.toSet(), deferredForecasts = deferredForecasts.toList())
 
     internal fun restoreData(data: LedgerData) {
         pendingAccountAction = null
         referenceUiStates.clear()
         transactions.clear(); transactions.addAll(data.transactions)
+        deferredForecasts.clear(); deferredForecasts.addAll(data.deferredForecasts)
         archivedAccounts.clear(); archivedAccounts.addAll(data.archivedAccounts.sorted())
         accountCurrencies.clear(); accountCurrencies.addAll(data.accountCurrencies)
         localRates.clear(); localRates.putAll(data.localRates)
@@ -452,7 +463,7 @@ class DemoViewModel : ViewModel() {
         accountCurrencies.clear(); localRates.clear()
         referenceUiStates.clear()
         referenceOptions.clear()
-        transactions.clear(); categories.clear(); payments.clear(); draft = null; transferPayment = null
+        transactions.clear(); deferredForecasts.clear(); categories.clear(); payments.clear(); draft = null; transferPayment = null
         openings = listOf(BigDecimal("500.00"), BigDecimal("3000.00"))
         destination.intValue = 0; account.intValue = 0; initialized = false; limitReached = false
     }
@@ -469,7 +480,8 @@ class DemoViewModel : ViewModel() {
             (row.originalAmount != null && Money.parseAmount(current.amount, locale, Fx.digits(requireNotNull(row.originalCurrency)))?.compareTo(row.originalAmount.abs()) != 0) ||
             (row.exchangeAmount != null && targetAmount(current, locale)?.compareTo(row.exchangeAmount.abs()) != 0) ||
             current.description.trim() != row.description || current.category != row.category || current.payment != row.payment ||
-            current.date.ifEmpty { row.date } != row.date || current.transferTarget != target || current.addingCategory || current.addingPayment
+            current.date.ifEmpty { row.date } != row.date || current.transferTarget != target || current.addingCategory || current.addingPayment ||
+            Splits.parse(current.splits, amount, currencyCode(current.account), locale, categories) != row.splits
     }
 
     internal fun needsSeriesScope(locale: Locale): Boolean {
@@ -509,7 +521,7 @@ class DemoViewModel : ViewModel() {
         val old = transactions.firstOrNull { it.id == current.editingId }
         val additional = if (current.editingId == null) (if (current.transferTarget == null) 1 else 2)
             else if (current.transferTarget != null && old?.peerId == null) 1 else 0
-        if (transactions.size + additional > LedgerLimits.MAX_TRANSACTIONS) { limitReached = true; return false }
+        if (transactions.size + deferredForecasts.size + additional > LedgerLimits.MAX_TRANSACTIONS) { limitReached = true; return false }
         val amount = nativeAmount(current, locale)
         if (amount == null || current.description.isBlank() || current.account !in openings.indices ||
             current.category !in categories || current.payment !in payments ||
@@ -518,6 +530,10 @@ class DemoViewModel : ViewModel() {
             (current.date.isNotEmpty() && OperationDates.parse(current.date) == null)) {
             draft = current.copy(attempted = true)
             return false
+        }
+        val splitLines = Splits.parse(current.splits, amount, currencyCode(current.account), locale, categories)
+        if (splitLines == null || (current.transferTarget != null && splitLines.isNotEmpty())) {
+            draft = current.copy(attempted = true); return false
         }
         val index = current.editingId?.let { id -> transactions.indexOfFirst { it.id == id } }
         // A missing target must never turn an edit into a new operation.
@@ -538,7 +554,7 @@ class DemoViewModel : ViewModel() {
         val foreignOriginal = target == null && inputCode != currencyCode(current.account)
         val original = if (foreignOriginal) Money.parseAmount(current.amount, locale, Fx.digits(inputCode)) else null
         val originalRate = if (foreignOriginal) entryRate(current, inputCode, currencyCode(current.account), locale) else null
-        val nextId = (transactions.maxOfOrNull { it.id } ?: 0) + 1
+        val nextId = ((transactions + deferredForecasts).maxOfOrNull { it.id } ?: 0) + 1
         if (previous == null && (nextId <= 0 || nextId >= Long.MAX_VALUE - 1)) return false
         if (previous != null && target != null && peer == null && (nextId <= 0 || nextId == Long.MAX_VALUE)) return false
         val rowId = previous?.id ?: nextId
@@ -550,7 +566,7 @@ class DemoViewModel : ViewModel() {
             previous?.cleared ?: false, peerId, previous?.seriesId, previous?.occurrence, !preparing, preparing || previous?.readyToConfirm == true,
             exchangeAmount = if (different) (if (current.income) requireNotNull(targetValue).negate() else targetValue) else null,
             originalCurrency = if (foreignOriginal) inputCode else null,
-            originalAmount = original?.let { if (current.income) it else it.negate() }, fxRate = originalRate)
+            originalAmount = original?.let { if (current.income) it else it.negate() }, fxRate = originalRate, splits = splitLines)
         val nextRules = rules.toMutableList()
         val oldRule = previous?.seriesId?.let { id -> nextRules.firstOrNull { it.id == id } }
         if (oldRule == null && current.repeatFrequency != RepeatFrequency.NONE) {
@@ -565,7 +581,7 @@ class DemoViewModel : ViewModel() {
             val id = java.util.UUID.randomUUID().toString()
             nextRules.add(RecurringRule(id, row.date, current.repeatFrequency, row.account, target, row.amount,
                 row.description, row.category, row.payment, until = until?.toString(), count = count,
-                targetAmount = row.exchangeAmount, originalCurrency = row.originalCurrency, originalAmount = row.originalAmount, fxRate = row.fxRate))
+                targetAmount = row.exchangeAmount, originalCurrency = row.originalCurrency, originalAmount = row.originalAmount, fxRate = row.fxRate, splits = row.splits))
             row = row.copy(seriesId = id, occurrence = 0)
         } else if (oldRule != null) {
             var revised = oldRule
@@ -931,6 +947,7 @@ private fun EntryDialog(names: List<String>, model: DemoViewModel) {
                                 EntryCurrencyFields(model, draft)
                                 EntryAmounts(model, draft, compact = true)
                                 EntryReferences(model, draft, compact = true)
+                                EntrySplits(model, draft)
                                 EntryRepeat(model, draft)
                                 if (model.limitReached) Text(stringResource(R.string.vault_data_limit), color = MaterialTheme.colorScheme.error)
                                 if (draft.attempted) Text(stringResource(if (draft.repeatFrequency == RepeatFrequency.NONE) R.string.invalid_amount else R.string.repeat_invalid), color = MaterialTheme.colorScheme.error)
@@ -941,7 +958,8 @@ private fun EntryDialog(names: List<String>, model: DemoViewModel) {
                             verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             EntryBasics(names, model, draft)
                             EntryReferences(model, draft)
-                            EntryRepeat(model, draft)
+                            EntrySplits(model, draft)
+                                EntryRepeat(model, draft)
                             if (model.limitReached) Text(stringResource(R.string.vault_data_limit), color = MaterialTheme.colorScheme.error)
                                 if (draft.attempted) Text(stringResource(if (draft.repeatFrequency == RepeatFrequency.NONE) R.string.invalid_amount else R.string.repeat_invalid), color = MaterialTheme.colorScheme.error)
                         }
@@ -1434,7 +1452,8 @@ internal fun UpcomingDialog(model: DemoViewModel, account: Int, names: List<Stri
         }
     }
     val rules = model.rules.toList()
-    val upcoming = remember(rules, account, today, days) { UpcomingOccurrences.project(rules, account, today, days) }
+    val deferred = model.deferredForecasts.toList()
+    val upcoming = remember(rules, deferred, account, today, days) { UpcomingOccurrences.project(rules, account, today, days, deferred = deferred) }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn,
         usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         Surface(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(8.dp), shape = MaterialTheme.shapes.large) {

@@ -19,3 +19,7 @@ Les succès des tests ASUS de la 0.7.11 ne valent pas validation de la 0.7.12.
 
 Essais et comportement : [Comptes et séries externes](gestion-comptes-0.7.12.md).
 Le rendu des couleurs, des icônes et des coins doit encore être confirmé visuellement.
+
+## Retour utilisateur du 16 novembre
+
+Frédéric a installé lui-même la 0.7.12-dev et confirme que son fonctionnement est correct. Ce retour ne remplace pas une exécution du harnais sur cet APK.

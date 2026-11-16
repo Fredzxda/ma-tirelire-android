@@ -8,7 +8,7 @@ internal object RecurrenceCodec {
         .put("frequency", r.frequency.name).put("account", r.account).put("target", r.target ?: JSONObject.NULL)
         .put("targetAmount", r.targetAmount?.toPlainString() ?: JSONObject.NULL).put("originalCurrency", r.originalCurrency ?: JSONObject.NULL)
         .put("originalAmount", r.originalAmount?.toPlainString() ?: JSONObject.NULL).put("fxRate", r.fxRate?.toPlainString() ?: JSONObject.NULL)
-        .put("amount", r.amount.toPlainString()).put("description", r.description).put("category", r.category)
+        .put("splits", Splits.encode(r.splits)).put("amount", r.amount.toPlainString()).put("description", r.description).put("category", r.category)
         .put("payment", r.payment).put("next", r.next).put("until", r.until ?: JSONObject.NULL)
         .put("count", r.count ?: JSONObject.NULL).put("active", r.active).put("confirmedThrough", r.confirmedThrough).put("scheduleBase", r.scheduleBase)
         .put("scheduleOffset", r.scheduleOffset).put("generatedThrough", r.generatedThrough ?: JSONObject.NULL)
@@ -28,7 +28,8 @@ internal object RecurrenceCodec {
         targetAmount = if (j.isNull("targetAmount")) null else validatedAmount(j.getString("targetAmount")),
         originalCurrency = if (j.isNull("originalCurrency")) null else j.getString("originalCurrency"),
         originalAmount = if (j.isNull("originalAmount")) null else validatedAmount(j.getString("originalAmount")),
-        fxRate = if (j.isNull("fxRate")) null else requireNotNull(Fx.rate(j.getString("fxRate"), java.util.Locale.US)))
+        fxRate = if (j.isNull("fxRate")) null else requireNotNull(Fx.rate(j.getString("fxRate"), java.util.Locale.US)),
+        splits = Splits.decode(j.optJSONArray("splits")))
 
     fun validate(data: LedgerData, schema: Int) {
         require(data.rules.size <= 500 && data.rules.map { it.id }.distinct().size == data.rules.size)
@@ -41,6 +42,8 @@ internal object RecurrenceCodec {
             require(r.account in data.openings.indices && (r.target == null || (r.target in data.openings.indices && r.target != r.account)))
             fun code(index: Int) = data.accountCurrencies.getOrNull(index) ?: "EUR"
             require(Fx.validAmount(r.amount, code(r.account)))
+            require(r.splits.isEmpty() || schema >= 15)
+            require(Splits.valid(r.splits, r.amount, code(r.account), data.categories) && (r.target == null || r.splits.isEmpty()))
             if (r.target != null && code(r.target) != code(r.account)) {
                 require(schema >= 13 && r.targetAmount != null && r.targetAmount.signum() == -r.amount.signum() && Fx.validAmount(r.targetAmount, code(r.target)))
             } else require(r.targetAmount == null)

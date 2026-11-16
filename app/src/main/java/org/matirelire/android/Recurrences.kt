@@ -17,6 +17,7 @@ internal data class RecurringRule(
     val confirmedThrough: Int = 0,
     val scheduleBase: Int = 0, val scheduleOffset: Int = 0, val generatedThrough: String? = null,
     val targetAmount: BigDecimal? = null, val originalCurrency: String? = null, val originalAmount: BigDecimal? = null, val fxRate: BigDecimal? = null,
+    val splits: List<OperationSplit> = emptyList(),
 ) {
     fun dateAt(index: Int): LocalDate? = runCatching {
         val start = requireNotNull(OperationDates.parse(anchor))
@@ -39,13 +40,14 @@ internal object Recurrences {
     /** Cursor and complete occurrences are returned together for one atomic snapshot. */
     fun generate(data: LedgerData, today: LocalDate, budget: Int = 256): RepeatGeneration {
         require(budget in 1..1000)
-        val horizon = data.anticipation.horizon(today)
-        val rows = data.transactions.toMutableList()
+        val restored = AnticipationForecasts.restore(data, today)
+        val horizon = restored.anticipation.horizon(today)
+        val rows = restored.transactions.toMutableList()
         val rules = data.rules.toMutableList()
         val recorded = rows.mapNotNull { row -> row.seriesId?.let { it to row.occurrence } }.toHashSet()
-        var nextId = (rows.maxOfOrNull { it.id } ?: 0) + 1
+        var nextId = ((rows + restored.deferredForecasts).maxOfOrNull { it.id } ?: 0) + 1
         var made = 0
-        var changed = false
+        var changed = restored != data
         var blocked = false
         for (i in rules.indices) {
             var rule = rules[i]
@@ -57,7 +59,7 @@ internal object Recurrences {
                 if (due == null) { rule = rule.copy(active = false); changed = true; break }
                 if (due > horizon || made >= budget) break
                 val needed = if (rule.target == null) 1 else 2
-                if (rows.size + needed > LedgerLimits.MAX_TRANSACTIONS || nextId <= 0 || nextId >= Long.MAX_VALUE - 1 || rule.next >= 1_000_000) {
+                if (rows.size + restored.deferredForecasts.size + needed > LedgerLimits.MAX_TRANSACTIONS || nextId <= 0 || nextId >= Long.MAX_VALUE - 1 || rule.next >= 1_000_000) {
                     blocked = true; break
                 }
                 // Deleted occurrences remain consumed by the cursor and cannot reappear.
@@ -65,17 +67,17 @@ internal object Recurrences {
                     val first = DemoTransaction(nextId++, rule.account, rule.description, rule.amount,
                         rule.category, rule.payment, due.toString(), false,
                         if (rule.target == null) null else nextId, rule.id, rule.next, false,
-                        exchangeAmount = rule.targetAmount, originalCurrency = rule.originalCurrency, originalAmount = rule.originalAmount, fxRate = rule.fxRate)
+                        exchangeAmount = rule.targetAmount, originalCurrency = rule.originalCurrency, originalAmount = rule.originalAmount, fxRate = rule.fxRate, splits = rule.splits)
                     rows.add(first)
                     if (rule.target != null) rows.add(first.copy(id = nextId++, account = rule.target,
                         amount = rule.targetAmount ?: rule.amount.negate(), peerId = first.id,
-                        exchangeAmount = if (rule.targetAmount != null) rule.amount else null, originalCurrency = null, originalAmount = null, fxRate = null))
+                        exchangeAmount = if (rule.targetAmount != null) rule.amount else null, originalCurrency = null, originalAmount = null, fxRate = null, splits = emptyList()))
                 }
                 rule = rule.copy(next = rule.next + 1, generatedThrough = due.toString())
                 changed = true; made++
             }
             rules[i] = rule
         }
-        return RepeatGeneration(data.copy(transactions = rows, rules = rules), changed, blocked)
+        return RepeatGeneration(restored.copy(transactions = rows, rules = rules), changed, blocked)
     }
 }

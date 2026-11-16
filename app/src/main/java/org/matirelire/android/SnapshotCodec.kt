@@ -18,29 +18,35 @@ internal data class LedgerData(
     val accountCurrencies: List<String> = emptyList(),
     val localRates: Map<String, String> = emptyMap(),
     val archivedAccounts: Set<Int> = emptySet(),
+    val deferredForecasts: List<DemoTransaction> = emptyList(),
 )
 
 internal object SnapshotCodec {
     const val MAX_BYTES = LedgerLimits.MAX_SNAPSHOT_BYTES
 
     fun encode(data: LedgerData): ByteArray {
+        fun encodeRows(values: List<DemoTransaction>): JSONArray {
         val rows = JSONArray()
-        data.transactions.forEach { t -> rows.put(JSONObject().put("id", t.id).put("account", t.account)
+        values.forEach { t -> rows.put(JSONObject().put("id", t.id).put("account", t.account)
             .put("description", t.description).put("amount", t.amount.toPlainString())
             .put("exchangeAmount", t.exchangeAmount?.toPlainString() ?: JSONObject.NULL)
             .put("originalCurrency", t.originalCurrency ?: JSONObject.NULL).put("originalAmount", t.originalAmount?.toPlainString() ?: JSONObject.NULL)
-            .put("fxRate", t.fxRate?.toPlainString() ?: JSONObject.NULL)
+            .put("fxRate", t.fxRate?.toPlainString() ?: JSONObject.NULL).put("splits", Splits.encode(t.splits))
             .put("category", t.category).put("payment", t.payment).put("date", t.date).put("cleared", t.cleared).put("peerId", t.peerId ?: JSONObject.NULL).put("seriesId", t.seriesId ?: JSONObject.NULL).put("occurrence", t.occurrence ?: JSONObject.NULL).put("amountConfirmed", t.amountConfirmed).put("readyToConfirm", t.readyToConfirm)) }
+        return rows
+        }
+        val rows = encodeRows(data.transactions)
         val d = data.draft?.let { draft -> JSONObject().put("account", draft.account).put("income", draft.income)
             .put("inputCurrency", draft.inputCurrency).put("fxRate", draft.fxRate)
-            .put("amount", draft.amount).put("description", draft.description).put("category", draft.category)
+            .put("splits", Splits.encodeDraft(draft.splits)).put("amount", draft.amount).put("description", draft.description).put("category", draft.category)
             .put("payment", draft.payment).put("addingCategory", draft.addingCategory).put("addingPayment", draft.addingPayment)
             .put("newCategory", draft.newCategory).put("newPayment", draft.newPayment)
             .put("editingId", draft.editingId ?: JSONObject.NULL).put("date", draft.date).put("transferTarget", draft.transferTarget ?: JSONObject.NULL)
             .put("repeatFrequency", draft.repeatFrequency.name).put("repeatUntil", draft.repeatUntil)
             .put("repeatCount", draft.repeatCount).put("applyToSeries", draft.applyToSeries) }
-        val result = JSONObject().put("schema", if (data.archivedAccounts.isNotEmpty()) 14 else if (data.accountCurrencies.isNotEmpty() || data.localRates.isNotEmpty() || data.transactions.any { it.originalCurrency != null || it.exchangeAmount != null } || data.rules.any { it.targetAmount != null || it.originalCurrency != null } || data.draft?.let { it.inputCurrency.isNotBlank() || it.fxRate.isNotBlank() } == true) 13 else if (data.referenceOptions.isNotEmpty()) 12 else if (data.dateMigrationVersion > 0) 11 else if (data.transactionOrder != TransactionOrder.ORIGINAL) 10 else if (data.anticipation != Anticipation.DUE) 9 else if (data.rules.isNotEmpty() || data.draft?.repeatFrequency?.let { it != RepeatFrequency.NONE } == true) 9 else if (data.transferPayment != null) 4 else if (data.transactions.any { it.peerId != null } || data.draft?.transferTarget != null) 3 else if (data.accountNames.isEmpty()) 1 else 2)
+        val result = JSONObject().put("schema", if (data.deferredForecasts.isNotEmpty()) 16 else if (data.transactions.any { it.splits.isNotEmpty() } || data.rules.any { it.splits.isNotEmpty() } || data.draft?.splits?.isNotEmpty() == true) 15 else if (data.archivedAccounts.isNotEmpty()) 14 else if (data.accountCurrencies.isNotEmpty() || data.localRates.isNotEmpty() || data.transactions.any { it.originalCurrency != null || it.exchangeAmount != null } || data.rules.any { it.targetAmount != null || it.originalCurrency != null } || data.draft?.let { it.inputCurrency.isNotBlank() || it.fxRate.isNotBlank() } == true) 13 else if (data.referenceOptions.isNotEmpty()) 12 else if (data.dateMigrationVersion > 0) 11 else if (data.transactionOrder != TransactionOrder.ORIGINAL) 10 else if (data.anticipation != Anticipation.DUE) 9 else if (data.rules.isNotEmpty() || data.draft?.repeatFrequency?.let { it != RepeatFrequency.NONE } == true) 9 else if (data.transferPayment != null) 4 else if (data.transactions.any { it.peerId != null } || data.draft?.transferTarget != null) 3 else if (data.accountNames.isEmpty()) 1 else 2)
             .put("dateMigrationVersion", data.dateMigrationVersion).put("transactionOrder", data.transactionOrder.name).put("anticipation", data.anticipation.name).put("rules", JSONArray(data.rules.map(RecurrenceCodec::encode))).put("transferPayment", data.transferPayment ?: JSONObject.NULL).put("accountNames", JSONArray(data.accountNames)).put("transactions", rows)
+            .put("deferredForecasts", encodeRows(data.deferredForecasts))
             .put("archivedAccounts", JSONArray(data.archivedAccounts.sorted()))
             .put("accountCurrencies", JSONArray(data.accountCurrencies)).put("localRates", JSONObject(data.localRates))
             .put("referenceOptions", ReferenceCatalog.encode(data.referenceOptions))
@@ -71,7 +77,7 @@ internal object SnapshotCodec {
         require(!quoted && depth == 0)
         val root = JSONObject(text)
         val schema = root.getInt("schema")
-        require(schema in 1..14)
+        require(schema in 1..16)
         fun names(key: String): List<String> {
             val list = root.getJSONArray(key)
             require(list.length() in 1..500)
@@ -107,7 +113,11 @@ internal object SnapshotCodec {
         val archivedList = (0 until archivedJson.length()).map { archivedJson.getInt(it).also { index -> require(index in openings.indices) } }
         require(archivedList.distinct().size == archivedList.size)
         val archived = archivedList.toSet()
-        val entries = root.getJSONArray("transactions")
+        val liveEntries = root.getJSONArray("transactions")
+        val deferredEntries = if (schema >= 16) root.getJSONArray("deferredForecasts") else JSONArray()
+        val entries = JSONArray()
+        (0 until liveEntries.length()).forEach { entries.put(liveEntries.getJSONObject(it)) }
+        (0 until deferredEntries.length()).forEach { entries.put(deferredEntries.getJSONObject(it)) }
         require(entries.length() <= LedgerLimits.MAX_TRANSACTIONS)
         val parsedRows = (0 until entries.length()).map { i ->
             val t = entries.getJSONObject(i)
@@ -123,10 +133,12 @@ internal object SnapshotCodec {
                 exchangeAmount = if (schema >= 13 && !t.isNull("exchangeAmount")) t.getString("exchangeAmount").toBigDecimal().also { require(it.precision() <= 16 && it.scale() in 0..3) } else null,
                 originalCurrency = if (schema >= 13 && !t.isNull("originalCurrency")) t.getString("originalCurrency").also { require(Fx.valid(it)) } else null,
                 originalAmount = if (schema >= 13 && !t.isNull("originalAmount")) amount(t.getString("originalAmount"), t.getString("originalCurrency")) else null,
-                fxRate = if (schema >= 13 && !t.isNull("fxRate")) requireNotNull(Fx.rate(t.getString("fxRate"), java.util.Locale.US)) else null).also {
+                fxRate = if (schema >= 13 && !t.isNull("fxRate")) requireNotNull(Fx.rate(t.getString("fxRate"), java.util.Locale.US)) else null,
+                splits = if (schema >= 15) Splits.decode(t.optJSONArray("splits")) else emptyList()).also {
                 require(it.id > 0 && it.id < Long.MAX_VALUE && it.account in openings.indices)
                 require(it.description.isNotBlank() && it.description.length <= 100 && it.date.length <= 80)
                 require(it.category in categories && it.payment in payments)
+                require(Splits.valid(it.splits, it.amount, code(it.account), categories) && (it.peerId == null || it.splits.isEmpty()))
             }
         }
         val legacyById = parsedRows.associateBy { it.id }
@@ -172,7 +184,8 @@ internal object SnapshotCodec {
                 repeatUntil = it.optString("repeatUntil"), repeatCount = it.optString("repeatCount"),
                 applyToSeries = it.optBoolean("applyToSeries"),
                 inputCurrency = if (schema >= 13) it.optString("inputCurrency") else "",
-                fxRate = if (schema >= 13) it.optString("fxRate") else "").also { draft ->
+                fxRate = if (schema >= 13) it.optString("fxRate") else "",
+                splits = if (schema >= 15) Splits.decodeDraft(it.optJSONArray("splits")) else emptyList()).also { draft ->
                 require((draft.inputCurrency.isBlank() || Fx.valid(draft.inputCurrency)) && draft.fxRate.length <= 48)
                 require(draft.account in openings.indices && draft.amount.length <= 30 && draft.description.length <= 100)
                 require((draft.category.isEmpty() || draft.category in categories) && (draft.payment.isEmpty() || draft.payment in payments))
@@ -190,6 +203,9 @@ internal object SnapshotCodec {
                 require(draft.date.isEmpty() || OperationDates.parse(draft.date) != null)
                 require(draft.repeatUntil.length <= 10 && draft.repeatCount.length <= 5)
                 require(draft.newCategory.length <= 60 && draft.newPayment.length <= 60)
+                require(draft.splits.size <= Splits.MAX_LINES && draft.splits.all { line ->
+                    (line.category.isEmpty() || line.category in categories) && line.description.length <= 100 && line.amount.length <= 30
+                })
             }
         }
         val rulesJson = if (schema >= 5) root.getJSONArray("rules") else JSONArray()
@@ -200,16 +216,23 @@ internal object SnapshotCodec {
             if (schema < 6) rule.copy(confirmedThrough = rows.filter { row -> row.seriesId == rule.id && row.amountConfirmed }
                 .maxOfOrNull { row -> requireNotNull(row.occurrence) } ?: 0) else rule
         }
-        val result = LedgerData(rows, categories, payments, openings, d, accountNames, transferPayment, rules,
+        val result = LedgerData(rows.take(liveEntries.length()), categories, payments, openings, d, accountNames, transferPayment, rules,
             if (schema >= 8) Anticipation.valueOf(root.getString("anticipation")) else Anticipation.DUE,
             if (schema >= 10) TransactionOrder.valueOf(root.getString("transactionOrder")) else TransactionOrder.ORIGINAL,
             if (schema >= 11) root.getInt("dateMigrationVersion").also { require(it == 1 || (schema >= 12 && it == 0)) } else 0,
-            if (schema >= 12) ReferenceCatalog.decode(root.getJSONObject("referenceOptions"), categories, payments, openings.indices, transferPayment) else emptyMap(), currencies, rates, archived)
+            if (schema >= 12) ReferenceCatalog.decode(root.getJSONObject("referenceOptions"), categories, payments, openings.indices, transferPayment) else emptyMap(), currencies, rates, archived, rows.drop(liveEntries.length()))
         require(result.rules.none { it.active && (it.account in archived || it.target in archived) })
         require(result.draft == null || (result.draft.account !in archived && result.draft.transferTarget !in archived))
-        RecurrenceCodec.validate(result, schema)
+        val liveIds = result.transactions.map { it.id }.toSet()
+        require(rows.all { it.peerId == null || ((it.id in liveIds) == (it.peerId in liveIds)) })
+        require(rows.filter { it.seriesId != null }.groupBy { it.seriesId to it.occurrence }.values.all { group ->
+            group.all { it.id in liveIds } || group.none { it.id in liveIds }
+        })
+        require(result.deferredForecasts.all { it.seriesId != null && !it.amountConfirmed && !it.cleared && !it.readyToConfirm && OperationDates.parse(it.date) != null })
+        require(result.draft?.editingId == null || result.transactions.any { it.id == result.draft.editingId })
+        RecurrenceCodec.validate(result.copy(transactions = rows), schema)
         val normalized = normalizeArchivedTransferTemplates(result)
-        RecurrenceCodec.validate(normalized, schema)
+        RecurrenceCodec.validate(normalized.copy(transactions = normalized.transactions + normalized.deferredForecasts), schema)
         return normalized
     }
 }

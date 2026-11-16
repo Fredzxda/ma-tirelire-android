@@ -50,7 +50,7 @@ class AnticipationTest {
         assertFalse(confirmed.cleared)
     }
 
-    @Test fun reducingHorizonAndRestoringNeverDeleteOrDuplicateForecasts() {
+    @Test fun reducingHorizonDefersExactForecastsAndRestoringDoesNotDuplicate() {
         val model = model()
         model.setAnticipation(Anticipation.MONTH_END); model.generateDue(today)
         val before = model.transactions.toList()
@@ -59,9 +59,83 @@ class AnticipationTest {
         restored.restoreData(SnapshotCodec.decode(archive))
         assertEquals(Anticipation.MONTH_END, restored.anticipation)
         assertFalse(restored.generateDue(today))
+        restored.generateDue(today)
         restored.setAnticipation(Anticipation.DUE)
         assertFalse(restored.generateDue(today))
-        assertEquals(before, restored.transactions.toList())
+        assertEquals(before.toSet(), (restored.transactions + restored.deferredForecasts).toSet())
+        assertTrue(restored.transactions.none { RecurringState.of(it, today) == RecurringState.FORECAST })
+        assertEquals(3, restored.deferredForecasts.size)
+        restored.setAnticipation(Anticipation.MONTH_END)
+        assertEquals(before.toSet(), restored.transactions.toSet())
+        assertTrue(restored.deferredForecasts.isEmpty())
+    }
+
+    @Test fun deferredRecordsKeepExactHistoryAndReserveTheirIds() {
+        val model = model()
+        model.generateDue(today)
+        model.setAnticipation(Anticipation.MONTH_END); model.generateDue(today)
+        model.setAnticipation(Anticipation.DUE)
+        val hidden = model.deferredForecasts.toList()
+        model.beginEntry(today)
+        model.updateDraft(model.draft!!.copy(amount = "2", description = "New", category = "Food", payment = "Card"))
+        assertTrue(model.saveEntry(Locale.US, "unused"))
+        assertTrue(model.transactions.last().id > hidden.maxOf { it.id })
+        val saved = model.exportData()
+        val changedTemplate = saved.copy(rules = saved.rules.map { it.copy(amount = BigDecimal("-99.00"), description = "Changed future template") },
+            anticipation = Anticipation.MONTH_END)
+        val restored = Recurrences.generate(SnapshotCodec.decode(SnapshotCodec.encode(changedTemplate)), today).data
+        assertEquals(hidden.toSet(), restored.transactions.filter { row -> row.id in hidden.map { it.id } }.toSet())
+        assertEquals(3, UpcomingOccurrences.project(saved.rules, 0, today, 30, deferred = saved.deferredForecasts).items.count { it.index < saved.rules.single().next })
+    }
+
+    @Test fun protectedPairsAndPreparedOccurrencesStayVisible() {
+        val model = model(transfer = true)
+        model.generateDue(today)
+        model.setAnticipation(Anticipation.MONTH_END); model.generateDue(today)
+        val data = model.exportData()
+        val changed = data.copy(transactions = data.transactions.map {
+            when (it.date) {
+                "2026-11-15" -> it.copy(readyToConfirm = true)
+                "2026-11-22" -> if (it.account == 1) it.copy(cleared = true) else it
+                else -> it
+            }
+        }, anticipation = Anticipation.DUE)
+        val adjusted = AnticipationForecasts.adjust(changed, today)
+        assertEquals(2, adjusted.deferredForecasts.size)
+        assertTrue(adjusted.deferredForecasts.all { it.date == "2026-11-29" })
+        assertEquals(2, adjusted.transactions.count { it.date == "2026-11-22" })
+        SnapshotCodec.decode(SnapshotCodec.encode(adjusted))
+    }
+
+    @Test fun hiddenForecastsRestoreWhenDueWithoutRevivingManualDeletion() {
+        val model = model()
+        model.generateDue(today)
+        model.setAnticipation(Anticipation.MONTH_END); model.generateDue(today)
+        val deleted = model.transactions.first { it.date == "2026-11-22" }
+        model.deleteEntry(deleted.id)
+        model.setAnticipation(Anticipation.DUE)
+        val persisted = SnapshotCodec.decode(SnapshotCodec.encode(model.exportData()))
+        val due = Recurrences.generate(persisted, LocalDate.of(2026, 11, 29)).data
+        assertTrue(due.deferredForecasts.isEmpty())
+        assertTrue(due.transactions.none { it.date == "2026-11-22" })
+        assertEquals(1, due.transactions.count { it.date == "2026-11-29" })
+        assertFalse(Recurrences.generate(due, LocalDate.of(2026, 11, 29)).changed)
+    }
+
+    @Test fun accountArchivingPreservesHiddenPartitionAndExternalizesFutureTemplate() {
+        val model = model(transfer = true)
+        model.generateDue(today)
+        model.setAnticipation(Anticipation.MONTH_END); model.generateDue(today)
+        model.setAnticipation(Anticipation.DUE)
+        val hidden = model.deferredForecasts.toList()
+        val balance = model.balance(0)
+        assertTrue(model.archiveAccount(1))
+        assertEquals(balance, model.balance(0))
+        assertEquals(hidden, model.deferredForecasts.toList())
+        assertNull(model.rules.single().target)
+        assertTrue(model.deleteAccount(1))
+        assertTrue(model.deferredForecasts.all { it.account == 0 && it.peerId == null })
+        SnapshotCodec.decode(SnapshotCodec.encode(model.exportData()))
     }
 
     @Test fun transfersStayAtomicAndAreNotDuplicatedInUpcomingView() {

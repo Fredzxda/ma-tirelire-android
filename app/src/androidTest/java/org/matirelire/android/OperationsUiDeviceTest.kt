@@ -45,6 +45,41 @@ class OperationsUiDeviceTest {
             }
         }
     }
+    @Test fun splitEntryPortraitCanReachLastLineAndSave() = exerciseSplitEntry(false)
+    @Test fun splitEntryLandscapeCanReachLastLineAndSave() = exerciseSplitEntry(true)
+    private fun exerciseSplitEntry(landscape: Boolean) {
+        val orientation = if (landscape) android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        ui.runOnUiThread { ui.activity.requestedOrientation = orientation }
+        val expected = if (landscape) android.content.res.Configuration.ORIENTATION_LANDSCAPE
+            else android.content.res.Configuration.ORIENTATION_PORTRAIT
+        ui.waitUntil(10_000) { ui.activity.resources.configuration.orientation == expected }
+        val model = model()
+        model.ensureAccountNames(listOf("Current", "Savings"))
+        model.beginEntry(today)
+        model.updateDraft(model.draft!!.copy(amount = "50", description = "Fixture split"))
+        ui.setContent { MaterialTheme {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                model.draft?.let { EntrySplits(model, it) }
+                androidx.compose.material3.Button(onClick = {
+                    model.saveEntry(ui.activity.resources.configuration.locales[0], "unused")
+                }, modifier = Modifier.testTag("fixture-save-splits")) {
+                    androidx.compose.material3.Text("Save fixture")
+                }
+            }
+        } }
+        ui.onNodeWithTag("split_add").performClick()
+        ui.onNodeWithTag("split_amount_0").performScrollTo().performTextInput("30")
+        ui.onNodeWithTag("split_amount_1").performScrollTo().performTextInput("20")
+        ui.onNodeWithTag("fixture-save-splits").performScrollTo().performClick()
+        ui.runOnIdle {
+            assertNull(model.draft)
+            val row = model.transactions.last()
+            assertEquals(BigDecimal("-50.00"), row.amount)
+            assertEquals(2, row.splits.size)
+            assertEquals(0, row.splits.sumOf { it.amount }.compareTo(BigDecimal("50")))
+        }
+    }
     @Test fun accountSwipesRequireConfirmationAndCancelDoesNotArchive() {
         val model = model(); model.ensureAccountNames(listOf("Current", "Savings"))
         var opened = 0

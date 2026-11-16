@@ -89,9 +89,9 @@ internal fun DemoViewModel.removeReference(category: Boolean, name: String, repl
     val names = if (category) categories else payments
     if (name !in names || names.size <= 1 || (!category && name == transferPayment)) return false
     if (replacement != null && (replacement !in names || replacement == name || (!category && replacement == transferPayment))) return false
-    val used = transactions.any { (if (category) it.category else it.payment) == name } ||
-        rules.any { (if (category) it.category else it.payment) == name } ||
-        draft?.let { (if (category) it.category else it.payment) == name } == true
+    val used = (transactions + deferredForecasts).any { (if (category) it.category else it.payment) == name || (category && it.splits.any { line -> line.category == name }) } ||
+        rules.any { (if (category) it.category else it.payment) == name || (category && it.splits.any { line -> line.category == name }) } ||
+        draft?.let { (if (category) it.category else it.payment) == name || (category && it.splits.any { line -> line.category == name }) } == true
     if (used && replacement == null) return false
     // Children are reparented to the removed category's parent, independently of replacement.
     val metadata = referenceOptions.toMutableMap()
@@ -105,22 +105,24 @@ internal fun DemoViewModel.removeReference(category: Boolean, name: String, repl
 }
 
 private fun DemoViewModel.rewriteReference(category: Boolean, old: String, next: String) {
-    transactions.indices.forEach { i ->
-        val row = transactions[i]
-        if (category && row.category == old) transactions[i] = row.copy(category = next)
-        if (!category && row.payment == old) transactions[i] = row.copy(payment = next)
-    }
+    fun rewriteRow(row: DemoTransaction): DemoTransaction = if (category) row.copy(
+        category = if (row.category == old) next else row.category,
+        splits = row.splits.map { if (it.category == old) it.copy(category = next) else it })
+        else if (row.payment == old) row.copy(payment = next) else row
+    transactions.indices.forEach { i -> transactions[i] = rewriteRow(transactions[i]) }
+    deferredForecasts.indices.forEach { i -> deferredForecasts[i] = rewriteRow(deferredForecasts[i]) }
     rules.indices.forEach { i ->
         val rule = rules[i]
-        if (category && rule.category == old) rules[i] = rule.copy(category = next)
-        if (!category && rule.payment == old) rules[i] = rule.copy(payment = next)
+        rules[i] = if (category) rule.copy(category = if (rule.category == old) next else rule.category,
+            splits = rule.splits.map { if (it.category == old) it.copy(category = next) else it })
+            else if (rule.payment == old) rule.copy(payment = next) else rule
     }
     draft?.let { value ->
-        // updateDraft persists; postpone that callback until references are changed atomically.
         val callback = onChange; onChange = null
         try {
-            if (category && value.category == old) updateDraft(value.copy(category = next))
-            if (!category && value.payment == old) updateDraft(value.copy(payment = next))
+            if (category) updateDraft(value.copy(category = if (value.category == old) next else value.category,
+                splits = value.splits.map { if (it.category == old) it.copy(category = next) else it }))
+            else if (value.payment == old) updateDraft(value.copy(payment = next))
         } finally { onChange = callback }
     }
 }
