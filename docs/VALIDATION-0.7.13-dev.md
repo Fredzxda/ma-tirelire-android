@@ -16,10 +16,11 @@ perte des écritures confirmées/pointées ni résurrection des suppressions man
   fictive : défilement jusqu’aux deux montants puis enregistrement. Ils ne couvrent
   pas à eux seuls la fiche complète, la rotation en cours de saisie ou le clavier.
 
-Installation, lancement et tests instrumentés non effectués : l’ASUS configuré
-n’était pas disponible dans ADB lors des deux vérifications du 16 novembre.
-Aucune validation sur téléphone n’est revendiquée à ce stade. Relancer
-`powershell -NoProfile -File tools/play.ps1` après reconnexion de cet appareil.
+Installation et version 0.7.13-dev vérifiées sur l’ASUS après sa reconnexion.
+Les 14 tests instrumentés SQLCipher/Keystore et interface ont réussi, dont les
+deux nouveaux scénarios de ventilation en portrait et paysage. L’application a
+été relancée avec succès par le harnais. Le coffre personnel n’a pas été utilisé
+par les tests. Ces contrôles ne remplacent pas les essais métier de Frédéric.
 
 APK local : `app/build/outputs/apk/debug/app-debug.apk`.
 CI GitHub : non observée au moment de cette validation locale.
