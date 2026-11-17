@@ -45,6 +45,45 @@ class OperationsUiDeviceTest {
             }
         }
     }
+    @Test fun descriptionSuggestionsPortraitFillOnlyEmptyReferences() = exerciseDescriptionSuggestions(false)
+    @Test fun descriptionSuggestionsLandscapeFillOnlyEmptyReferences() = exerciseDescriptionSuggestions(true)
+    private fun exerciseDescriptionSuggestions(landscape: Boolean) {
+        ui.runOnUiThread { ui.activity.requestedOrientation = if (landscape)
+            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
+        ui.waitUntil(10_000) { ui.activity.resources.configuration.orientation == if (landscape)
+            android.content.res.Configuration.ORIENTATION_LANDSCAPE else android.content.res.Configuration.ORIENTATION_PORTRAIT }
+        val model = model()
+        model.beginEntry(today)
+        ui.setContent { MaterialTheme {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                model.draft?.let { EntryDescriptionSuggestions(model, it) }
+            }
+        } }
+        ui.onNodeWithTag("entry-description").performClick().performTextInput("Fixture cu")
+        ui.onNodeWithTag("description-suggestion-1").performClick()
+        ui.runOnIdle {
+            assertEquals("Fixture current", model.draft!!.description)
+            assertEquals("Food", model.draft!!.category)
+            assertEquals("Card", model.draft!!.payment)
+            model.addCategory("Chosen category")
+            model.addPayment("Chosen payment")
+            model.updateDraft(model.draft!!.copy(description = "", category = "Chosen category", payment = "Chosen payment"))
+        }
+        ui.onNodeWithTag("entry-description").performTextInput("Fixture cu")
+        ui.onNodeWithTag("description-suggestion-1").performClick()
+        ui.runOnIdle {
+            assertEquals("Chosen category", model.draft!!.category)
+            assertEquals("Chosen payment", model.draft!!.payment)
+        }
+    }
+    @Test fun operationCardShowsActualSplitCategories() {
+        val model = model()
+        val original = model.transactions.first()
+        model.transactions[0] = original.copy(splits = listOf(
+            OperationSplit("Food", "", BigDecimal("4.00")), OperationSplit("House", "", BigDecimal("6.00"))))
+        screen(model)
+        ui.onNodeWithText("Food + House", substring = true).assertExists()
+    }
     @Test fun splitEntryPortraitCanReachLastLineAndSave() = exerciseSplitEntry(false)
     @Test fun splitEntryLandscapeCanReachLastLineAndSave() = exerciseSplitEntry(true)
     private fun exerciseSplitEntry(landscape: Boolean) {
@@ -57,7 +96,7 @@ class OperationsUiDeviceTest {
         val model = model()
         model.ensureAccountNames(listOf("Current", "Savings"))
         model.beginEntry(today)
-        model.updateDraft(model.draft!!.copy(amount = "50", description = "Fixture split"))
+        model.updateDraft(model.draft!!.copy(amount = "50", description = "Fixture split", category = "Food", payment = "Card"))
         ui.setContent { MaterialTheme {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 model.draft?.let { EntrySplits(model, it) }
@@ -114,7 +153,7 @@ class OperationsUiDeviceTest {
     @Test fun foreignCurrencyEntryShowsConversionAndSavesOriginalAmount() {
         val model = model(); model.ensureAccountNames(listOf("Current", "Savings"))
         model.beginEntry(today)
-        model.updateDraft(model.draft!!.copy(amount = "10", description = "Fixture foreign expense"))
+        model.updateDraft(model.draft!!.copy(amount = "10", description = "Fixture foreign expense", category = "Food", payment = "Card"))
         ui.setContent { MaterialTheme {
             Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
                 model.draft?.let { EntryCurrencyFields(model, it) }

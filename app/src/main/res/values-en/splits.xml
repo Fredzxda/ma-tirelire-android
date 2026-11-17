@@ -7,4 +7,5 @@
     <string name="splits_add">Add split line</string>
     <string name="splits_invalid">Enter at least two positive shares. Their sum must exactly match the operation amount in the account currency.</string>
     <string name="splits_transfer_blocked">Remove the split before creating an internal transfer.</string>
+    <string name="split_categories_summary">Split categories: %1$s</string>
 </resources>

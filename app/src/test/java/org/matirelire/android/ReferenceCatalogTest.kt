@@ -12,7 +12,7 @@ class ReferenceCatalogTest {
     }
     @Test fun renameAndReplacePreserveSeriesPairsAndIndependentClearing() {
         val m = model()
-        m.beginEntry(java.time.LocalDate.of(2026, 11, 11))
+        m.beginEntryWithReferences(java.time.LocalDate.of(2026, 11, 11))
         m.updateDraft(m.draft!!.copy(description = "Monthly transfer", amount = "25.00", payment = "Transfer",
             transferTarget = 1, repeatFrequency = RepeatFrequency.MONTH, repeatCount = "3"))
         assertTrue(m.saveEntry(Locale.US, "unused", today = java.time.LocalDate.of(2026, 11, 11)))
@@ -34,7 +34,7 @@ class ReferenceCatalogTest {
         val m = model()
         val today = java.time.LocalDate.of(2026, 11, 11)
         m.addCategory("Split only")
-        m.beginEntry(today)
+        m.beginEntryWithReferences(today)
         m.updateDraft(m.draft!!.copy(description = "Split weekly", amount = "10.00", category = "Food", payment = "Card",
             repeatFrequency = RepeatFrequency.WEEK, splits = listOf(
                 SplitDraft("Split only", "First", "4.00"), SplitDraft("Other", "Second", "6.00"))))
@@ -66,14 +66,17 @@ class ReferenceCatalogTest {
         val m = model()
         m.saveReference(true, "Food", "Food", ReferenceOptions(kind = ReferenceKind.EXPENSE, accounts = setOf(0)))
         m.beginEntry()
-        assertEquals("Food", m.draft!!.category)
+        assertEquals("", m.draft!!.category)
+        assertEquals("", m.draft!!.payment)
+        m.updateDraft(m.draft!!.copy(category = "Food", payment = "Card"))
         m.updateDraft(m.draft!!.copy(income = true, amount = "10.00", description = "Test"))
-        assertEquals("Other", m.draft!!.category)
+        assertEquals("", m.draft!!.category)
         m.updateDraft(m.draft!!.copy(category = "Food"))
         assertFalse(m.saveEntry(Locale.US, "unused"))
         m.updateDraft(m.draft!!.copy(income = false))
         m.changeDraftAccount(1)
-        assertEquals("Other", m.draft!!.category)
+        assertEquals("", m.draft!!.category)
+        m.updateDraft(m.draft!!.copy(category = "Other"))
         assertTrue(m.saveEntry(Locale.US, "unused"))
     }
     @Test fun referenceEditorMemoryIsDiscardedAtLock() {

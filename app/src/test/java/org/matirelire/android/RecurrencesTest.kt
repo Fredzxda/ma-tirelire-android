@@ -13,7 +13,7 @@ class RecurrencesTest {
         ensureTransferPayment("Transfer")
     }
     private fun series(model: DemoViewModel, transfer: Boolean = false, count: String = "3", until: String = "") {
-        model.beginEntry(LocalDate.of(2026, 1, 31))
+        model.beginEntryWithReferences(LocalDate.of(2026, 1, 31))
         model.updateDraft(model.draft!!.copy(description = "Monthly", amount = "10.00", repeatFrequency = RepeatFrequency.MONTH,
             repeatCount = count, repeatUntil = until, payment = if (transfer) "Transfer" else "Card",
             transferTarget = if (transfer) 1 else null))

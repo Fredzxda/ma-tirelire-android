@@ -42,13 +42,13 @@ class DemoViewModelTest {
 
     @Test fun reopeningDraftPreservesEveryFieldAndSavesExactlyOnce() {
         val model = model()
-        model.beginEntry()
+        model.beginEntryWithReferences()
         val category = model.addCategory("Transport")!!
         val payment = model.addPayment("Cash")!!
         val edited = model.draft!!.copy(account = 1, amount = "12,34", income = true,
             description = "Test", category = category, payment = payment)
         model.updateDraft(edited)
-        model.beginEntry()
+        model.beginEntryWithReferences()
         assertEquals(edited, model.draft)
         val count = model.transactions.size
         assertTrue(model.saveEntry(Locale.FRANCE, "2026-11-08"))
@@ -66,7 +66,7 @@ class DemoViewModelTest {
     @Test fun cancellationAndInvalidInputNeverCreateAnOperation() {
         val model = model()
         val count = model.transactions.size
-        model.beginEntry()
+        model.beginEntryWithReferences()
         model.updateDraft(model.draft!!.copy(amount = "1,234", description = "Test"))
         assertFalse(model.saveEntry(Locale.FRANCE, "2026-11-08"))
         assertTrue(model.draft!!.attempted)
@@ -74,13 +74,13 @@ class DemoViewModelTest {
         model.cancelEntry()
         assertNull(model.draft)
         assertEquals(count, model.transactions.size)
-        model.beginEntry()
+        model.beginEntryWithReferences()
         assertEquals("", model.draft!!.amount)
     }
 
     @Test fun newExpenseStartsUnclearedAndReferenceCreationDoesNotResetDraft() {
         val model = model()
-        model.beginEntry()
+        model.beginEntryWithReferences()
         model.updateDraft(model.draft!!.copy(amount = "12.34", description = "Expense",
             addingCategory = true, newCategory = "Travel"))
         val category = model.addCategory(model.draft!!.newCategory)!!
@@ -90,7 +90,7 @@ class DemoViewModelTest {
         assertEquals(BigDecimal("555.32"), model.balance(0))
         assertEquals(BigDecimal("587.66"), model.balance(0, true))
         assertFalse(model.transactions.last().cleared)
-        model.beginEntry()
+        model.beginEntryWithReferences()
         assertTrue(model.categories.contains("Travel"))
     }
 

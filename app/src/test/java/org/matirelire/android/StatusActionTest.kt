@@ -11,7 +11,7 @@ class StatusActionTest {
     private fun model(transfer: Boolean = false) = DemoViewModel().apply {
         initialize(listOf(DemoTransaction(1, 0, "Fixture", BigDecimal("-1.00"), "Food", "Card", "2026-01-01", true)))
         ensureAccountNames(listOf("Current", "Savings")); ensureTransferPayment("Transfer")
-        beginEntry(LocalDate.of(2026, 11, 1))
+        beginEntryWithReferences(LocalDate.of(2026, 11, 1))
         updateDraft(draft!!.copy(amount = "10", description = "Weekly", repeatFrequency = RepeatFrequency.WEEK,
             payment = if (transfer) "Transfer" else "Card", transferTarget = if (transfer) 1 else null))
         assertTrue(saveEntry(Locale.US, "unused"))

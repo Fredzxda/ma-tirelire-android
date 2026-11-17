@@ -11,7 +11,7 @@ class RecurrenceConfirmationTest {
     private fun model(transfer: Boolean = false, count: String = "4") = DemoViewModel().apply {
         initialize(listOf(DemoTransaction(1, 0, "Fixture", BigDecimal("-1.00"), "Food", "Card", "2026-01-01", true)))
         ensureAccountNames(listOf("Current", "Savings")); ensureTransferPayment("Transfer")
-        beginEntry(LocalDate.of(2026, 1, 1))
+        beginEntryWithReferences(LocalDate.of(2026, 1, 1))
         updateDraft(draft!!.copy(amount = "10", description = "Recurring", repeatFrequency = RepeatFrequency.MONTH,
             repeatCount = count, payment = if (transfer) "Transfer" else "Card", transferTarget = if (transfer) 1 else null))
         assertTrue(saveEntry(Locale.US, "unused"))
@@ -25,7 +25,7 @@ class RecurrenceConfirmationTest {
 
     @Test fun calendarSelectionStoresIsoClearsCountAndRefusesEarlierEnd() {
         val model = model()
-        model.beginEntry(LocalDate.of(2026, 6, 10))
+        model.beginEntryWithReferences(LocalDate.of(2026, 6, 10))
         model.updateDraft(model.draft!!.copy(repeatCount = "3"))
         assertFalse(model.selectRepeatEnd("2026-06-09"))
         assertFalse(model.selectRepeatEnd("10/06/2026"))

@@ -11,7 +11,7 @@ class AnticipationTest {
     private fun model(transfer: Boolean = false) = DemoViewModel().apply {
         initialize(listOf(DemoTransaction(1, 0, "Fixture", BigDecimal("-1.00"), "Food", "Card", "2026-01-01", true)))
         ensureAccountNames(listOf("Current", "Savings")); ensureTransferPayment("Transfer")
-        beginEntry(LocalDate.of(2026, 11, 1))
+        beginEntryWithReferences(LocalDate.of(2026, 11, 1))
         updateDraft(draft!!.copy(amount = "10", description = "Weekly", repeatFrequency = RepeatFrequency.WEEK,
             payment = if (transfer) "Transfer" else "Card", transferTarget = if (transfer) 1 else null))
         assertTrue(saveEntry(Locale.US, "unused"))
@@ -76,7 +76,7 @@ class AnticipationTest {
         model.setAnticipation(Anticipation.MONTH_END); model.generateDue(today)
         model.setAnticipation(Anticipation.DUE)
         val hidden = model.deferredForecasts.toList()
-        model.beginEntry(today)
+        model.beginEntryWithReferences(today)
         model.updateDraft(model.draft!!.copy(amount = "2", description = "New", category = "Food", payment = "Card"))
         assertTrue(model.saveEntry(Locale.US, "unused"))
         assertTrue(model.transactions.last().id > hidden.maxOf { it.id })

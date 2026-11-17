@@ -20,7 +20,7 @@ class AccountsTest {
         assertEquals("New account", model.accountNames[2])
         assertEquals(BigDecimal("-25.50"), model.balance(2))
         model.account.intValue = 2
-        model.beginEntry()
+        model.beginEntryWithReferences()
         model.updateDraft(model.draft!!.copy(amount = "10,00", description = "Expense"))
         assertTrue(model.saveEntry(Locale.FRANCE, "date"))
         model.toggleCleared(model.transactions.last().id)

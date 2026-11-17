@@ -13,9 +13,9 @@ class OperationDatesTest {
 
     @Test fun dateDefaultsAtDraftStartAndSurvivesReopeningAndSnapshot() {
         val model = model()
-        model.beginEntry(LocalDate.of(2026, 11, 10))
+        model.beginEntryWithReferences(LocalDate.of(2026, 11, 10))
         assertEquals("2026-11-10", model.draft!!.date)
-        model.beginEntry(LocalDate.of(2026, 11, 11))
+        model.beginEntryWithReferences(LocalDate.of(2026, 11, 11))
         assertEquals("2026-11-10", model.draft!!.date)
         model.updateDraft(model.draft!!.copy(date = "2024-02-29", amount = "12,34", description = "Past expense"))
         val restored = DemoViewModel()

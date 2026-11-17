@@ -76,8 +76,8 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Check using fictitious data</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">Split transactions across categories and descriptions, with exact total validation. Reducing anticipation removes forecasts beyond the limit that are neither confirmed nor cleared; confirmed and cleared entries are preserved.</string>
-    <string name="release_notes_tests">Using test data, split an expense across two categories and check the total and editing. Increase anticipation to 30 days, then return to month end: next-month forecasts should disappear. Increase it again: they should return without duplicates. Confirmed or cleared entries must remain.</string>
+    <string name="release_notes_changes">Split transactions show their combined categories, without a separate main category to enter. Description suggestions come from this account’s previous entries; choosing one fills its category and payment method only when those fields are still empty.</string>
+    <string name="release_notes_tests">Create an expense with a previously used description: select its suggestion and check category and payment method. Try again with those fields already filled: they must remain unchanged. Split an entry across two categories: both must appear in the list and editor.</string>
     <string name="account_add">Add account</string>
     <string name="account_edit">Account settings</string>
     <string name="account_configure">Configure %1$s</string>

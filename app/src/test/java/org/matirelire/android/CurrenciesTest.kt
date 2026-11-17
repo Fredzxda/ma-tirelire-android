@@ -22,7 +22,7 @@ class CurrenciesTest {
     }
     private fun beginTransfer(model: DemoViewModel, source: Int, target: Int, amount: String = "10.00", periodic: Boolean = false) {
         model.account.intValue = source
-        model.beginEntry(today)
+        model.beginEntryWithReferences(today)
         model.updateDraft(model.draft!!.copy(description = "Fixture transfer", payment = "Transfer", transferTarget = target,
             amount = amount, repeatFrequency = if (periodic) RepeatFrequency.MONTH else RepeatFrequency.NONE,
             repeatCount = if (periodic) "3" else ""))
@@ -30,7 +30,7 @@ class CurrenciesTest {
 
     @Test fun formattingOnlyOfForeignQuoteDoesNotPromptForSeriesScope() {
         val m = model(); m.setLocalRate("USD", "0.9", Locale.US)
-        m.beginEntry(today)
+        m.beginEntryWithReferences(today)
         m.updateDraft(m.draft!!.copy(description = "Foreign series", inputCurrency = "USD", amount = "10",
             repeatFrequency = RepeatFrequency.MONTH, repeatCount = "3"))
         assertTrue(m.saveEntry(Locale.US, "unused", today = today))
@@ -55,7 +55,7 @@ class CurrenciesTest {
     }
     @Test fun malformedOriginalCurrencyInSeriesIsRejectedBeforeGeneration() {
         val m = model(); m.setLocalRate("USD", "0.9", Locale.US)
-        m.beginEntry(today)
+        m.beginEntryWithReferences(today)
         m.updateDraft(m.draft!!.copy(description = "Original series", inputCurrency = "USD", amount = "10",
             repeatFrequency = RepeatFrequency.MONTH, repeatCount = "3"))
         assertTrue(m.saveEntry(Locale.US, "unused", today = today))
@@ -144,7 +144,7 @@ class CurrenciesTest {
 
     @Test fun originalForeignAmountAndAppliedQuoteStayFixedWhenLocalRateChanges() {
         val m = model(); m.setLocalRate("USD", "0.9", Locale.US)
-        m.beginEntry(today)
+        m.beginEntryWithReferences(today)
         m.updateDraft(m.draft!!.copy(description = "Foreign purchase", inputCurrency = "USD", amount = "10.00"))
         assertTrue(m.saveEntry(Locale.US, "unused", today = today))
         val row = m.transactions.last()

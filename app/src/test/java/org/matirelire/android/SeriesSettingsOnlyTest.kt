@@ -10,7 +10,7 @@ class SeriesSettingsOnlyTest {
     private fun model() = DemoViewModel().apply {
         initialize(listOf(DemoTransaction(1, 0, "Fixture", BigDecimal("-1.00"), "Food", "Card", "2026-01-01", true)))
         ensureAccountNames(listOf("Current", "Savings")); ensureTransferPayment("Transfer")
-        beginEntry(LocalDate.of(2026, 1, 5))
+        beginEntryWithReferences(LocalDate.of(2026, 1, 5))
         updateDraft(draft!!.copy(amount = "10", description = "Original", repeatFrequency = RepeatFrequency.MONTH))
         assertTrue(saveEntry(Locale.US, "unused"))
         generateDue(LocalDate.of(2026, 3, 5))

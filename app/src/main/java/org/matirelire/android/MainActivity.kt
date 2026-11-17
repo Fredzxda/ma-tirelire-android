@@ -352,8 +352,7 @@ class DemoViewModel : ViewModel() {
         if (draft == null) {
             if (isArchived(account.intValue)) return
             referenceUiStates.keys.removeAll { it.startsWith("entry-category") }
-            draft = EntryDraft(account = account.intValue, date = today.toString(),
-                category = referenceChoices(true, account.intValue, false).firstOrNull().orEmpty(), payment = referenceChoices(false, account.intValue, false).firstOrNull().orEmpty())
+            draft = EntryDraft(account = account.intValue, date = today.toString())
             onChange?.invoke()
         }
     }
@@ -402,8 +401,8 @@ class DemoViewModel : ViewModel() {
         if (next.editingId == null && (previous.account != next.account || previous.income != next.income)) {
             val categoryChoices = referenceChoices(true, next.account, next.income)
             val paymentChoices = referenceChoices(false, next.account, next.income)
-            value = value.copy(category = next.category.takeIf { it in categoryChoices } ?: categoryChoices.firstOrNull().orEmpty(),
-                payment = next.payment.takeIf { it in paymentChoices } ?: paymentChoices.firstOrNull().orEmpty())
+            value = value.copy(category = next.category.takeIf { it in categoryChoices }.orEmpty(),
+                payment = next.payment.takeIf { it in paymentChoices }.orEmpty())
             if (!isTransferPayment(value.payment)) value = value.copy(transferTarget = null)
         }
         draft = value; onChange?.invoke()
@@ -515,23 +514,26 @@ class DemoViewModel : ViewModel() {
 
     internal fun saveEntry(locale: Locale, date: String, scope: SeriesEditScope = SeriesEditScope.CURRENT,
         today: java.time.LocalDate = java.time.LocalDate.now()): Boolean {
-        val current = draft ?: return false
+        val current = completedDescriptionDraft(draft ?: return false)
         if (isArchived(current.account) || current.transferTarget?.let(::isArchived) == true) return false
-        if (seriesOnlyEdit(locale)) return saveSeriesOnly(today)
+        if (current == draft && seriesOnlyEdit(locale)) return saveSeriesOnly(today)
         val old = transactions.firstOrNull { it.id == current.editingId }
         val additional = if (current.editingId == null) (if (current.transferTarget == null) 1 else 2)
             else if (current.transferTarget != null && old?.peerId == null) 1 else 0
         if (transactions.size + deferredForecasts.size + additional > LedgerLimits.MAX_TRANSACTIONS) { limitReached = true; return false }
         val amount = nativeAmount(current, locale)
+        val splitLines = amount?.let { Splits.parse(current.splits, it, currencyCode(current.account), locale, categories) }
+        val storedCategory = if (!splitLines.isNullOrEmpty()) splitLines.first().category
+            else if (current.transferTarget != null) current.category.takeIf { it in categories } ?: categories.firstOrNull().orEmpty()
+            else current.category
         if (amount == null || current.description.isBlank() || current.account !in openings.indices ||
-            current.category !in categories || current.payment !in payments ||
-            (old == null && (current.category !in referenceChoices(true, current.account, current.income) ||
+            storedCategory !in categories || current.payment !in payments ||
+            (old == null && ((current.splits.isEmpty() && current.transferTarget == null && storedCategory !in referenceChoices(true, current.account, current.income)) ||
                 current.payment !in referenceChoices(false, current.account, current.income))) || current.addingCategory || current.addingPayment ||
             (current.date.isNotEmpty() && OperationDates.parse(current.date) == null)) {
             draft = current.copy(attempted = true)
             return false
         }
-        val splitLines = Splits.parse(current.splits, amount, currencyCode(current.account), locale, categories)
         if (splitLines == null || (current.transferTarget != null && splitLines.isNotEmpty())) {
             draft = current.copy(attempted = true); return false
         }
@@ -561,7 +563,7 @@ class DemoViewModel : ViewModel() {
         val peerId = if (target == null) null else peer?.id ?: (if (previous == null) nextId + 1 else nextId)
         var row = DemoTransaction(rowId,
             current.account, current.description.trim(), if (current.income) amount else amount.negate(),
-            current.category, current.payment,
+            storedCategory, current.payment,
             current.date.ifEmpty { previous?.date ?: OperationDates.parse(date)?.toString() ?: return false },
             previous?.cleared ?: false, peerId, previous?.seriesId, previous?.occurrence, !preparing, preparing || previous?.readyToConfirm == true,
             exchangeAmount = if (different) (if (current.income) requireNotNull(targetValue).negate() else targetValue) else null,
@@ -1033,7 +1035,7 @@ private fun EntryAmount(model: DemoViewModel, draft: EntryDraft, modifier: Modif
 
 @Composable
 private fun EntryDescription(model: DemoViewModel, draft: EntryDraft, modifier: Modifier) {
-    OutlinedTextField(value = draft.description, onValueChange = { model.updateDraft(draft.copy(description = it.take(100))) }, label = { Text(stringResource(R.string.description)) }, singleLine = true, modifier = modifier)
+    EntryDescriptionSuggestions(model, draft, modifier)
 }
 
 @Composable
@@ -1047,7 +1049,7 @@ private fun EntryBasics(names: List<String>, model: DemoViewModel, draft: EntryD
 
 @Composable
 private fun EntryReferences(model: DemoViewModel, draft: EntryDraft, compact: Boolean = false) {
-    if (compact && !model.isTransferPayment(draft.payment)) {
+    if (compact && draft.splits.isEmpty() && !model.isTransferPayment(draft.payment)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(Modifier.weight(1f)) { EntryCategory(model, draft) }
             Box(Modifier.weight(1f)) { EntryPayment(model, draft) }
@@ -1060,6 +1062,11 @@ private fun EntryReferences(model: DemoViewModel, draft: EntryDraft, compact: Bo
 
 @Composable
 private fun EntryCategory(model: DemoViewModel, draft: EntryDraft) {
+    if (draft.splits.isNotEmpty()) {
+        Text(stringResource(R.string.split_categories_summary, draft.splits.map { it.category }.filter { it.isNotBlank() }.distinct().joinToString(" + ")),
+            style = MaterialTheme.typography.bodySmall)
+        return
+    }
     if (draft.transferTarget != null) {
         Text(stringResource(R.string.transfer_category_excluded), style = MaterialTheme.typography.bodySmall)
         return

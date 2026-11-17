@@ -76,8 +76,8 @@
     <string name="release_notes_title">Nouveautés · %1$s</string>
     <string name="release_notes_test_title">À vérifier avec des données fictives</string>
     <string name="release_notes_understood">Compris</string>
-    <string name="release_notes_changes">Ventilation des opérations entre catégories et descriptions, avec contrôle de la somme. La réduction de l’anticipation retire les prévisions hors limite non confirmées et non pointées ; les opérations confirmées et pointées restent conservées.</string>
-    <string name="release_notes_tests">Sur des données fictives, répartissez une dépense entre deux catégories et vérifiez la somme puis la modification. Augmentez l’anticipation à 30 jours, puis revenez à la fin du mois : les prévisions du mois suivant doivent disparaître. Augmentez à nouveau : elles doivent revenir sans doublon. Une opération confirmée ou pointée doit rester présente.</string>
+    <string name="release_notes_changes">Les opérations ventilées affichent leurs catégories réunies, sans catégorie principale à saisir. La description propose les saisies précédentes du compte ; sélectionner une suggestion reprend sa catégorie et son moyen de paiement uniquement si ces champs sont encore vides.</string>
+    <string name="release_notes_tests">Créez une dépense avec une description déjà utilisée : choisissez sa suggestion et vérifiez catégorie et moyen de paiement. Réessayez après avoir renseigné ces champs : ils doivent rester inchangés. Ventilez une opération entre deux catégories : les deux doivent être visibles dans la liste et la fiche.</string>
     <string name="account_add">Ajouter un compte</string>
     <string name="account_edit">Configurer le compte</string>
     <string name="account_configure">Configurer %1$s</string>

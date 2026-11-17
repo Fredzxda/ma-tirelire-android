@@ -6,6 +6,14 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class SplitOperationsTest {
+    @Test fun categoriesAreDerivedAndDistinctWithoutChangingStoredMainCategory() {
+        val row = DemoTransaction(1, 0, "Fixture", BigDecimal("-10.00"), "Legacy", "Card", "2026-11-17",
+            splits = listOf(OperationSplit("Food", "", BigDecimal("3.00")),
+                OperationSplit("House", "", BigDecimal("4.00")), OperationSplit("Food", "", BigDecimal("3.00"))))
+        assertEquals("Food + House", Splits.categorySummary(row))
+        assertEquals("Legacy", row.category)
+        assertEquals("Legacy", Splits.categorySummary(row.copy(splits = emptyList())))
+    }
     private fun model() = DemoViewModel().apply { initialize(listOf(
         DemoTransaction(1, 0, "Initial", BigDecimal("-10.00"), "Food", "Card", "2026-11-16"))) }
     private fun lines() = listOf(SplitDraft("Food", "First", "4,00"), SplitDraft("Food", "Second", "6,00"))

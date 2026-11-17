@@ -10,6 +10,13 @@ class TransactionSearchTest {
         DemoTransaction(2, 0, "Courses", BigDecimal("-10.00"), "Alimentation", "Carte", "2026-11-11"),
         DemoTransaction(3, 0, "Salaire", BigDecimal("100.00"), "Revenus", "Virement", "2026-11-11"))
 
+    @Test fun splitSearchUsesActualCategoriesRatherThanHiddenLegacyCategory() {
+        val row = rows[0].copy(category = "Hidden legacy", splits = listOf(
+            OperationSplit("Food", "Groceries", BigDecimal("20.00")),
+            OperationSplit("Transport", "Bus", BigDecimal("22.50"))))
+        assertEquals(listOf(row), TransactionSearch.filter(listOf(row), "food bus"))
+        assertTrue(TransactionSearch.filter(listOf(row), "Hidden legacy").isEmpty())
+    }
     @Test fun ignoresAccentsCaseAndWhitespace() {
         assertEquals(listOf(rows[0]), TransactionSearch.filter(rows, "  ELECTRICITE   ETE  "))
     }

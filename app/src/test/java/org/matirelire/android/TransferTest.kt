@@ -11,7 +11,7 @@ class TransferTest {
         ensureAccountNames(listOf("Current", "Savings"))
     }
     private fun transfer(model: DemoViewModel) {
-        model.beginEntry()
+        model.beginEntryWithReferences()
         model.updateDraft(model.draft!!.copy(transferTarget = 1, amount = "25,50", description = "Transfer", date = "2026-11-09"))
         assertTrue(model.saveEntry(Locale.FRANCE, "unused"))
     }
@@ -19,7 +19,7 @@ class TransferTest {
     @Test fun creationPersistsOneCompletePairAndKeepsConsolidationUnchanged() {
         val model = model()
         val total = model.balance(0) + model.balance(1)
-        model.beginEntry()
+        model.beginEntryWithReferences()
         model.updateDraft(model.draft!!.copy(transferTarget = 1, amount = "25,50", description = "Transfer"))
         var writes = 0
         model.onChange = {
@@ -80,7 +80,7 @@ class TransferTest {
 
     @Test fun invalidTargetsAndPartialPairsAreRejected() {
         val model = model()
-        model.beginEntry()
+        model.beginEntryWithReferences()
         model.updateDraft(model.draft!!.copy(transferTarget = 0, amount = "10", description = "Invalid"))
         assertFalse(model.saveEntry(Locale.US, "unused"))
         assertEquals(1, model.transactions.size)
@@ -107,7 +107,7 @@ class TransferTest {
         assertNull(SnapshotCodec.decode(SnapshotCodec.encode(legacy)).transactions.single().peerId)
         val rows = (1L until LedgerLimits.MAX_TRANSACTIONS.toLong()).map { ordinary.copy(id = it) }
         model.restoreData(legacy.copy(transactions = rows))
-        model.beginEntry()
+        model.beginEntryWithReferences()
         model.updateDraft(model.draft!!.copy(transferTarget = 1, amount = "1", description = "Too many"))
         assertFalse(model.saveEntry(Locale.US, "unused"))
         assertEquals(LedgerLimits.MAX_TRANSACTIONS - 1, model.transactions.size)

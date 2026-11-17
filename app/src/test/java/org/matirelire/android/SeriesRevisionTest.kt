@@ -10,7 +10,7 @@ class SeriesRevisionTest {
     private fun model(anchor: String = "2026-01-05", frequency: RepeatFrequency = RepeatFrequency.MONTH, transfer: Boolean = false) = DemoViewModel().apply {
         initialize(listOf(DemoTransaction(1, 0, "Fixture", BigDecimal("-1.00"), "Food", "Card", "2026-01-01", true)))
         ensureAccountNames(listOf("Current", "Savings")); ensureTransferPayment("Transfer")
-        beginEntry(LocalDate.parse(anchor))
+        beginEntryWithReferences(LocalDate.parse(anchor))
         updateDraft(draft!!.copy(amount = "10", description = "Recurring", repeatFrequency = frequency,
             payment = if (transfer) "Transfer" else "Card", transferTarget = if (transfer) 1 else null))
         assertTrue(saveEntry(Locale.US, "unused"))

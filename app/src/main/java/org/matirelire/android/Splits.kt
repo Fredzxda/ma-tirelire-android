@@ -12,6 +12,9 @@ internal data class SplitDraft(val category: String = "", val description: Strin
 
 internal object Splits {
     const val MAX_LINES = 50
+    /** Derived presentation only: never creates a synthetic catalog category. */
+    fun categorySummary(row: DemoTransaction): String = if (row.splits.isEmpty()) row.category
+        else row.splits.map { it.category }.distinct().joinToString(" + ")
     fun valid(lines: List<OperationSplit>, amount: BigDecimal, currency: String, categories: List<String>): Boolean =
         lines.isEmpty() || (lines.size in 2..MAX_LINES && lines.all {
             it.category in categories && it.description.length <= 100 && it.amount.signum() > 0 && Fx.validAmount(it.amount, currency)

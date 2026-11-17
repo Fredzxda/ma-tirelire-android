@@ -18,7 +18,7 @@ class AccountLifecycleTest {
         assertTrue(m.saveAccount(Locale.US)); return m.openings.lastIndex
     }
     private fun series(m: DemoViewModel, target: Int = 1, income: Boolean = false) {
-        m.account.intValue = 0; m.beginEntry(today)
+        m.account.intValue = 0; m.beginEntryWithReferences(today)
         m.updateDraft(m.draft!!.copy(income = income, amount = "10", description = "Fixture monthly", payment = "Transfer", transferTarget = target,
             repeatFrequency = RepeatFrequency.MONTH, repeatCount = "3"))
         assertTrue(m.saveEntry(Locale.US, "unused", today = today))
@@ -57,7 +57,7 @@ class AccountLifecycleTest {
         m.deleteEntry(source.id); m.toggleCleared(archived.id); assertEquals(before, m.transactions.toList())
         m.toggleCleared(source.id); assertTrue(m.transactions.single { it.id == source.id }.cleared)
         assertFalse(m.transactions.single { it.id == archived.id }.cleared)
-        m.account.intValue = 1; m.beginEntry(today); assertNull(m.draft)
+        m.account.intValue = 1; m.beginEntryWithReferences(today); assertNull(m.draft)
     }
     @Test fun allAccountsCanBeArchivedWithoutInvalidSelectionOrTotal() {
         val m = model(); series(m); assertTrue(m.archiveAccount(0)); assertTrue(m.archiveAccount(1))
@@ -98,7 +98,7 @@ class AccountLifecycleTest {
         val m = model(); val usd = addUsd(m)
         m.saveReference(true, "Food", "Food", ReferenceOptions(accounts = setOf(1)))
         m.archiveAccount(usd)
-        m.account.intValue = 0; m.beginEntry(today)
+        m.account.intValue = 0; m.beginEntryWithReferences(today)
         m.updateDraft(m.draft!!.copy(amount = "1", description = "Draft"))
         assertTrue(m.deleteAccount(1))
         assertEquals(setOf(1), m.archivedAccounts.toSet()); assertEquals("USD", m.currencyCode(1))
@@ -179,7 +179,7 @@ class AccountLifecycleTest {
         assertEquals(m.exportData(), SnapshotCodec.decode(SnapshotCodec.encode(m.exportData())))
     }
     @Test fun ordinarySeriesStillStopsWhenItsOnlyAccountIsArchived() {
-        val m = model(); m.beginEntry(today)
+        val m = model(); m.beginEntryWithReferences(today)
         m.updateDraft(m.draft!!.copy(amount = "10", description = "Ordinary", repeatFrequency = RepeatFrequency.MONTH, repeatCount = "3"))
         assertTrue(m.saveEntry(Locale.US, "unused", today = today))
         m.archiveAccount(0)

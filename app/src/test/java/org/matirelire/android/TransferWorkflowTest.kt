@@ -15,7 +15,7 @@ class TransferWorkflowTest {
 
     @Test fun transferWithoutTargetIsAnExternalFlowAndAppearsInReports() {
         val model = model()
-        model.beginEntry()
+        model.beginEntryWithReferences()
         model.selectDraftPayment("Transfer")
         assertNull(model.draft!!.transferTarget)
         model.updateDraft(model.draft!!.copy(amount = "5", description = "External"))

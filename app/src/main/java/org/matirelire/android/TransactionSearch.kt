@@ -12,7 +12,7 @@ internal object TransactionSearch {
         val words = normalized(query).trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
         if (words.isEmpty()) return rows
         return rows.filter { row ->
-            val text = normalized((listOf(row.description, row.category, row.payment) + row.splits.flatMap { listOf(it.category, it.description) }).joinToString(" "))
+            val text = normalized((listOf(row.description, if (row.splits.isEmpty()) row.category else "", row.payment) + row.splits.flatMap { listOf(it.category, it.description) }).joinToString(" "))
             words.all { it in text }
         }
     }
