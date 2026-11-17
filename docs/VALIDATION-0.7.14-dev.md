@@ -37,10 +37,13 @@ des suppressions manuelles ni modification du coffre personnel n’est effectué
   portrait/paysage, résumé des catégories ventilées. Ils portent sur les composants
   dans une activité fictive ; pas sur une rotation dans la fiche complète.
 
-Installation, lancement et tests instrumentés non effectués : ASUS configuré
-indisponible dans ADB. Aucune validation sur appareil revendiquée pour cet APK.
-Le harnais `tools/play.ps1` reste à exécuter après reconnexion. Le coffre personnel
-n’a pas été utilisé. CI GitHub non observée lors de cette validation locale.
+Installation et version 0.7.14-dev vérifiées sur l’ASUS après sa reconnexion.
+Les 17 tests instrumentés SQLCipher/Keystore et interface ont réussi, dont les
+suggestions et la préservation des références en portrait/paysage ainsi que
+l’affichage des catégories ventilées. L’application a été relancée avec succès.
+Les tests utilisent une activité vierge et des données fictives, sans ouvrir le
+coffre personnel. Ces contrôles ne remplacent pas les essais métier de Frédéric.
+CI GitHub non observée lors de cette validation locale.
 
 ## Essais manuels
 
