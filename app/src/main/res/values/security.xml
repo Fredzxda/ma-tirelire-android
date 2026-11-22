@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:locale="fr">
     <string name="vault_title">Le coffre Ma Tirelire</string>
-    <string name="vault_prototype_note">Prototype %1$s : stockage chiffré en cours de validation. Utilisez uniquement des données fictives, même si elles sont maintenant conservées entre les ouvertures.</string>
+    <string name="vault_prototype_note">Version %1$s · Coffre local chiffré.</string>
     <string name="vault_extra_required">Confirmez le code supplémentaire du coffre.</string>
     <string name="vault_extra_code">Code supplémentaire</string>
     <string name="vault_continue">Continuer</string>
@@ -47,7 +47,7 @@
     <string name="vault_save_error">Enregistrement impossible. Ne poursuivez pas la saisie avant résolution du problème.</string>
     <string name="vault_storage_error">Accès au stockage impossible. Vérifiez le dossier, les autorisations et l’espace disponible.</string>
     <string name="vault_backup_success">Sauvegarde chiffrée créée avec succès.</string>
-    <string name="vault_data_limit">Limite du prototype atteinte : 10 000 opérations ou 500 catégories et moyens de paiement.</string>
+    <string name="vault_data_limit">Limite atteinte : 50 000 opérations, 500 catégories ou 500 moyens de paiement.</string>
     <string name="vault_create_error">Création du coffre impossible après l’authentification Android. Les fichiers existants sont conservés.</string>
     <string name="vault_unlock_error">Ouverture du coffre impossible après l’authentification Android. Les fichiers existants sont conservés.</string>
 </resources>

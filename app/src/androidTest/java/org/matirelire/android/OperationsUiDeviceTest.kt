@@ -82,7 +82,18 @@ class OperationsUiDeviceTest {
         model.transactions[0] = original.copy(splits = listOf(
             OperationSplit("Food", "", BigDecimal("4.00")), OperationSplit("House", "", BigDecimal("6.00"))))
         screen(model)
-        ui.onNodeWithText("Food + House", substring = true).assertExists()
+        ui.onNodeWithText("Food + House · Card").assertExists()
+    }
+    @Test fun internalTransferCardUsesOneMetadataLabel() {
+        val model = DemoViewModel().apply {
+            initialize(listOf(
+                DemoTransaction(1,0,"Fixture transfer",BigDecimal("-10.00"),"Food","Transfer",today.toString(),peerId=2),
+                DemoTransaction(2,1,"Fixture transfer",BigDecimal("10.00"),"Food","Transfer",today.toString(),peerId=1)))
+        }
+        screen(model)
+        val text = InstrumentationRegistry.getInstrumentation().targetContext.getString(R.string.transfer_linked)
+        ui.onAllNodes(hasText(text) and hasAnyAncestor(hasTestTag("operation-1")), useUnmergedTree = true).assertCountEquals(1)
+        ui.onNodeWithText("Transfer", substring = false).assertDoesNotExist()
     }
     @Test fun splitEntryPortraitCanReachLastLineAndSave() = exerciseSplitEntry(false)
     @Test fun splitEntryLandscapeCanReachLastLineAndSave() = exerciseSplitEntry(true)

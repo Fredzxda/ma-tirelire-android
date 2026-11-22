@@ -263,10 +263,9 @@ private fun OperationCard(row: DemoTransaction, today: java.time.LocalDate, onEd
             }
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(Modifier.weight(1f)) {
-                    val categoryText = if (row.splits.isEmpty()) row.category else stringResource(R.string.split_categories_summary, Splits.categorySummary(row))
-                    Text(if (row.peerId != null) row.payment else "$categoryText · ${row.payment}", style = MaterialTheme.typography.bodySmall)
+                    val categoryText = Splits.categorySummary(row)
+                    Text(if (row.peerId != null) stringResource(R.string.transfer_linked) else "$categoryText · ${row.payment}", style = MaterialTheme.typography.bodySmall)
                     if (row.originalAmount != null && row.originalCurrency != null) Text(money(row.originalAmount, row.originalCurrency), style = MaterialTheme.typography.bodySmall)
-                    if (row.peerId != null) Text(stringResource(R.string.transfer_linked), style = MaterialTheme.typography.labelSmall)
                     if (OperationDates.forOrdering(row.date) == null) Text(stringResource(R.string.date_needs_review),
                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                 }

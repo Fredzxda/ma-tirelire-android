@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -946,9 +947,8 @@ private fun EntryDialog(names: List<String>, model: DemoViewModel) {
                                     EntryDirection(model, draft)
                                     EntryDate(model, draft)
                                 }
-                                EntryCurrencyFields(model, draft)
-                                EntryAmounts(model, draft, compact = true)
-                                EntryReferences(model, draft, compact = true)
+                                EntryFinancialFields(model, draft)
+                                EntryCategory(model, draft)
                                 EntrySplits(model, draft)
                                 EntryRepeat(model, draft)
                                 if (model.limitReached) Text(stringResource(R.string.vault_data_limit), color = MaterialTheme.colorScheme.error)
@@ -959,11 +959,11 @@ private fun EntryDialog(names: List<String>, model: DemoViewModel) {
                         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             EntryBasics(names, model, draft)
-                            EntryReferences(model, draft)
+                            EntryCategory(model, draft)
                             EntrySplits(model, draft)
-                                EntryRepeat(model, draft)
+                            EntryRepeat(model, draft)
                             if (model.limitReached) Text(stringResource(R.string.vault_data_limit), color = MaterialTheme.colorScheme.error)
-                                if (draft.attempted) Text(stringResource(if (draft.repeatFrequency == RepeatFrequency.NONE) R.string.invalid_amount else R.string.repeat_invalid), color = MaterialTheme.colorScheme.error)
+                            if (draft.attempted) Text(stringResource(if (draft.repeatFrequency == RepeatFrequency.NONE) R.string.invalid_amount else R.string.repeat_invalid), color = MaterialTheme.colorScheme.error)
                         }
                     }
                 }
@@ -1015,27 +1015,49 @@ private fun EntryDirection(model: DemoViewModel, draft: EntryDraft) {
     }
 }
 
+/** Companion selectors keep most of each row available for financial input. */
 @Composable
-private fun EntryAmounts(model: DemoViewModel, draft: EntryDraft, compact: Boolean = false) {
-    if (compact) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            EntryAmount(model, draft, Modifier.weight(0.38f))
-            EntryDescription(model, draft, Modifier.weight(0.62f))
+internal fun EntryFinancialFields(model: DemoViewModel, draft: EntryDraft) {
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val stacked = maxWidth < 300.dp || LocalDensity.current.fontScale > 1.3f
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (stacked) {
+                EntryAmount(model, draft, Modifier.fillMaxWidth())
+                EntryAmountCurrency(model, draft, Modifier.fillMaxWidth())
+            } else Row(Modifier.fillMaxWidth().testTag("amount-currency-row"),
+                horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
+                EntryAmount(model, draft, Modifier.weight(1f))
+                EntryAmountCurrency(model, draft, Modifier.width(96.dp))
+            }
+            EntryCurrencyFields(model, draft, showSelector = false)
+            if (stacked) {
+                EntryDescriptionSuggestions(model, draft, Modifier.fillMaxWidth())
+                EntryPayment(model, draft, Modifier.fillMaxWidth())
+            } else Row(Modifier.fillMaxWidth().testTag("description-payment-row"),
+                horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
+                EntryDescriptionSuggestions(model, draft, Modifier.weight(1f))
+                EntryPayment(model, draft, Modifier.width(128.dp))
+            }
+            val linked = model.transactions.firstOrNull { it.id == draft.editingId }?.peerId != null
+            if (model.isTransferPayment(draft.payment)) TransferTargetPicker(model, draft, linked)
+            if (draft.transferTarget != null) Text(stringResource(if (linked) R.string.transfer_edit_hint else R.string.transfer_conversion_hint),
+                style = MaterialTheme.typography.bodySmall)
         }
-    } else {
-        EntryAmount(model, draft, Modifier.fillMaxWidth())
-        EntryDescription(model, draft, Modifier.fillMaxWidth())
     }
 }
 
 @Composable
 private fun EntryAmount(model: DemoViewModel, draft: EntryDraft, modifier: Modifier) {
-    OutlinedTextField(value = draft.amount, onValueChange = { model.updateDraft(draft.copy(amount = it.take(30))) }, label = { Text(stringResource(R.string.amount)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true, modifier = modifier)
+    PinnedLabelField(draft.amount, { model.updateDraft(draft.copy(amount = it)) }, stringResource(R.string.amount),
+        modifier.testTag("entry-amount"), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), maxLength = 30)
 }
 
 @Composable
-private fun EntryDescription(model: DemoViewModel, draft: EntryDraft, modifier: Modifier) {
-    EntryDescriptionSuggestions(model, draft, modifier)
+private fun EntryAmountCurrency(model: DemoViewModel, draft: EntryDraft, modifier: Modifier) {
+    val native = model.currencyCode(draft.account)
+    val code = if (draft.transferTarget == null) draft.inputCurrency.ifBlank { native } else native
+    CurrencySelector(code, { model.updateDraft(draft.copy(inputCurrency = if (it == native) "" else it, fxRate = "")) },
+        enabled = draft.transferTarget == null, model = model, stateKey = "entry-original-currency", compact = true, modifier = modifier)
 }
 
 @Composable
@@ -1043,21 +1065,7 @@ private fun EntryBasics(names: List<String>, model: DemoViewModel, draft: EntryD
     EntryAccounts(names, model, draft, horizontal = true)
     EntryDirection(model, draft)
     EntryDate(model, draft)
-    EntryCurrencyFields(model, draft)
-    EntryAmounts(model, draft)
-}
-
-@Composable
-private fun EntryReferences(model: DemoViewModel, draft: EntryDraft, compact: Boolean = false) {
-    if (compact && draft.splits.isEmpty() && !model.isTransferPayment(draft.payment)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Box(Modifier.weight(1f)) { EntryCategory(model, draft) }
-            Box(Modifier.weight(1f)) { EntryPayment(model, draft) }
-        }
-    } else {
-        EntryCategory(model, draft)
-        EntryPayment(model, draft)
-    }
+    EntryFinancialFields(model, draft)
 }
 
 @Composable
@@ -1088,63 +1096,50 @@ private fun EntryCategory(model: DemoViewModel, draft: EntryDraft) {
 }
 
 @Composable
-private fun EntryPayment(model: DemoViewModel, draft: EntryDraft) {
+private fun EntryPayment(model: DemoViewModel, draft: EntryDraft, modifier: Modifier = Modifier) {
     val linked = model.transactions.firstOrNull { it.id == draft.editingId }?.peerId != null
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(Modifier.weight(1f)) {
-            ReferencePicker(
-                label = stringResource(R.string.payment), selected = draft.payment,
-                options = if (linked) model.payments.filter(model::isTransferPayment) else model.referenceChoices(false, draft.account, draft.income, if (draft.editingId != null) draft.payment else ""),
-                onSelect = model::selectDraftPayment,
-                adding = draft.addingPayment, newName = draft.newPayment,
-                onBeginAdd = { model.updateDraft(draft.copy(addingPayment = true, newPayment = "")) },
-                onNameChange = { model.updateDraft(draft.copy(newPayment = it.take(60))) },
-                onCancelAdd = { model.updateDraft(draft.copy(addingPayment = false, newPayment = "")) },
-                onAdd = {
-                    model.addPayment(draft.newPayment)?.let {
-                        model.updateDraft(draft.copy(payment = it, transferTarget = null, addingPayment = false, newPayment = ""))
-                    }
-                }, allowAdd = !linked,
-            )
-        }
-        if (model.isTransferPayment(draft.payment)) Box(Modifier.weight(1f)) { TransferTargetPicker(model, draft, linked) }
-    }
-    if (draft.transferTarget != null) Text(stringResource(if (linked) R.string.transfer_edit_hint else R.string.transfer_conversion_hint),
-        style = MaterialTheme.typography.bodySmall)
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun ReferencePicker(
-    label: String, selected: String, options: List<String>, onSelect: (String) -> Unit,
-    adding: Boolean, newName: String, onBeginAdd: () -> Unit, onNameChange: (String) -> Unit,
-    onCancelAdd: () -> Unit, onAdd: () -> Unit, allowAdd: Boolean = true,
-) {
     var expanded by remember { mutableStateOf(false) }
-    Column(Modifier.fillMaxWidth()) {
-        Text(label, style = MaterialTheme.typography.labelLarge)
-        Box {
-            OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth(), enabled = !adding) {
-                Text(selected.ifBlank { stringResource(R.string.choose_reference) }, modifier = Modifier.weight(1f))
-                Text("▾")
-            }
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                options.forEach { value -> DropdownMenuItem(text = { Text(value) }, onClick = { onSelect(value); expanded = false }) }
-                if (allowAdd) {
-                    HorizontalDivider()
-                    DropdownMenuItem(text = { Text(stringResource(R.string.add_reference, label)) }, onClick = { expanded = false; onBeginAdd() })
-                }
-            }
-        }
-        if (adding) {
-            OutlinedTextField(value = newName, onValueChange = onNameChange, label = { Text(stringResource(R.string.reference_name)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            Text(stringResource(R.string.reference_duplicate_hint), style = MaterialTheme.typography.bodySmall)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = onAdd, enabled = newName.isNotBlank()) { Text(stringResource(R.string.add_and_select)) }
-                TextButton(onClick = onCancelAdd) { Text(stringResource(R.string.cancel)) }
+    var creating by referenceMemory(model, "entry-payment-creating") { false }
+    val options = if (linked) model.payments.filter(model::isTransferPayment) else
+        model.referenceChoices(false, draft.account, draft.income, if (draft.editingId != null) draft.payment else "")
+    Box(modifier) {
+        EntryCompactSelector(stringResource(R.string.entry_payment_short), draft.payment,
+            { expanded = true }, Modifier.fillMaxWidth().testTag("entry-payment"))
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            options.forEach { value -> DropdownMenuItem(text = { Text(value) }, onClick = {
+                model.selectDraftPayment(value); expanded = false
+            }) }
+            if (!linked) {
+                HorizontalDivider()
+                DropdownMenuItem(text = { Text(stringResource(R.string.add_reference, stringResource(R.string.payment))) },
+                    onClick = { expanded = false; creating = true })
             }
         }
     }
+    var newName by referenceMemory(model, "entry-payment-create-name") { "" }
+    var creationError by referenceMemory(model, "entry-payment-create-error") { false }
+    fun closeCreation() {
+        creating = false
+        model.referenceUiStates.keys.removeAll { key -> key.startsWith("entry-payment-create-") }
+    }
+    if (creating) AlertDialog(onDismissRequest = { closeCreation() },
+        title = { Text(stringResource(R.string.refs_new_payment)) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                PinnedLabelField(newName, { newName = it; creationError = false }, stringResource(R.string.reference_name),
+                    Modifier.fillMaxWidth().testTag("entry-payment-create-name"), maxLength = 60)
+                Text(stringResource(R.string.reference_duplicate_hint), style = MaterialTheme.typography.bodySmall)
+                if (creationError) Text(stringResource(R.string.refs_create_error), color = MaterialTheme.colorScheme.error)
+            }
+        }, confirmButton = {
+            TextButton(enabled = newName.isNotBlank(), onClick = {
+                val selected = model.addPayment(newName)
+                if (selected == null) creationError = true else {
+                    model.selectDraftPayment(selected); closeCreation()
+                }
+            }, modifier = Modifier.testTag("entry-payment-create-confirm")) { Text(stringResource(R.string.add_and_select)) }
+        }, dismissButton = { TextButton(onClick = { closeCreation() }) { Text(stringResource(R.string.cancel)) } },
+        properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn))
 }
 
 @Composable
@@ -1350,9 +1345,23 @@ internal fun EntryRepeat(model: DemoViewModel, draft: EntryDraft) {
     val row = model.transactions.firstOrNull { it.id == draft.editingId }
     val rule = model.rules.firstOrNull { it.id == row?.seriesId }
     var expanded by remember { mutableStateOf(false) }
+    var information by remember { mutableStateOf(false) }
+    if (information) AlertDialog(onDismissRequest = { information = false },
+        title = { Text(stringResource(R.string.entry_repeat_information_title)) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()).testTag("repeat-information-content"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (rule != null) Text(stringResource(R.string.repeat_scope_hint))
+                Text(stringResource(if (rule == null) R.string.repeat_limits_hint else R.string.repeat_remaining_hint))
+                Text(stringResource(R.string.repeat_confirm_hint))
+            }
+        }, confirmButton = { TextButton(onClick = { information = false }) { Text(stringResource(android.R.string.ok)) } },
+        properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn))
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(stringResource(R.string.repeat_title), style = MaterialTheme.typography.labelLarge)
-        if (rule != null) Text(stringResource(R.string.repeat_scope_hint), style = MaterialTheme.typography.bodySmall)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.repeat_title), Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
+            val infoLabel = stringResource(R.string.entry_repeat_information_title)
+            IconButton(onClick = { information = true }, modifier = Modifier.testTag("repeat-information").semantics { contentDescription = infoLabel }) { Text("ⓘ") }
+        }
         Box {
             OutlinedButton(onClick = { expanded = true }) { Text(repeatLabel(draft.repeatFrequency)) }
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
@@ -1364,9 +1373,8 @@ internal fun EntryRepeat(model: DemoViewModel, draft: EntryDraft) {
             }
         }
         if (draft.repeatFrequency != RepeatFrequency.NONE) {
-            Text(stringResource(if (rule == null) R.string.repeat_limits_hint else R.string.repeat_remaining_hint), style = MaterialTheme.typography.bodySmall)
             BoxWithConstraints {
-                val stacked = maxWidth < 340.dp || LocalConfiguration.current.fontScale > 1.15f
+                val stacked = maxWidth < 340.dp || LocalDensity.current.fontScale > 1.15f
                 val countField: @Composable (Modifier) -> Unit = { fieldModifier ->
                     Box(fieldModifier.testTag("repeat-count-frame")) {
                     PinnedLabelField(value = draft.repeatCount,

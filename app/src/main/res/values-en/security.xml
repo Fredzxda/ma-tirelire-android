@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="vault_title">Your Ma Tirelire vault</string>
-    <string name="vault_prototype_note">Prototype %1$s: encrypted storage is being validated. Use fictional data only, even though it is now kept between sessions.</string>
+    <string name="vault_prototype_note">Version %1$s · Local encrypted vault.</string>
     <string name="vault_extra_required">Confirm your additional vault code.</string>
     <string name="vault_extra_code">Additional code</string>
     <string name="vault_continue">Continue</string>
@@ -47,7 +47,7 @@
     <string name="vault_save_error">Data could not be saved. Stop entering data until this issue is resolved.</string>
     <string name="vault_storage_error">Storage cannot be accessed. Check the folder, permissions and available space.</string>
     <string name="vault_backup_success">Encrypted backup created successfully.</string>
-    <string name="vault_data_limit">Prototype limit reached: 10,000 entries or 500 categories and payment methods.</string>
+    <string name="vault_data_limit">Limit reached: 50,000 transactions, 500 categories or 500 payment methods.</string>
     <string name="vault_create_error">Could not create the vault after Android authentication. No existing vault was replaced.</string>
     <string name="vault_unlock_error">Could not open the vault after Android authentication. Existing files are preserved.</string>
 </resources>

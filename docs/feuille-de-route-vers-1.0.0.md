@@ -220,3 +220,13 @@ des vérifications : [VALIDATION-0.7.13-dev.md](VALIDATION-0.7.13-dev.md).
 ## 0.7.14-dev — améliorations de saisie
 
 Résumé des catégories ventilées dans la liste et la fiche, sans catégorie principale supplémentaire. Suggestions locales de descriptions avec reprise des références vides. Les suppressions manuelles de récurrences restent consommées par le curseur ; le réglage d’anticipation ne les annule pas. Ce lot améliore la saisie, les champs bancaires et chéquiers restent à venir.
+
+## 0.7.15-dev — ergonomie des cartes et de la saisie
+
+Cartes allégées, champs montant/devise et description/moyen regroupés,
+catégorie suivie de la ventilation, aide de périodicité dans Informations et
+suppression des anciens libellés de démonstration dans l’interface.
+Le catalogue et la proposition de placement des icônes de catégories sont
+préparés dans docs/design ; leur association persistée aux catégories et leur
+affichage Android restent à intégrer. Placement validé le 22 novembre : avant le statut, trois pictogrammes distincts puis +N au maximum. Les champs
+bancaires et chéquiers restent au prochain lot fonctionnel.

@@ -25,14 +25,16 @@ private fun localRateText(value: BigDecimal, locale: Locale): String =
 
 /** A bounded, searchable currency chooser; no Android saved-state payload. */
 @Composable
-internal fun CurrencySelector(code: String, onSelect: (String) -> Unit, enabled: Boolean = true, model: DemoViewModel? = null, stateKey: String = "currency-selector") {
+internal fun CurrencySelector(code: String, onSelect: (String) -> Unit, enabled: Boolean = true, model: DemoViewModel? = null, stateKey: String = "currency-selector", compact: Boolean = false, modifier: Modifier = Modifier) {
     val locale = LocalConfiguration.current.locales[0]
     val openState = if (model == null) remember { mutableStateOf(false) } else referenceMemory(model, "$stateKey-open") { false }
     val queryState = if (model == null) remember { mutableStateOf("") } else referenceMemory(model, "$stateKey-query") { "" }
     var open by openState
     var query by queryState
     val title = stringResource(R.string.currency_label)
-    Column(Modifier.fillMaxWidth()) {
+    if (compact) EntryCompactSelector(title, code, { query = ""; open = true },
+        modifier.testTag("currency-selector"), enabled = enabled)
+    else Column(modifier.fillMaxWidth()) {
         Text(title, style = MaterialTheme.typography.labelLarge)
         OutlinedButton(onClick = { query = ""; open = true }, enabled = enabled,
             modifier = Modifier.fillMaxWidth().testTag("currency-selector")) {
@@ -114,7 +116,7 @@ internal fun CurrencySettings(model: DemoViewModel) {
 
 /** Fields stay in the host form's scroll area, never adding a permanent Operations toolbar. */
 @Composable
-internal fun EntryCurrencyFields(model: DemoViewModel, draft: EntryDraft) {
+internal fun EntryCurrencyFields(model: DemoViewModel, draft: EntryDraft, showSelector: Boolean = true) {
     val locale = LocalConfiguration.current.locales[0]
     val native = model.currencyCode(draft.account)
     val target = draft.transferTarget?.let(model::currencyCode)
@@ -122,7 +124,7 @@ internal fun EntryCurrencyFields(model: DemoViewModel, draft: EntryDraft) {
     val from = original
     val to = target ?: native
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (target == null) CurrencySelector(original, {
+        if (showSelector && target == null) CurrencySelector(original, {
             model.updateDraft(draft.copy(inputCurrency = if (it == native) "" else it, fxRate = ""))
         }, model = model, stateKey = "entry-original-currency")
         if (from != to) {

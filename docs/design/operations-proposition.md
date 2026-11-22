@@ -98,3 +98,21 @@ Implémentation livrée en 0.7.3-dev, contrôles consignés dans ../VALIDATION-0
 Correction ergonomique 0.7.4-dev : indication courte Historique / À vérifier
 dans le menu Filtre ; indication Active sous Recherche plutôt que le point.
 Une seule ligne de sous-libellé, hauteur de barre conservée.
+
+## Ajustements du 22 novembre 2026 — 0.7.15-dev
+
+- Les catégories ventilées sont réunies sans préfixe « Ventilation : » dans les
+  cartes. La fiche peut conserver un intitulé de section explicite.
+- Un virement interne affiche une seule métadonnée « Virement interne lié »,
+  avec la même typographie bodySmall que catégorie/moyen sur une autre opération.
+- Fiche : montant large + devise compacte à droite, description large + moyen
+  de paiement à droite. Taux FX et compte cible restent conditionnels sur une
+  ligne distincte. Catégorie puis ventilation se suivent directement.
+- Petites largeurs et texte agrandi : empiler les contrôles lorsque nécessaire
+  pour leur lisibilité. Le contenu reste défilant, en portrait et paysage.
+- Les explications de périodicité et de limites vivent dans Informations ; les
+  valeurs, statuts et erreurs restent dans la fiche.
+- Icônes de catégories : placement avant le statut validé le 22 novembre,
+  trois pictogrammes distincts maximum puis +N. Catalogue distinct dans
+  [le catalogue interactif](categories-icones-proposition.html). Pas encore de
+  paramètre enregistré dans les catégories pour cette livraison.

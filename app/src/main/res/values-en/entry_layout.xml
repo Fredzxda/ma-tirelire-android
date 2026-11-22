@@ -1,0 +1,4 @@
+<resources>
+    <string name="entry_payment_short">Payment</string>
+    <string name="entry_repeat_information_title">Recurrence information</string>
+</resources>
