@@ -62,3 +62,9 @@
   Details et correspondance locale : docs/publication-github.md.
 
 - Formulaires et selecteurs : appliquer .agents/skills/ma-tirelire-adaptive-forms/SKILL.md pour les adaptations portrait/paysage, clavier et grands textes.
+
+- Efficacité : lire docs/workflow-validation.md. Une validation complète par
+  livraison ; corrections intermédiaires ciblées selon leur risque. Réutiliser
+  les résultats de tâches Gradle inchangées, ne pas relancer après documentation
+  seule. Logs sur disque, ne remonter que bilan et erreurs pertinentes. Éviter
+  les sous-agents pour petites évolutions ; contexte minimal si délégation utile.

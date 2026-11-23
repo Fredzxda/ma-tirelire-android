@@ -19,6 +19,7 @@ internal data class LedgerData(
     val localRates: Map<String, String> = emptyMap(),
     val archivedAccounts: Set<Int> = emptySet(),
     val deferredForecasts: List<DemoTransaction> = emptyList(),
+    val showCategoryIcons: Boolean = true,
 )
 
 internal object SnapshotCodec {
@@ -44,8 +45,9 @@ internal object SnapshotCodec {
             .put("editingId", draft.editingId ?: JSONObject.NULL).put("date", draft.date).put("transferTarget", draft.transferTarget ?: JSONObject.NULL)
             .put("repeatFrequency", draft.repeatFrequency.name).put("repeatUntil", draft.repeatUntil)
             .put("repeatCount", draft.repeatCount).put("applyToSeries", draft.applyToSeries) }
-        val result = JSONObject().put("schema", if (data.deferredForecasts.isNotEmpty()) 16 else if (data.transactions.any { it.splits.isNotEmpty() } || data.rules.any { it.splits.isNotEmpty() } || data.draft?.splits?.isNotEmpty() == true) 15 else if (data.archivedAccounts.isNotEmpty()) 14 else if (data.accountCurrencies.isNotEmpty() || data.localRates.isNotEmpty() || data.transactions.any { it.originalCurrency != null || it.exchangeAmount != null } || data.rules.any { it.targetAmount != null || it.originalCurrency != null } || data.draft?.let { it.inputCurrency.isNotBlank() || it.fxRate.isNotBlank() } == true) 13 else if (data.referenceOptions.isNotEmpty()) 12 else if (data.dateMigrationVersion > 0) 11 else if (data.transactionOrder != TransactionOrder.ORIGINAL) 10 else if (data.anticipation != Anticipation.DUE) 9 else if (data.rules.isNotEmpty() || data.draft?.repeatFrequency?.let { it != RepeatFrequency.NONE } == true) 9 else if (data.transferPayment != null) 4 else if (data.transactions.any { it.peerId != null } || data.draft?.transferTarget != null) 3 else if (data.accountNames.isEmpty()) 1 else 2)
+        val result = JSONObject().put("schema", if (!data.showCategoryIcons || data.referenceOptions.values.any { it.icon != null || it.inheritIcon }) 17 else if (data.deferredForecasts.isNotEmpty()) 16 else if (data.transactions.any { it.splits.isNotEmpty() } || data.rules.any { it.splits.isNotEmpty() } || data.draft?.splits?.isNotEmpty() == true) 15 else if (data.archivedAccounts.isNotEmpty()) 14 else if (data.accountCurrencies.isNotEmpty() || data.localRates.isNotEmpty() || data.transactions.any { it.originalCurrency != null || it.exchangeAmount != null } || data.rules.any { it.targetAmount != null || it.originalCurrency != null } || data.draft?.let { it.inputCurrency.isNotBlank() || it.fxRate.isNotBlank() } == true) 13 else if (data.referenceOptions.isNotEmpty()) 12 else if (data.dateMigrationVersion > 0) 11 else if (data.transactionOrder != TransactionOrder.ORIGINAL) 10 else if (data.anticipation != Anticipation.DUE) 9 else if (data.rules.isNotEmpty() || data.draft?.repeatFrequency?.let { it != RepeatFrequency.NONE } == true) 9 else if (data.transferPayment != null) 4 else if (data.transactions.any { it.peerId != null } || data.draft?.transferTarget != null) 3 else if (data.accountNames.isEmpty()) 1 else 2)
             .put("dateMigrationVersion", data.dateMigrationVersion).put("transactionOrder", data.transactionOrder.name).put("anticipation", data.anticipation.name).put("rules", JSONArray(data.rules.map(RecurrenceCodec::encode))).put("transferPayment", data.transferPayment ?: JSONObject.NULL).put("accountNames", JSONArray(data.accountNames)).put("transactions", rows)
+            .put("showCategoryIcons", data.showCategoryIcons)
             .put("deferredForecasts", encodeRows(data.deferredForecasts))
             .put("archivedAccounts", JSONArray(data.archivedAccounts.sorted()))
             .put("accountCurrencies", JSONArray(data.accountCurrencies)).put("localRates", JSONObject(data.localRates))
@@ -77,7 +79,7 @@ internal object SnapshotCodec {
         require(!quoted && depth == 0)
         val root = JSONObject(text)
         val schema = root.getInt("schema")
-        require(schema in 1..16)
+        require(schema in 1..17)
         fun names(key: String): List<String> {
             val list = root.getJSONArray(key)
             require(list.length() in 1..500)
@@ -220,7 +222,8 @@ internal object SnapshotCodec {
             if (schema >= 8) Anticipation.valueOf(root.getString("anticipation")) else Anticipation.DUE,
             if (schema >= 10) TransactionOrder.valueOf(root.getString("transactionOrder")) else TransactionOrder.ORIGINAL,
             if (schema >= 11) root.getInt("dateMigrationVersion").also { require(it == 1 || (schema >= 12 && it == 0)) } else 0,
-            if (schema >= 12) ReferenceCatalog.decode(root.getJSONObject("referenceOptions"), categories, payments, openings.indices, transferPayment) else emptyMap(), currencies, rates, archived, rows.drop(liveEntries.length()))
+            if (schema >= 12) ReferenceCatalog.decode(root.getJSONObject("referenceOptions"), categories, payments, openings.indices, transferPayment, includeIcons = schema >= 17) else emptyMap(), currencies, rates, archived, rows.drop(liveEntries.length()),
+            showCategoryIcons = if (schema >= 17) root.getBoolean("showCategoryIcons") else true)
         require(result.rules.none { it.active && (it.account in archived || it.target in archived) })
         require(result.draft == null || (result.draft.account !in archived && result.draft.transferTarget !in archived))
         val liveIds = result.transactions.map { it.id }.toSet()

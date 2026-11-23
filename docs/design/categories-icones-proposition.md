@@ -2,8 +2,8 @@
 
 Statut : placement validé par Frédéric le 22 novembre 2026 : icônes avant le
 statut, au plus trois pictogrammes distincts puis +N pour une ventilation.
-L’intégration Android reste au prochain lot. Aucun changement de
-coffre ou de format de sauvegarde n’est effectué par cette maquette.
+Intégration Android réalisée en 0.7.16-dev (format de coffre 17). La maquette
+reste une référence visuelle distincte de l’application.
 
 Ouvrir [le catalogue interactif](categories-icones-proposition.html). Il contient
 64 pictogrammes originaux, répartis en huit familles de huit. Le catalogue se
@@ -51,3 +51,7 @@ Les futurs VectorDrawable peuvent reprendre ces géométries. Les détails seron
 Les libellés de la maquette sont français ; l’intégration devra fournir FR/EN.
 Cette page n’implémente pas encore de sélecteur dans l’application, de persistance
 des affectations, ni de migration. Son aperçu n’est pas une capture de l’APK.
+
+## Intégration livrée
+
+La 0.7.16-dev implémente le sélecteur, les vecteurs, les affectations, l’héritage explicite et le masquage global. Voir ../VALIDATION-0.7.16-dev.md pour les vérifications et limites.

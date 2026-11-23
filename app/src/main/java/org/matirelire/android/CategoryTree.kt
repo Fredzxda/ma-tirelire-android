@@ -61,6 +61,7 @@ internal fun CategoryTree(model: DemoViewModel, selected: String, selectable: Li
                         .clickable(enabled = row.selectable, role = Role.Button) { onSelect(row.name) }
                         .semantics { contentDescription = model.categoryPath(row.name); this.selected = selected == row.name }
                         .padding(horizontal = 4.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        CategoryGlyph(model, row.name)
                         Column(Modifier.weight(1f)) {
                             Text(row.name, Modifier.fillMaxWidth(), fontWeight = if (row.hasChildren) FontWeight.SemiBold else FontWeight.Normal)
                             if ((query.isNotBlank() || row.depth > 4) && row.depth > 0)
@@ -120,6 +121,8 @@ internal fun ReferenceCreateDialog(model: DemoViewModel, category: Boolean, init
     var name by referenceMemory(model, "$stateKey-name") { "" }
     var parent by referenceMemory(model, "$stateKey-parent") { initialParent.orEmpty() }
     var error by referenceMemory(model, "$stateKey-error") { false }
+    var icon by referenceMemory(model, "$stateKey-icon") { null as String? }
+    var inheritIcon by referenceMemory(model, "$stateKey-inherit") { false }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, securePolicy = SecureFlagPolicy.SecureOn)) {
         Surface(Modifier.padding(12.dp).widthIn(max = 500.dp).fillMaxWidth(), shape = MaterialTheme.shapes.large) {
             Column(Modifier.padding(20.dp).imePadding().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -128,11 +131,12 @@ internal fun ReferenceCreateDialog(model: DemoViewModel, category: Boolean, init
                     Modifier.fillMaxWidth().testTag("reference-create-name"), maxLength = 60)
                 if (category) CategorySelectorField(model, parent, model.categories, "$stateKey-parent-selector", { parent = it },
                     stringResource(R.string.refs_parent), allowNone = true)
+                if (category) CategoryIconSelectorField(model, icon, inheritIcon, parent.isNotBlank(), "$stateKey-icon") { id, inherit -> icon = id; inheritIcon = inherit }
                 if (error) Text(stringResource(R.string.refs_create_error), color = MaterialTheme.colorScheme.error)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
                     Button(onClick = {
-                        val created = model.createReference(category, name, if (category) parent.ifBlank { null } else null)
+                        val created = model.createReference(category, name, if (category) parent.ifBlank { null } else null, if (category) icon else null, category && inheritIcon)
                         if (created != null) onCreated(created) else error = true
                     }, enabled = name.isNotBlank(), modifier = Modifier.testTag("reference-create-confirm")) { Text(stringResource(R.string.refs_create)) }
                 }

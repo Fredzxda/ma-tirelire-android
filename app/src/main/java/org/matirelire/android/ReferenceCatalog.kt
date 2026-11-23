@@ -5,12 +5,14 @@ import org.json.JSONObject
 
 internal enum class ReferenceKind { ANY, EXPENSE, INCOME }
 internal data class ReferenceOptions(val parent: String? = null, val kind: ReferenceKind = ReferenceKind.ANY,
-    val hidden: Boolean = false, val accounts: Set<Int> = emptySet())
+    val hidden: Boolean = false, val accounts: Set<Int> = emptySet(),
+    val icon: String? = null, val inheritIcon: Boolean = false)
 
 internal object ReferenceCatalog {
     fun key(category: Boolean, name: String) = (if (category) "c:" else "p:") + name
     fun encode(options: Map<String, ReferenceOptions>) = JSONObject().apply {
         options.forEach { (key, value) -> put(key, JSONObject().put("parent", value.parent ?: JSONObject.NULL)
+            .put("icon", value.icon ?: JSONObject.NULL).put("inheritIcon", value.inheritIcon)
             .put("kind", value.kind.name).put("hidden", value.hidden).put("accounts", JSONArray(value.accounts.sorted()))) }
     }
     fun validate(options: Map<String, ReferenceOptions>, categories: List<String>, payments: List<String>, accounts: IntRange, transfer: String?) {
@@ -20,7 +22,9 @@ internal object ReferenceCatalog {
             val category = key.startsWith("c:")
             require(key.drop(2) in if (category) categories else payments)
             require(value.accounts.all { it in accounts })
-            if (!category) require(value.parent == null)
+            require(value.icon == null || value.icon in CategoryIconCatalog.ids)
+            require(value.icon == null || !value.inheritIcon)
+            if (!category) require(value.parent == null && value.icon == null && !value.inheritIcon)
             value.parent?.let { require(it in categories) }
             if (key == key(false, transfer.orEmpty())) require(value == ReferenceOptions())
             val seen = mutableSetOf(key.drop(2))
@@ -31,7 +35,7 @@ internal object ReferenceCatalog {
             }
         }
     }
-    fun decode(json: JSONObject, categories: List<String>, payments: List<String>, accounts: IntRange, transfer: String?): Map<String, ReferenceOptions> {
+    fun decode(json: JSONObject, categories: List<String>, payments: List<String>, accounts: IntRange, transfer: String?, includeIcons: Boolean = true): Map<String, ReferenceOptions> {
         require(json.length() <= 1000)
         return json.keys().asSequence().associateWith { key ->
             val obj = json.getJSONObject(key)
@@ -40,7 +44,9 @@ internal object ReferenceCatalog {
             val values = (0 until list.length()).map { list.getInt(it) }
             require(values.distinct().size == values.size)
             ReferenceOptions(if (obj.isNull("parent")) null else obj.getString("parent"),
-                ReferenceKind.valueOf(obj.getString("kind")), obj.getBoolean("hidden"), values.toSet())
+                ReferenceKind.valueOf(obj.getString("kind")), obj.getBoolean("hidden"), values.toSet(),
+                if (includeIcons && !obj.isNull("icon")) obj.getString("icon") else null,
+                if (includeIcons) obj.optBoolean("inheritIcon", false) else false)
         }.also { validate(it, categories, payments, accounts, transfer) }
     }
 }

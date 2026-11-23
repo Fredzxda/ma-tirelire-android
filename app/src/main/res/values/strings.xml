@@ -76,8 +76,8 @@
     <string name="release_notes_title">Nouveautés · %1$s</string>
     <string name="release_notes_test_title">Points à vérifier</string>
     <string name="release_notes_understood">Compris</string>
-    <string name="release_notes_changes">Fiche réorganisée : devise à droite du montant, moyen de paiement à droite de la description, catégorie suivie de la ventilation. Aide de périodicité dans Informations. Cartes allégées : catégories sans préfixe et une seule mention pour un virement interne. Libellés actualisés pour l’utilisation courante.</string>
-    <string name="release_notes_tests">Vérifiez la saisie et la modification en portrait et paysage, le choix de devise, le taux de change et le compte cible des virements. Vérifiez l’accès à la dernière action avec le clavier ouvert. Consultez Informations dans Périodicité, puis les cartes ventilées et les virements internes.</string>
+    <string name="release_notes_changes">Icônes des catégories : 64 pictogrammes, choix à la création et dans les réglages, option Aucune ou héritage du parent. Affichage avant le statut, trois icônes distinctes maximum puis +N pour une ventilation. Le masquage global et les choix sont conservés dans le coffre et les sauvegardes.</string>
+    <string name="release_notes_tests">Choisissez une icône de catégorie puis enregistrez. Vérifiez la carte, une catégorie fille avec héritage, une ventilation et le masquage global. Fermez et rouvrez le coffre pour vérifier la conservation du choix.</string>
     <string name="account_add">Ajouter un compte</string>
     <string name="account_edit">Configurer le compte</string>
     <string name="account_configure">Configurer %1$s</string>

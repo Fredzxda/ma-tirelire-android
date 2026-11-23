@@ -213,7 +213,7 @@ internal fun TransactionsScreen(names: List<String>, account: Int, balance: BigD
             }
             items(visible, key = { it.id }) { row ->
                 OperationCard(row, model.calendarToday, onEdit = { closeMenu(); onEdit(row.id) },
-                    onToggle = { closeMenu(); onToggle(row.id) }, currencyCode = model.currencyCode(row.account), editable = model.canEditTransaction(row), pointingEnabled = !model.isArchived(row.account))
+                    onToggle = { closeMenu(); onToggle(row.id) }, currencyCode = model.currencyCode(row.account), editable = model.canEditTransaction(row), pointingEnabled = !model.isArchived(row.account), model = model)
             }
         }
     }
@@ -246,12 +246,13 @@ internal fun orderResource(order: TransactionOrder): Int = when (order) {
     TransactionOrder.OLDEST -> R.string.order_oldest
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun OperationCard(row: DemoTransaction, today: java.time.LocalDate, onEdit: () -> Unit, onToggle: () -> Unit, currencyCode: String = "EUR", editable: Boolean = true, pointingEnabled: Boolean = true) {
+private fun OperationCard(row: DemoTransaction, today: java.time.LocalDate, onEdit: () -> Unit, onToggle: () -> Unit, currencyCode: String = "EUR", editable: Boolean = true, pointingEnabled: Boolean = true, model: DemoViewModel) {
     Card(enabled = editable, onClick = onEdit, modifier = Modifier.fillMaxWidth().testTag("operation-${row.id}")) {
         Column(Modifier.padding(12.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(Modifier.weight(1f)) { RecurringBadge(row, today) }
+                FlowRow(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp)) { CategoryIconStrip(model, row); RecurringBadge(row, today) }
                 Text(OperationDates.display(row.date, LocalConfiguration.current.locales[0]),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
             }

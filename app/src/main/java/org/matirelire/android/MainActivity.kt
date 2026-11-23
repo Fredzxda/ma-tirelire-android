@@ -259,6 +259,12 @@ class DemoViewModel : ViewModel() {
     }
     internal var dateMigrationVersion = 0
         private set
+    internal var showCategoryIcons by mutableStateOf(true)
+        private set
+    internal fun setShowCategoryIcons(value: Boolean) {
+        if (showCategoryIcons == value) return
+        showCategoryIcons = value; onChange?.invoke()
+    }
     internal var transactionOrder by mutableStateOf(TransactionOrder.ORIGINAL)
         private set
     internal fun setTransactionOrder(value: TransactionOrder) {
@@ -420,7 +426,7 @@ class DemoViewModel : ViewModel() {
     }
     internal fun cancelEntry() { draft = null; onChange?.invoke() }
 
-    internal fun exportData() = LedgerData(transactions.toList(), categories.toList(), payments.toList(), openings.toList(), draft, accountNames.toList(), transferPayment, rules.toList(), anticipation, transactionOrder, dateMigrationVersion, referenceOptions.toMap(), accountCurrencies.toList(), localRates.toMap(), archivedAccounts.toSet(), deferredForecasts = deferredForecasts.toList())
+    internal fun exportData() = LedgerData(transactions.toList(), categories.toList(), payments.toList(), openings.toList(), draft, accountNames.toList(), transferPayment, rules.toList(), anticipation, transactionOrder, dateMigrationVersion, referenceOptions.toMap(), accountCurrencies.toList(), localRates.toMap(), archivedAccounts.toSet(), deferredForecasts = deferredForecasts.toList(), showCategoryIcons = showCategoryIcons)
 
     internal fun restoreData(data: LedgerData) {
         pendingAccountAction = null
@@ -436,6 +442,7 @@ class DemoViewModel : ViewModel() {
         transferPayment = data.transferPayment
         dateMigrationVersion = data.dateMigrationVersion
         transactionOrder = data.transactionOrder
+        showCategoryIcons = data.showCategoryIcons
         anticipation = data.anticipation; calendarToday = java.time.LocalDate.now()
         rules.clear(); rules.addAll(data.rules); recurrenceEpoch++; recurrenceBlocked = false
         openings = data.openings.toList()
@@ -454,6 +461,7 @@ class DemoViewModel : ViewModel() {
         accountPeriod = AccountPeriod()
         operationsMenu = OperationsMenu.NONE
         transactionOrder = TransactionOrder.ORIGINAL
+        showCategoryIcons = true
         dateMigrationVersion = 0
         onChange = null
         rules.clear(); recurrenceEpoch++; recurrenceBlocked = false

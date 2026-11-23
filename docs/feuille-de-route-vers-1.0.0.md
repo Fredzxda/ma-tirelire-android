@@ -230,3 +230,7 @@ Le catalogue et la proposition de placement des icônes de catégories sont
 préparés dans docs/design ; leur association persistée aux catégories et leur
 affichage Android restent à intégrer. Placement validé le 22 novembre : avant le statut, trois pictogrammes distincts puis +N au maximum. Les champs
 bancaires et chéquiers restent au prochain lot fonctionnel.
+
+## 0.7.16-dev — icônes des catégories
+
+64 pictogrammes intégrés, choix explicite ou héritage du parent, sauvegardes et masquage global. Affichage avant le statut, trois icônes distinctes puis +N. Les champs bancaires et chéquiers restent au prochain lot fonctionnel.

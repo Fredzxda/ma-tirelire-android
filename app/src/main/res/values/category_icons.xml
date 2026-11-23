@@ -1,0 +1,8 @@
+<resources>
+    <string name="icons_title">Icônes des catégories</string>
+    <string name="icons_none">Aucune icône</string>
+    <string name="icons_inherit">Utiliser celle du parent</string>
+    <string name="icons_search">Rechercher une icône</string>
+    <string name="icons_all">Toutes</string>
+    <string name="icons_show">Afficher les icônes sur les opérations</string>
+</resources>

@@ -40,6 +40,7 @@ internal fun ReferenceManagementDialog(model: DemoViewModel, onDismiss: () -> Un
         FilterChip(selected = category, onClick = { category = true }, label = { Text(stringResource(R.string.refs_categories)) })
         FilterChip(selected = !category, onClick = { category = false }, label = { Text(stringResource(R.string.refs_payments)) })
         OutlinedButton(onClick = { creating = true }) { Text(stringResource(if (category) R.string.refs_new_category else R.string.refs_new_payment)) }
+        if (category) ReferenceCheck(stringResource(R.string.icons_show), model.showCategoryIcons) { model.setShowCategoryIcons(it) }
         TextButton(onClick = onDismiss) { Text(stringResource(R.string.refs_close)) }
     }
     val picker: @Composable (Modifier) -> Unit = { modifier ->
@@ -96,6 +97,8 @@ private fun ReferenceEditor(model: DemoViewModel, category: Boolean, original: S
     val stored = model.referenceOptions[(if (category) "c:" else "p:") + original] ?: ReferenceOptions()
     var name by referenceMemory(model, "editor-$category-$original-name") { original }
     var parent by referenceMemory(model, "editor-$category-$original-parent") { stored.parent.orEmpty() }
+    var icon by referenceMemory(model, "editor-$category-$original-icon") { stored.icon }
+    var inheritIcon by referenceMemory(model, "editor-$category-$original-inherit") { stored.inheritIcon }
     var kindName by referenceMemory(model, "editor-$category-$original-kindName") { stored.kind.name }
     var hidden by referenceMemory(model, "editor-$category-$original-hidden") { stored.hidden }
     var accountIds by referenceMemory(model, "editor-$category-$original-accountIds") { stored.accounts.sorted().joinToString(",") }
@@ -113,6 +116,7 @@ private fun ReferenceEditor(model: DemoViewModel, category: Boolean, original: S
             model.categories.filter { it != original && it !in model.categoryDescendants(original) },
             "management-parent-$original", { parent = it; edited() }, stringResource(R.string.refs_parent), allowNone = true)
     }
+    if (category) CategoryIconSelectorField(model, icon, inheritIcon, parent.isNotBlank(), "editor-icon-$original") { id, inherit -> icon = id; inheritIcon = inherit; edited() }
     if (!dedicatedTransfer) {
         ReferenceChoice(stringResource(R.string.refs_kind), stringResource(when (ReferenceKind.valueOf(kindName)) {
             ReferenceKind.ANY -> R.string.refs_any
@@ -146,7 +150,7 @@ private fun ReferenceEditor(model: DemoViewModel, category: Boolean, original: S
     Button(onClick = {
         val options = if (dedicatedTransfer) stored else ReferenceOptions(
             parent = if (category) parent.ifBlank { null } else null,
-            kind = ReferenceKind.valueOf(kindName), hidden = hidden, accounts = accounts)
+            kind = ReferenceKind.valueOf(kindName), hidden = hidden, accounts = accounts, icon = if (category) icon else null, inheritIcon = category && inheritIcon)
         if (model.saveReference(category, original, name, options)) {
             model.referenceUiStates.keys.removeAll { it.startsWith("editor-$category-$original-") }
             onSelected(name.trim()); error = false; saved = true

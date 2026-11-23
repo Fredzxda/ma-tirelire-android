@@ -17,13 +17,15 @@ internal fun DemoViewModel.categoryDescendants(name: String): Set<String> = cate
 }.toSet()
 
 /** Validate the complete new reference before a single encrypted persistence callback. */
-internal fun DemoViewModel.createReference(category: Boolean, text: String, parent: String? = null): String? {
+internal fun DemoViewModel.createReference(category: Boolean, text: String, parent: String? = null,
+    icon: String? = null, inheritIcon: Boolean = false): String? {
     val name = text.trim()
     val names = if (category) categories else payments
     if (name.isEmpty() || name.length > 60 || names.size >= 500 || names.any { it.equals(name, true) } ||
         (!category && parent != null) || (parent != null && parent !in categories)) return null
     val metadata = referenceOptions.toMutableMap()
-    if (category && parent != null) metadata[ReferenceCatalog.key(true, name)] = ReferenceOptions(parent = parent)
+    if (parent != null || icon != null || inheritIcon)
+        metadata[ReferenceCatalog.key(category, name)] = ReferenceOptions(parent = parent, icon = icon, inheritIcon = inheritIcon)
     if (runCatching { ReferenceCatalog.validate(metadata, if (category) categories + name else categories,
             if (category) payments else payments + name, openings.indices, transferPayment) }.isFailure) return null
     names.add(name)

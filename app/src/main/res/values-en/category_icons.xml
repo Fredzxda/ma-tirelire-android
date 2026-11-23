@@ -1,0 +1,8 @@
+<resources>
+    <string name="icons_title">Category icons</string>
+    <string name="icons_none">No icon</string>
+    <string name="icons_inherit">Use parent icon</string>
+    <string name="icons_search">Search icons</string>
+    <string name="icons_all">All</string>
+    <string name="icons_show">Show icons on transactions</string>
+</resources>
