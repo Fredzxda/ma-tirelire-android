@@ -1,0 +1,5 @@
+<resources>
+    <string name="series_next_date_title">Prochaine échéance à générer</string>
+    <string name="series_next_date_change">Modifier la prochaine échéance</string>
+    <string name="series_next_date_error">Date non disponible. Vérifiez les limites de la série et les opérations déjà enregistrées.</string>
+</resources>

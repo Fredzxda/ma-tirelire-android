@@ -76,8 +76,8 @@
     <string name="release_notes_title">What is new · %1$s</string>
     <string name="release_notes_test_title">Things to check</string>
     <string name="release_notes_understood">Got it</string>
-    <string name="release_notes_changes">Category icons: 64 pictograms, editable in category creation and settings, None or explicit parent inheritance. Icons appear before status, up to three distinct icons then +N for splits. Choices and global visibility are kept in the vault and backups.</string>
-    <string name="release_notes_tests">Choose and save a category icon. Check its card, parent inheritance, splits and global visibility. Close and reopen the vault to check persistence.</string>
+    <string name="release_notes_changes">Recurring series now let you change the next date to generate from Recurring transactions. Recorded entries remain unchanged; subsequent dates follow the same frequency from the selected date.</string>
+    <string name="release_notes_tests">Open Recurring transactions in settings and change the next date using the calendar. Check the next and following dates. Past entries must remain unchanged and paused series must remain paused.</string>
     <string name="account_add">Add account</string>
     <string name="account_edit">Account settings</string>
     <string name="account_configure">Configure %1$s</string>

@@ -32,8 +32,7 @@ internal object SeriesRevision {
         if (draft.repeatFrequency == RepeatFrequency.NONE) return rule.copy(active = false)
         val editedDate = OperationDates.parse(row.date) ?: return null
         val original = rows.firstOrNull { it.id == row.id }
-        val calendarChanged = draft.repeatFrequency != rule.frequency || original?.date != row.date ||
-            rule.dateAt(row.occurrence ?: 0)?.toString() != row.date
+        val calendarChanged = draft.repeatFrequency != rule.frequency || original?.date != row.date
         val anchor = if (calendarChanged) editedDate else requireNotNull(OperationDates.parse(rule.anchor))
         val until = draft.repeatUntil.takeIf { it.isNotBlank() }?.let(OperationDates::parse)
         val remaining = draft.repeatCount.takeIf { it.isNotBlank() }?.toIntOrNull()
@@ -61,6 +60,8 @@ internal object SeriesRevision {
             description = row.description, category = row.category, payment = row.payment, splits = row.splits,
             until = until?.toString(), count = remaining?.let { rule.next + it },
             active = (rule.active || wasExhausted) && remaining != 0,
-            scheduleBase = rule.next, scheduleOffset = step, generatedThrough = cutoff.toString())
+            scheduleBase = if (calendarChanged) rule.next else rule.scheduleBase,
+            scheduleOffset = if (calendarChanged) step else rule.scheduleOffset,
+            generatedThrough = if (calendarChanged) cutoff.toString() else rule.generatedThrough)
     }
 }

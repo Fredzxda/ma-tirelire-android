@@ -76,8 +76,8 @@
     <string name="release_notes_title">Nouveautés · %1$s</string>
     <string name="release_notes_test_title">Points à vérifier</string>
     <string name="release_notes_understood">Compris</string>
-    <string name="release_notes_changes">Icônes des catégories : 64 pictogrammes, choix à la création et dans les réglages, option Aucune ou héritage du parent. Affichage avant le statut, trois icônes distinctes maximum puis +N pour une ventilation. Le masquage global et les choix sont conservés dans le coffre et les sauvegardes.</string>
-    <string name="release_notes_tests">Choisissez une icône de catégorie puis enregistrez. Vérifiez la carte, une catégorie fille avec héritage, une ventilation et le masquage global. Fermez et rouvrez le coffre pour vérifier la conservation du choix.</string>
+    <string name="release_notes_changes">Les séries permettent maintenant de modifier la date de la prochaine échéance à générer, depuis Opérations périodiques. Les écritures déjà enregistrées restent inchangées ; les suivantes repartent de cette date avec la même périodicité.</string>
+    <string name="release_notes_tests">Dans les réglages, ouvrez Opérations périodiques puis Modifier la prochaine échéance. Choisissez une date au calendrier, vérifiez la prochaine date affichée et les suivantes. Les anciennes opérations ne doivent pas changer. Une série arrêtée doit rester arrêtée.</string>
     <string name="account_add">Ajouter un compte</string>
     <string name="account_edit">Configurer le compte</string>
     <string name="account_configure">Configurer %1$s</string>

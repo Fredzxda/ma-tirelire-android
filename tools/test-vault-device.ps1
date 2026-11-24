@@ -1,4 +1,4 @@
-param([ValidateSet('Full','Icons')][string]$Suite = 'Full')
+param([ValidateSet('Full','Icons','NextDate')][string]$Suite = 'Full')
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Resolve-AndroidDevice.ps1')
 $project = Split-Path $PSScriptRoot -Parent
@@ -14,7 +14,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Impossible de verifier le verrouillage Android
 if ($policy -match '(?m)^\s+showing=true\s*$') {
     throw 'Deverrouiller Android sur ASUS puis relancer Play : les tests interface necessitent un ecran accessible. Aucun code ne doit etre transmis.'
 }
-$classes = if ($Suite -eq 'Icons') { 'org.matirelire.android.CategoryIconsDeviceTest' } else { 'org.matirelire.android.VaultStorageDeviceTest,org.matirelire.android.OperationsUiDeviceTest,org.matirelire.android.EntryLayoutDeviceTest,org.matirelire.android.CategoryIconsDeviceTest' }
+$classes = if ($Suite -eq 'Icons') { 'org.matirelire.android.CategoryIconsDeviceTest' } elseif ($Suite -eq 'NextDate') { 'org.matirelire.android.SeriesNextDateDeviceTest' } else { 'org.matirelire.android.VaultStorageDeviceTest,org.matirelire.android.OperationsUiDeviceTest,org.matirelire.android.EntryLayoutDeviceTest,org.matirelire.android.CategoryIconsDeviceTest,org.matirelire.android.SeriesNextDateDeviceTest' }
 $result = @(& $adb -s $device shell am instrument -w -r -e class $classes org.matirelire.android.demo.test/androidx.test.runner.AndroidJUnitRunner)
 $result | Write-Output
 if ($LASTEXITCODE -ne 0 -or -not ($result -match 'OK \([1-9][0-9]* tests?\)') -or ($result -match 'FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed')) {

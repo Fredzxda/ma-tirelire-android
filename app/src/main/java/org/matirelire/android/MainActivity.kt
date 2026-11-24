@@ -305,6 +305,7 @@ class DemoViewModel : ViewModel() {
         onChange?.invoke()
         return true
     }
+    internal fun notifySeriesScheduleChanged() { recurrenceEpoch++; onChange?.invoke() }
     internal fun setSeriesActive(id: String, active: Boolean) {
         val index = rules.indexOfFirst { it.id == id }
         if (index < 0) return
@@ -1420,6 +1421,7 @@ private fun RecurringRulesDialog(model: DemoViewModel, onDismiss: () -> Unit) {
                     Text(repeatLabel(rule.frequency))
                     Text(stringResource(R.string.repeat_next, rule.nextDate()?.let { OperationDates.display(it.toString(), locale) }
                         ?: stringResource(R.string.repeat_stopped)))
+                    SeriesNextDateButton(model, rule)
                     TextButton(onClick = { model.setSeriesActive(rule.id, !rule.active) },
                         enabled = rule.active || rule.copy(active = true).nextDate() != null) {
                         Text(stringResource(if (rule.active) R.string.repeat_pause else R.string.repeat_resume))

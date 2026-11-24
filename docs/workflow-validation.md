@@ -33,3 +33,6 @@ Ce mode ne remplace pas la validation d’une modification du coffre.
 
 Les tâches Gradle marquées UP-TO-DATE sont réutilisées ; ne pas faire clean
 par défaut. Les quotas exacts ne sont pas estimés à partir du nombre de tests.
+
+Calendrier de prochaine échéance : mode appareil ciblé `-Suite NextDate`
+après compilation du seul APK de tests si le code applicatif est inchangé.

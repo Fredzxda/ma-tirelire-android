@@ -1,0 +1,5 @@
+<resources>
+    <string name="series_next_date_title">Next occurrence to generate</string>
+    <string name="series_next_date_change">Change next occurrence date</string>
+    <string name="series_next_date_error">Date unavailable. Check series limits and already recorded transactions.</string>
+</resources>

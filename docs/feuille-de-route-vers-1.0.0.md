@@ -234,3 +234,7 @@ bancaires et chéquiers restent au prochain lot fonctionnel.
 ## 0.7.16-dev — icônes des catégories
 
 64 pictogrammes intégrés, choix explicite ou héritage du parent, sauvegardes et masquage global. Affichage avant le statut, trois icônes distinctes puis +N. Les champs bancaires et chéquiers restent au prochain lot fonctionnel.
+
+## 0.7.17-dev — prochaine date des séries
+
+Modification au calendrier de la prochaine échéance à générer, sans changer les écritures enregistrées ou différées. Les dates suivantes suivent la même fréquence. Série arrêtée conservée arrêtée, limites conservées et reprise du calendrier lors d’une édition ultérieure du montant vérifiée.
