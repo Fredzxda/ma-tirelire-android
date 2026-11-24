@@ -83,11 +83,13 @@ stable mais n'autorise ni publication ni distribution.
 La CI compile les APK et exécute les tests unitaires, lint et le contrôle de version.
 Elle n'ouvre aucun coffre utilisateur et ne déploie sur aucun téléphone.
 Les tests Android matériels et d'interface sont exécutés séparément sur appareil :
-115 tests unitaires et 7 tests isolés ASUS passent pour la version 0.7.17-dev.
+La validation de référence 0.7.17-dev a réussi avec 197 tests unitaires et 27
+tests ASUS. Ces totaux historiques ne constituent plus le périmètre par défaut.
 Cela ne constitue pas une certification de sécurité ni une validation de toutes
 les fonctions prévues pour 1.0.0.
 
-Le workflow local `tools/play.ps1` compile, vérifie, installe et lance sur l'ASUS
+Le workflow local `tools/play.ps1 -Suite <lot>` exécute uniquement les tests
+choisis pour le changement, compile, installe et lance sur l'ASUS
 personnel explicitement autorisé. Son identité est dans `tools/device.local.json`,
 ignoré par Git et non fourni. Ce workflow ne choisit aucun autre téléphone et
 nécessite Android déverrouillé pour les tests d'interface. Les autres contributeurs

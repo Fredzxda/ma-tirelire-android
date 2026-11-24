@@ -1,5 +1,9 @@
-param([ValidateSet('Full','Icons','NextDate')][string]$Suite = 'Full')
+param([string]$Suite, [switch]$PlanOnly, [string]$FullReason)
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'Get-ValidationPlan.ps1')
+$plan = Get-ValidationPlan -Suite $Suite -FullReason $FullReason
+if ($PlanOnly) { $plan | ConvertTo-Json -Depth 3; return }
+if (-not $plan.DeviceClasses) { throw 'Suite sans tests appareil. Utiliser Play -Suite None pour installer et lancer.' }
 . (Join-Path $PSScriptRoot 'Resolve-AndroidDevice.ps1')
 $project = Split-Path $PSScriptRoot -Parent
 $configuration = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'device.local.json') -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -14,7 +18,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Impossible de verifier le verrouillage Android
 if ($policy -match '(?m)^\s+showing=true\s*$') {
     throw 'Deverrouiller Android sur ASUS puis relancer Play : les tests interface necessitent un ecran accessible. Aucun code ne doit etre transmis.'
 }
-$classes = if ($Suite -eq 'Icons') { 'org.matirelire.android.CategoryIconsDeviceTest' } elseif ($Suite -eq 'NextDate') { 'org.matirelire.android.SeriesNextDateDeviceTest' } else { 'org.matirelire.android.VaultStorageDeviceTest,org.matirelire.android.OperationsUiDeviceTest,org.matirelire.android.EntryLayoutDeviceTest,org.matirelire.android.CategoryIconsDeviceTest,org.matirelire.android.SeriesNextDateDeviceTest' }
+$classes = $plan.DeviceClasses
 $result = @(& $adb -s $device shell am instrument -w -r -e class $classes org.matirelire.android.demo.test/androidx.test.runner.AndroidJUnitRunner)
 $result | Write-Output
 if ($LASTEXITCODE -ne 0 -or -not ($result -match 'OK \([1-9][0-9]* tests?\)') -or ($result -match 'FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed')) {
@@ -22,4 +26,4 @@ if ($LASTEXITCODE -ne 0 -or -not ($result -match 'OK \([1-9][0-9]* tests?\)') -o
 }
 $launch = @(& $adb -s $device shell am start -W -n org.matirelire.android.demo/org.matirelire.android.MainActivity)
 if ($LASTEXITCODE -ne 0 -or -not ($launch -match '^Status:\s*ok\s*$')) { throw 'Lancement apres test non confirme.' }
-Write-Output 'Controles SQLCipher, Keystore et interface reussis ; application relancee.'
+Write-Output ('Suite ' + $Suite + ' reussie ; application relancee.')

@@ -3,9 +3,21 @@ param(
     [ValidateNotNullOrEmpty()]
     [string]$DeviceSerial,
     [switch]$Launch,
-    [switch]$IncludeDeviceTestApk
+    [switch]$IncludeDeviceTestApk,
+    [string]$Suite,
+    [switch]$PlanOnly,
+    [string]$FullReason
 )
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'Get-ValidationPlan.ps1')
+$plan = Get-ValidationPlan -Suite $Suite -FullReason $FullReason
+$buildTasks = @('assembleDebug','lintDebug')
+if ($IncludeDeviceTestApk) { $buildTasks += 'assembleDebugAndroidTest' }
+if ($plan.AllUnitTests -or $plan.UnitTests.Count -gt 0) {
+    $buildTasks += 'testDebugUnitTest'
+    foreach ($testFilter in $plan.UnitTests) { $buildTasks += @('--tests', $testFilter) }
+}
+if ($PlanOnly) { $buildTasks | ConvertTo-Json; return }
 $adb = Join-Path $env:LOCALAPPDATA 'Android/Sdk/platform-tools/adb.exe'
 if (-not (Test-Path -LiteralPath $adb)) { throw 'ADB absent : verifier Android SDK Platform Tools.' }
 $state = & $adb -s $DeviceSerial get-state 2>$null
@@ -13,11 +25,7 @@ if ($LASTEXITCODE -ne 0 -or "$state".Trim() -ne 'device') {
     throw 'Telephone absent ou non autorise. Verifier le cable et accepter le debogage USB sur le telephone.'
 }
 $project = Split-Path $PSScriptRoot -Parent
-if ($IncludeDeviceTestApk) {
-    & (Join-Path $PSScriptRoot 'build.ps1') -Tasks @('assembleDebug', 'testDebugUnitTest', 'lintDebug', 'assembleDebugAndroidTest')
-} else {
-    & (Join-Path $PSScriptRoot 'build.ps1')
-}
+& (Join-Path $PSScriptRoot 'build.ps1') -Tasks $buildTasks
 $apk = Join-Path $project 'app/build/outputs/apk/debug/app-debug.apk'
 $metadata = Get-Content -LiteralPath (Join-Path $project 'app/build/outputs/apk/debug/output-metadata.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 if ($metadata.applicationId -ne 'org.matirelire.android.demo' -or $metadata.elements[0].versionName -notmatch '-dev$') {

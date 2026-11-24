@@ -1,8 +1,9 @@
 # Ma Tirelire Android
 
 - Appliquer le skill dev-delivery ; toute version de developpement est suffixee -dev.
-- Workflow local de livraison : `powershell -NoProfile -File tools/play.ps1`.
-  Il compile, teste, controle lint, installe et ouvre la demo sur l'ASUS configure.
+- Workflow local de livraison : `powershell -NoProfile -File tools/play.ps1 -Suite <lot>`.
+  Choisir explicitement les tests lies au changement ; aucune suite par defaut.
+  Il compile, controle lint, installe et ouvre sur l ASUS configure.
 - Frederic a autorise le 9 novembre 2026 l'installation et le lancement sur cet
   ASUS apres chaque nouvelle compilation validee. Ne pas redemander cet accord.
 - Identite physique dans `tools/device.local.json`, local et ignore de Git.
@@ -14,8 +15,9 @@
 - Verifier la version installee et le resultat du lancement ; ne pas confondre
   ouverture reussie et validation visuelle de l'interface.
 
-- Play compile aussi l APK de tests et execute les controles SQLCipher/Keystore
-  isoles sur ASUS avant de lancer l application. Le coffre utilisateur reste intact.
+- Play execute uniquement la suite explicitement choisie. SQLCipher/Keystore
+  seulement avec Storage ou Full ; None installe et lance sans tests appareil.
+  Le coffre utilisateur reste intact.
 
 - Chaque nouvelle version doit actualiser les ressources FR/EN release_notes_changes
   et release_notes_tests : nouveautes et scenarios manuels realisables. Le dialogue
@@ -49,8 +51,8 @@
   docs/design/operations-proposition.md. La proposition du 11 novembre 2026
   a ete validee par Frederic avec autorisation explicite d implementation.
 
-- Play execute aussi OperationsUiDeviceTest dans une activite vierge avec
-  donnees fictives ; ne jamais utiliser le coffre personnel pour ces tests.
+- Les tests Operations sont choisis seulement si cette vue change. Ils utilisent
+  une activite vierge, jamais le coffre personnel.
 
 - Les tests interface necessitent Android deverrouille ; le harnais le verifie.
   Seule l activite fictive garde son ecran allume pendant les tests, sans modifier
@@ -63,8 +65,8 @@
 
 - Formulaires et selecteurs : appliquer .agents/skills/ma-tirelire-adaptive-forms/SKILL.md pour les adaptations portrait/paysage, clavier et grands textes.
 
-- Efficacité : lire docs/workflow-validation.md. Une validation complète par
-  livraison ; corrections intermédiaires ciblées selon leur risque. Réutiliser
+- Efficacité : lire docs/workflow-validation.md. Tests cibles uniquement, y compris a la livraison. Full est exceptionnel
+  et doit avoir une justification concrete documentee. Réutiliser
   les résultats de tâches Gradle inchangées, ne pas relancer après documentation
   seule. Logs sur disque, ne remonter que bilan et erreurs pertinentes. Éviter
   les sous-agents pour petites évolutions ; contexte minimal si délégation utile.

@@ -1,38 +1,36 @@
-# Validation et coût des échanges — 23 novembre 2026
+# Tests ciblés — règle corrigée le 24 novembre 2026
 
-Le temps CPU des tests locaux et le quota du modèle sont distincts. L’objectif
-est de réduire les allers-retours, les sorties et le contexte répété, sans
-abandonner les contrôles qui protègent les données.
+La règle précédente « une suite complète à chaque livraison » est supprimée.
+Le harnais exige maintenant un choix explicite ; une omission échoue avant
+toute connexion ADB. Les commandes -PlanOnly permettent de relire le périmètre.
 
-## Règles
+| Changement | Suite | Tests sur téléphone |
+|---|---|---|
+| Date suivante des séries | NextDate | 1 test du calendrier |
+| Icônes des catégories | Icons | 3 tests des icônes |
+| Agencement de saisie | Forms | 5 tests de formulaire |
+| Recherche/menus des opérations | Operations | 3 méthodes ciblées |
+| Stockage et clés Android | Storage | 3 tests SQLCipher/Keystore |
+| Texte/documentation sans comportement | None | Aucun |
+| Régression transversale identifiée | Full | Suite complète, justification écrite |
 
-- Petit changement : un responsable, lectures ciblées. Délégation seulement
-  si elle apporte un gain, avec contexte minimal et périmètre sans recouvrement.
-- Pendant l’édition : compiler et exécuter les tests du module touché. Ne pas
-  refaire les essais physiques après chaque modification de texte.
-- Avant livraison : compilation, tests unitaires, lint et suite appareil via
-  Play. Une seule passe complète tant que rien ne justifie une nouvelle passe.
-- Si un test échoue : diagnostic limité à sa trace et ses fichiers. Correction
-  puis test ciblé ; élargir seulement en présence d’un risque non résolu.
-- Les changements de formats, de chiffrement, de soldes ou de sauvegardes
-  justifient une non-régression plus large. Un libellé ou une documentation seule
-  ne justifie pas de rejouer SQLCipher/Keystore.
-- Ne pas multiplier les tests qui recopient l’implémentation. Couvrir les
-  comportements et erreurs réellement possibles, données de test uniquement.
-- Garder les journaux hors conversation ; communiquer nombres, résultat et
-  limites. Conserver dans VALIDATION la portée exacte des preuves.
-- Après une interruption : statut Git, dernier état de validation et résumé
-  de reprise ; pas de relecture intégrale de toutes les archives.
+Les tests unitaires sont également filtrés par lot. Adapter ces sélections aux
+fichiers réellement touchés ; ne pas utiliser un lot voisin par commodité.
+Un nouvel écran ou comportement reçoit sa suite ciblée. Un échec ne déclenche
+pas automatiquement Full : diagnostiquer puis rejouer seulement ce qui change.
 
-## Commandes
+Exemples :
 
-Livraison complète : `powershell -NoProfile -File tools/play.ps1`.
-Correction du seul test d’icônes : compiler `assembleDebugAndroidTest`, puis
-`powershell -NoProfile -File tools/test-vault-device.ps1 -Suite Icons`.
-Ce mode ne remplace pas la validation d’une modification du coffre.
+```powershell
+powershell -NoProfile -File tools/play.ps1 -Suite NextDate -PlanOnly
+powershell -NoProfile -File tools/play.ps1 -Suite NextDate
+powershell -NoProfile -File tools/play.ps1 -Suite None
+```
 
-Les tâches Gradle marquées UP-TO-DATE sont réutilisées ; ne pas faire clean
-par défaut. Les quotas exacts ne sont pas estimés à partir du nombre de tests.
-
-Calendrier de prochaine échéance : mode appareil ciblé `-Suite NextDate`
-après compilation du seul APK de tests si le code applicatif est inchangé.
+Une modification de format doit couvrir migrations et sauvegardes concernées,
+mais ne justifie pas à elle seule de rejouer tous les écrans. Full exige aussi `-FullReason "justification concrète"`. Toute extension
+du périmètre est annoncée avec sa raison. Lint et compilation restent locaux.
+Les journaux restent sur disque ; bilan et erreurs utiles seulement en chat.
+Limiter la délégation, transmettre un contexte minimal et conserver un état
+de reprise court. Aucun pourcentage de réduction du quota n’est garanti : le
+temps de calcul local et l’usage du modèle sont des coûts distincts.
